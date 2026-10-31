@@ -18,6 +18,12 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 
 ## Timeline
 
+### 2026-10-31: Merged over the main redesign
+
+- `main` had a UI redesign in commit `e4617be`, with a navigation bar, Teach mode and two pre-built games (Gravity Playground and Hard Times 1932).
+- By decision, this work replaced that redesign in full. None of its changes are in the current code.
+- The commit is still in the git history. To recover a file from it, run `git show e4617be:<path>`.
+
 ### 2026-10-31: Interactive labs and the companion
 
 - Moved beyond question-and-answer games. Added two hand-built lab engines that the model configures: a bodies lab for gravity and electric forces, and a systems lab with sliders and a live graph.
