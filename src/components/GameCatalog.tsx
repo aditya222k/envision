@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import type { GameSummary } from "@/lib/games/store";
-import { useIncognito } from "@/lib/incognito";
+import { useTeachMode } from "@/lib/teach-mode";
 
 function studentLink(id: string) {
   return `${window.location.origin}/play/${id}`;
@@ -88,7 +88,7 @@ function GameRow({
   const isPublished = game.publishedAt !== null;
 
   return (
-    <article className="flex flex-col gap-4 bg-paper p-6">
+    <article className="flex flex-col gap-4 p-6 sm:p-8">
       <div className="flex flex-col gap-1">
         {isRenaming ? (
           <form onSubmit={handleRename} className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -121,18 +121,21 @@ function GameRow({
           <h2 className="text-2xl font-bold text-ink">{game.name}</h2>
         )}
         <p className="text-ink">{game.subjectLine}</p>
-        <p className="text-sm text-ink">
-          {isPublished
-            ? game.hasUnpublishedChanges
-              ? "Published. Students don't have your latest changes yet."
-              : "Published to students"
-            : "Not published"}
-          {` · Version ${game.versionCount} · Updated ${new Date(game.updatedAt).toLocaleDateString()}`}
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-soft">
+          <span className={`font-bold ${isPublished ? "text-science" : ""}`}>
+            {isPublished
+              ? game.hasUnpublishedChanges
+                ? "Published. Students don't have your latest changes yet."
+                : "Published to students"
+              : "Not published"}
+          </span>
+          <span>Version {game.versionCount}</span>
+          <span>Updated {new Date(game.updatedAt).toLocaleDateString()}</span>
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Link href={`/?game=${game.id}`} className="action link-action h-11 px-5">
+        <Link href={`/?game=${game.id}`} className="action h-11 px-5">
           Open
         </Link>
         {canManage && (
@@ -177,7 +180,7 @@ function GameRow({
           <button
             type="button"
             onClick={() => setIsDeleting(true)}
-            className="action action-quiet h-11 px-5"
+            className="h-11 px-2 font-bold text-history underline-offset-4 hover:underline sm:ml-auto"
           >
             Delete
           </button>
@@ -185,7 +188,7 @@ function GameRow({
       </div>
 
       {isDeleting && (
-        <div className="flex flex-col gap-3 border-2 border-history p-4">
+        <div className="flex flex-col gap-3 rounded-xl bg-[#fbe9e7] p-4">
           <p className="font-bold text-ink">
             Delete {game.name}? This can&apos;t be undone
             {isPublished ? ", and students will lose access" : ""}.
@@ -228,10 +231,10 @@ export function GameCatalog() {
   const [games, setGames] = useState<GameSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLocalAddress, setIsLocalAddress] = useState(false);
-  const isIncognito = useIncognito();
+  const isTeachMode = useTeachMode();
 
   useEffect(() => {
-    fetch(isIncognito ? "/api/games?demo=1" : "/api/games", {
+    fetch(isTeachMode ? "/api/games?demo=1" : "/api/games", {
       cache: "no-store",
     })
       .then((response) => {
@@ -247,23 +250,23 @@ export function GameCatalog() {
         );
       })
       .catch(() => setError("Envision couldn't load your games. Reload the page."));
-  }, [isIncognito]);
+  }, [isTeachMode]);
 
   if (error) {
     return (
-      <p role="alert" className="bg-paper p-6 font-bold text-history">
+      <p role="alert" className="p-6 font-bold text-history sm:p-8">
         {error}
       </p>
     );
   }
   if (!games) {
-    return <p className="bg-paper p-6 text-ink">Loading your games...</p>;
+    return <p className="p-6 text-ink-soft sm:p-8">Loading your games...</p>;
   }
   if (games.length === 0) {
     return (
-      <div className="flex flex-col gap-4 bg-paper p-6 text-ink">
+      <div className="flex flex-col items-start gap-4 p-6 text-ink sm:p-8">
         <p>You haven&apos;t built a game yet. Describe one to get started.</p>
-        <Link href="/" className="font-bold underline">
+        <Link href="/" className="action h-11 px-5">
           Build a game
         </Link>
       </div>
@@ -273,7 +276,7 @@ export function GameCatalog() {
   return (
     <>
       {isLocalAddress && games.some((game) => game.publishedAt) && (
-        <p className="bg-pencil p-4 font-bold text-ink">
+        <p className="bg-[var(--pencil-light)] p-6 font-bold text-ink sm:px-8">
           Student links start with localhost, so they only work on this
           computer. Open Envision using your computer&apos;s network address
           before you copy a link for students.
@@ -283,7 +286,7 @@ export function GameCatalog() {
         <GameRow
           key={game.id}
           game={game}
-          canManage={!isIncognito}
+          canManage={!isTeachMode}
           onChanged={(next) =>
             setGames((current) =>
               (current ?? []).map((item) => (item.id === next.id ? next : item)),

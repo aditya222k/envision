@@ -4,7 +4,7 @@ import Link from "next/link";
 import { BuildProgress } from "@/components/BuildProgress";
 import { GameDrawer } from "@/components/GameDrawer";
 import { EXAMPLE_GAMES, type Subject } from "@/lib/games/examples";
-import { setIncognito, useIncognito } from "@/lib/incognito";
+import { useTeachMode } from "@/lib/teach-mode";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   PROVIDER_IDS,
@@ -12,18 +12,19 @@ import {
   type ProviderId,
 } from "@/lib/llm/types";
 
-
 type GenerateEvent =
   | { type: "progress"; label: string; percent: number }
   | { type: "result"; game: CurrentGame; spec?: unknown }
   | { type: "error"; status: number; error: string }
   | { type: "stopped" };
 
-const SUBJECT_COLORS: Record<Subject, string> = {
-  Science: "bg-science text-paper",
-  Math: "bg-math text-paper",
-  History: "bg-history text-paper",
-  English: "bg-pencil text-ink",
+const SUBJECTS: Subject[] = ["Science", "Math", "History", "English"];
+
+const SUBJECT_CHALK: Record<Subject, string> = {
+  Science: "text-[var(--chalk-science)]",
+  Math: "text-[var(--chalk-math)]",
+  History: "text-[var(--chalk-history)]",
+  English: "text-[var(--chalk-english)]",
 };
 
 type CurrentGame = {
@@ -33,6 +34,7 @@ type CurrentGame = {
   summary: string;
   html: string;
   spec?: unknown;
+  prebuilt?: boolean;
 };
 
 type RunAction = "build" | "change";
@@ -57,7 +59,7 @@ export function GameBoard() {
   const [isStopping, setIsStopping] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [demoHistory, setDemoHistory] = useState<CurrentGame[]>([]);
-  const isIncognito = useIncognito();
+  const isTeachMode = useTeachMode();
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLElement>(null);
   const runRef = useRef<{ id: string; controller: AbortController } | null>(
@@ -91,7 +93,11 @@ export function GameBoard() {
 
   function showGame(next: CurrentGame) {
     setGame(next);
-    window.history.replaceState(null, "", `/?game=${next.id}`);
+    window.history.replaceState(
+      null,
+      "",
+      next.prebuilt ? "/" : `/?game=${next.id}`,
+    );
   }
 
   function handleEvent(action: RunAction, event: GenerateEvent, label: string) {
@@ -106,7 +112,7 @@ export function GameBoard() {
           : current,
       );
     } else if (event.type === "result") {
-      if (isIncognito && action === "change" && game) {
+      if (isTeachMode && action === "change" && game) {
         setDemoHistory((current) => [...current, game]);
       } else {
         setDemoHistory([]);
@@ -149,7 +155,7 @@ export function GameBoard() {
           ...body,
           provider,
           runId: run.id,
-          demo: isIncognito,
+          demo: isTeachMode,
         }),
         signal: run.controller.signal,
       });
@@ -230,7 +236,7 @@ export function GameBoard() {
     setNotice(null);
 
     const previous = demoHistory.at(-1);
-    if (isIncognito && previous) {
+    if (isTeachMode && previous) {
       setDemoHistory((current) => current.slice(0, -1));
       showGame(previous);
       return;
@@ -267,7 +273,7 @@ export function GameBoard() {
     setIsStopping(true);
     run.controller.abort();
 
-    if (isIncognito) {
+    if (isTeachMode) {
       setNotice(`${outcome}.`);
       setIsStopping(false);
       return;
@@ -337,100 +343,30 @@ export function GameBoard() {
   );
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-5">
-        <GameDrawer
-          currentGameId={game?.id ?? null}
-          isIncognito={isIncognito}
-          disabled={isLoading}
-          onOpenGame={handleOpenGame}
-        />
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isIncognito}
-          disabled={isLoading}
-          onClick={() => setIncognito(!isIncognito)}
-          className="incognito"
-        >
-          <span aria-hidden="true" className="incognito-track">
-            <span />
-          </span>
-          Incognito
-        </button>
-      </div>
-    <div className="board grid grid-cols-2 lg:grid-cols-4 lg:grid-rows-[auto_1fr_1fr_auto]">
-      {game && (
-        <section
-          ref={resultRef}
-          className="col-span-2 flex flex-col gap-4 bg-paper p-4 sm:p-6 lg:col-span-4 lg:row-start-5"
-        >
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-bold text-ink">
-              {game.name}, version {game.versionCount}
-            </h2>
-            <p className="text-ink">{game.summary}</p>
-          </div>
-          <iframe
-            title="Your game"
-            srcDoc={game.html}
-            sandbox="allow-scripts"
-            className="h-[85vh] w-full border-2 border-ink bg-white lg:h-[640px]"
-          />
-
-          <form onSubmit={handleChange} className="flex flex-col gap-4">
-            <label className="field-label">
-              Change something
-              <textarea
-                value={changeRequest}
-                onChange={(event) => setChangeRequest(event.target.value)}
-                rows={3}
-                required
-                placeholder="Set it in space, rewrite question 3, or add a harder round"
-                className="field p-3"
-              />
-            </label>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <button
-                type="submit"
-                disabled={isLoading || !changeRequest.trim()}
-                className="action h-12 px-6 sm:flex-1"
-              >
-                {isLoading && activeAction === "change"
-                  ? "Changing your game..."
-                  : "Change my game"}
-              </button>
-              {(isIncognito ? demoHistory.length > 0 : game.versionCount > 1) && (
-                <button
-                  type="button"
-                  onClick={handleUndo}
-                  disabled={isLoading}
-                  className="action action-quiet h-12 px-6"
-                >
-                  Undo last change
-                </button>
-              )}
-              <Link href="/games" className="action action-quiet link-action h-12 px-6">
-                Publish or manage
-              </Link>
-            </div>
-            {activeAction === "change" && runStatus}
-          </form>
-        </section>
-      )}
-
-      <section className="col-span-2 flex flex-col gap-5 bg-paper p-6 sm:p-10 lg:col-start-2 lg:row-span-2 lg:row-start-2">
-        <div className="flex flex-col gap-2">
-          <h1 className="font-display text-5xl leading-none text-ink sm:text-7xl">
-            Envision
+    <div className="flex flex-col gap-12 sm:gap-16">
+      <section className="grid items-start gap-8 lg:grid-cols-[5fr_7fr] lg:gap-12">
+        <div className="flex flex-col gap-4 lg:pt-4">
+          <h1 className="chalk-title text-5xl sm:text-6xl">
+            What should your class play today?
           </h1>
-          <p className="text-lg leading-7 text-ink">
-            Describe a game for your class, and Envision builds it. Pick a
-            square to start from an example.
+          <p className="max-w-[42ch] text-lg leading-7 text-chalk-dim">
+            Describe what students should learn and how they should play.
+            Envision builds the game, ready for class.
           </p>
+          <div>
+            <GameDrawer
+              currentGameId={game?.id ?? null}
+              isTeachMode={isTeachMode}
+              disabled={isLoading}
+              onOpenGame={handleOpenGame}
+            />
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="sheet flex flex-col gap-5 p-5 sm:p-7"
+        >
           <label className="field-label">
             Your game
             <textarea
@@ -442,13 +378,13 @@ export function GameBoard() {
               }}
               rows={5}
               required
-              placeholder="What should students learn, and how should they play?"
-              className="field p-3"
+              placeholder="A grade 8 game where students race to match each organelle to its job"
+              className="field resize-y p-4 leading-7"
             />
           </label>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <label className="field-label sm:flex-1">
+            <label className="field-label sm:w-56">
               AI provider
               <select
                 value={provider}
@@ -480,37 +416,113 @@ export function GameBoard() {
         </form>
       </section>
 
-      {EXAMPLE_GAMES.map((game) => (
-        <button
-          key={game.title}
-          type="button"
-          aria-pressed={selectedTitle === game.title}
-          onClick={() => {
-            setPrompt(game.prompt);
-            setSelectedTitle(game.title);
-            promptRef.current?.focus();
-          }}
-          className="square text-left text-ink"
+      {game && (
+        <section
+          ref={resultRef}
+          aria-labelledby="game-title"
+          className="sheet flex scroll-mt-24 flex-col gap-5 p-4 sm:p-7"
         >
-          <span
-            className={`px-3 py-1.5 text-sm font-bold ${SUBJECT_COLORS[game.subject]}`}
-          >
-            {game.subject}
-          </span>
-          <span className="flex flex-1 flex-col justify-between gap-3 p-3">
-            <span className="text-lg leading-6 font-bold">{game.title}</span>
-            <span className="text-sm">{game.grade}</span>
-          </span>
-        </button>
-      ))}
+          <div className="flex flex-col gap-1">
+            <h2 id="game-title" className="text-2xl font-bold text-ink">
+              {game.name}
+            </h2>
+            <p className="text-ink-soft">
+              Version {game.versionCount}. {game.summary}
+            </p>
+          </div>
+          <iframe
+            title="Your game"
+            srcDoc={game.html}
+            sandbox="allow-scripts"
+            allowFullScreen
+            className="game-frame h-[85vh] w-full lg:h-[640px]"
+          />
 
-      <Link href="/settings" className="square bg-ink text-paper">
-        <span className="flex flex-1 flex-col justify-between gap-3 p-3">
-          <span className="text-lg leading-6 font-bold">AI settings</span>
-          <span className="text-sm">Add your API keys</span>
-        </span>
-      </Link>
-    </div>
+          {!game.prebuilt && (
+            <form onSubmit={handleChange} className="flex flex-col gap-4">
+              <label className="field-label">
+                Change something
+                <textarea
+                  value={changeRequest}
+                  onChange={(event) => setChangeRequest(event.target.value)}
+                  rows={3}
+                  required
+                  placeholder="Set it in space, rewrite question 3, or add a harder round"
+                  className="field resize-y p-4 leading-7"
+                />
+              </label>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="submit"
+                  disabled={isLoading || !changeRequest.trim()}
+                  className="action h-12 px-6 sm:flex-1"
+                >
+                  {isLoading && activeAction === "change"
+                    ? "Changing your game..."
+                    : "Change my game"}
+                </button>
+                {(isTeachMode
+                  ? demoHistory.length > 0
+                  : game.versionCount > 1) && (
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    disabled={isLoading}
+                    className="action action-quiet h-12 px-6"
+                  >
+                    Undo last change
+                  </button>
+                )}
+                <Link href="/games" className="action action-quiet h-12 px-6">
+                  Publish or manage
+                </Link>
+              </div>
+              {activeAction === "change" && runStatus}
+            </form>
+          )}
+        </section>
+      )}
+
+      <section
+        aria-labelledby="ideas-title"
+        className="flex flex-col gap-6 pb-8"
+      >
+        <h2 id="ideas-title" className="chalk-title text-3xl sm:text-4xl">
+          Or start from an idea
+        </h2>
+        <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+          {SUBJECTS.map((subject) => (
+            <div key={subject} className="flex flex-col gap-3">
+              <h3 className={`idea-subject ${SUBJECT_CHALK[subject]}`}>
+                {subject}
+              </h3>
+              <ul className="flex flex-col gap-1">
+                {EXAMPLE_GAMES.filter((idea) => idea.subject === subject).map(
+                  (idea) => (
+                    <li key={idea.title}>
+                      <button
+                        type="button"
+                        aria-pressed={selectedTitle === idea.title}
+                        onClick={() => {
+                          setPrompt(idea.prompt);
+                          setSelectedTitle(idea.title);
+                          promptRef.current?.focus();
+                        }}
+                        className="idea"
+                      >
+                        <span className="text-lg leading-6 font-bold">
+                          {idea.title}
+                        </span>
+                        <span className="idea-grade">{idea.grade}</span>
+                      </button>
+                    </li>
+                  ),
+                )}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 
-const STORAGE_KEY = "envision-incognito";
-const CHANGE_EVENT = "envision-incognito-change";
+const STORAGE_KEY = "envision-teach-mode";
+const CHANGE_EVENT = "envision-teach-mode-change";
 
 function read() {
   try {
@@ -22,7 +22,7 @@ function subscribe(onChange: () => void) {
   };
 }
 
-export function setIncognito(isOn: boolean) {
+export function setTeachMode(isOn: boolean) {
   try {
     window.localStorage.setItem(STORAGE_KEY, isOn ? "on" : "off");
   } catch {
@@ -31,6 +31,6 @@ export function setIncognito(isOn: boolean) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
-export function useIncognito() {
+export function useTeachMode() {
   return useSyncExternalStore(subscribe, read, () => false);
 }

@@ -57,11 +57,11 @@ function ProviderRow({
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid gap-6 bg-paper p-6 sm:p-10 md:grid-cols-[1fr_2fr]"
+      className="grid gap-6 p-6 sm:p-8 md:grid-cols-[1fr_2fr]"
     >
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold text-ink">{label}</h2>
-        <p className="text-ink">
+        <p className={`font-bold ${summary.isConfigured ? "text-science" : "text-ink-soft"}`}>
           {summary.isConfigured ? "Ready to use" : "Not set up yet"}
         </p>
       </div>
@@ -155,19 +155,19 @@ export function ProviderSettings() {
 
   if (error) {
     return (
-      <p role="alert" className="bg-paper p-6 font-bold text-history sm:p-10">
+      <p role="alert" className="p-6 font-bold text-history sm:p-8">
         {error}
       </p>
     );
   }
   if (!providers) {
-    return <p className="bg-paper p-6 text-ink sm:p-10">Loading settings...</p>;
+    return <p className="p-6 text-ink-soft sm:p-8">Loading settings...</p>;
   }
 
   return (
     <>
       {!editable && (
-        <p className="bg-paper p-6 text-ink sm:p-10">
+        <p className="bg-[var(--pencil-light)] p-6 text-ink sm:p-8">
           These settings can only be changed in local development. Use
           environment variables for this deployment.
         </p>

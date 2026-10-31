@@ -25,7 +25,7 @@ Games will be generated through `POST /api/generate`, which can use Claude, Open
 
 Games are saved on your machine in `.envision/games/`, which git ignores. The **Your games** drawer on the home page opens any of them, and `/games` lists them for renaming, deleting and publishing. Publishing saves a separate copy for students at `/play/<id>`, so later edits don't reach students until you publish again. There's no login yet, so anyone who can reach the app can manage every game.
 
-The **Incognito** switch on the home page is a demo mode. It plays a simulated build and shows the closest saved game, without calling any AI provider or changing saved games. If there are no saved games, it adds three samples from `src/lib/games/samples.ts`. To test games, run `npm run preview:worlds` (no model needed) or `npm run eval:games` (builds and plays the example games).
+The **Teach mode** switch in the navigation bar is a demo mode. It plays a simulated build of about ten seconds and shows a ready-made game from `src/lib/games/prebuilt/`, without calling any AI provider or changing saved games. If there are no saved games, it adds three samples from `src/lib/games/samples.ts`. To test games, run `npm run preview:worlds` (no model needed) or `npm run eval:games` (builds and plays the example games).
 
 To configure a provider, do one of the following:
 

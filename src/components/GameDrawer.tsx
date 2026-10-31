@@ -6,12 +6,12 @@ import type { GameSummary } from "@/lib/games/store";
 
 export function GameDrawer({
   currentGameId,
-  isIncognito,
+  isTeachMode,
   disabled,
   onOpenGame,
 }: {
   currentGameId: string | null;
-  isIncognito: boolean;
+  isTeachMode: boolean;
   disabled: boolean;
   onOpenGame: (id: string) => void;
 }) {
@@ -25,7 +25,7 @@ export function GameDrawer({
 
     try {
       const response = await fetch(
-        isIncognito ? "/api/games?demo=1" : "/api/games",
+        isTeachMode ? "/api/games?demo=1" : "/api/games",
         { cache: "no-store" },
       );
       if (!response.ok) {
@@ -55,9 +55,9 @@ export function GameDrawer({
         onClick={openDrawer}
         disabled={disabled}
         aria-haspopup="dialog"
-        className="drawer-button"
+        className="nav-button"
       >
-        Your games
+        Open a saved game
       </button>
 
       <dialog
@@ -67,31 +67,31 @@ export function GameDrawer({
         className="drawer"
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between gap-4 border-b-[3px] border-ink p-5">
+          <div className="flex items-center justify-between gap-4 px-6 pt-6 pb-4">
             <h2
               id="game-drawer-title"
-              className="font-display text-3xl leading-none text-ink"
+              className="chalk-title text-3xl text-ink"
             >
               Your games
             </h2>
             <button
               type="button"
               onClick={closeDrawer}
-              className="action action-quiet h-10 px-4"
+              className="action action-quiet h-11 px-4"
             >
               Close
             </button>
           </div>
 
-          <div className="flex flex-1 flex-col overflow-y-auto">
+          <div className="flex flex-1 flex-col gap-1 overflow-y-auto">
             {error && (
-              <p role="alert" className="p-5 font-bold text-history">
+              <p role="alert" className="px-6 py-4 font-bold text-history">
                 {error}
               </p>
             )}
-            {!error && !games && <p className="p-5 text-ink">Loading...</p>}
+            {!error && !games && <p className="px-6 py-4 text-ink-soft">Loading your games...</p>}
             {!error && games?.length === 0 && (
-              <p className="p-5 text-ink">
+              <p className="px-6 py-4 text-ink-soft">
                 Games you build will appear here. Describe one to get started.
               </p>
             )}
@@ -107,15 +107,17 @@ export function GameDrawer({
                 className="drawer-game"
               >
                 <span className="text-lg leading-6 font-bold">{game.name}</span>
-                <span className="text-sm">{game.subjectLine}</span>
-                <span className="text-sm font-bold">
+                <span className="text-sm text-ink-soft">{game.subjectLine}</span>
+                <span
+                  className={`text-sm font-bold ${game.publishedAt ? "text-science" : "text-ink-soft"}`}
+                >
                   {game.publishedAt ? "Published" : "Not published"}
                 </span>
               </button>
             ))}
           </div>
 
-          <div className="border-t-[3px] border-ink p-5">
+          <div className="border-t border-[var(--line)] px-6 py-5">
             <Link href="/games" className="font-bold text-ink underline">
               Manage all games
             </Link>

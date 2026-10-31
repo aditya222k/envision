@@ -7,11 +7,11 @@ export const EXAMPLE_GAMES: {
   prompt: string;
 }[] = [
   {
-    title: "Food web survival",
+    title: "Gravity",
     subject: "Science",
     grade: "Grade 8",
     prompt:
-      "A grade 8 survival game where students play an animal in a food web and choose what to eat and avoid to last through three seasons.",
+      "A grade 8 science game where students jump on different planets, build orbits, drop objects and launch a rocket to see how gravity depends on mass and distance.",
   },
   {
     title: "Balance the equation",
@@ -35,11 +35,11 @@ export const EXAMPLE_GAMES: {
       "A high school algebra game where students build skate ramps by choosing the slope and intercept of each line.",
   },
   {
-    title: "Trade route race",
+    title: "Great Depression",
     subject: "History",
     grade: "Grade 8",
     prompt:
-      "A grade 8 strategy game where teams move goods along Silk Road trade routes and answer history questions to pass each city.",
+      "A grade 8 history game set in Detroit in 1932, where students keep a family together through the Great Depression week by week and see how New Deal programs changed their lives.",
   },
   {
     title: "Spot the fallacy",

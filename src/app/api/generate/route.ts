@@ -1,4 +1,4 @@
-import { runDemoBuild, runDemoChange } from "@/lib/games/demo";
+import { runDemoChange, runPrebuiltBuild } from "@/lib/games/demo";
 import { buildGame } from "@/lib/games/pipeline";
 import { reviseGame } from "@/lib/games/revise";
 import { finishRun, startRun } from "@/lib/games/runs";
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
       try {
         if (isDemo) {
-          // Incognito never calls a provider or changes a saved game.
+          // Teach mode never calls a provider or changes a saved game.
           const game =
             gameId && currentSpec
               ? await runDemoChange(
@@ -87,8 +87,12 @@ export async function POST(request: Request) {
                   signal,
                   onProgress,
                 )
-              : await runDemoBuild(body.prompt, signal, onProgress);
-          send({ type: "result", game, spec: game?.spec });
+              : await runPrebuiltBuild(body.prompt, signal, onProgress);
+          send({
+            type: "result",
+            game,
+            spec: "spec" in game ? game.spec : undefined,
+          });
         } else if (gameId && currentSpec) {
           const revision = await reviseGame(
             provider,
