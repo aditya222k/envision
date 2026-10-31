@@ -109,6 +109,15 @@ output{font-family:var(--mono);color:var(--ink);font-size:.85rem;letter-spacing:
 .verdict{margin:0;font-size:.92rem;font-weight:700}
 .verdict.ok{color:var(--mint)}
 .verdict.go{color:var(--coral)}
+/* Gravity Lab accessible visuals: patterns, labels and outlines that don't rely on colour */
+#view-lab .lab-sw{width:16px;height:16px;flex:none;display:inline-block}
+#view-lab .a11y-hint{margin:-4px 0 0 28px}
+#view-lab .lab-key{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:.86rem}
+#view-lab .lab-key li{display:grid;grid-template-columns:16px 1.2em minmax(0,1fr) 34px;gap:8px;align-items:center}
+#view-lab .lab-key b{font-family:var(--display);font-size:1rem}
+#view-lab .lab-key small{color:var(--muted)}
+#view-lab .lab-key svg{display:block}
+#view-lab .sel-title small{font-family:var(--body);font-weight:400;font-size:.85rem;color:var(--muted)}
 .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;margin-top:16px}
 .note{padding:16px 18px;border-radius:16px;border:1px solid var(--line);min-width:0}
 .note h3{font-family:var(--display);font-weight:600;font-size:1.1rem;margin:0 0 8px;color:var(--sun)}
@@ -329,6 +338,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-of
         <p class="hint" id="selHint">Click a ball to see every pull acting on it.</p>
       </div>
       <div class="group">
+        <label class="toggle"><input type="checkbox" id="lA11y" checked>Accessible visuals</label>
+        <p class="hint a11y-hint">Patterns on balls and trails, labelled arrows and clearer outlines, so nothing depends on colour alone.</p>
+        <ul class="lab-key" id="labKey" aria-label="Ball key: letter, pattern and trail style"></ul>
         <label class="toggle"><input type="checkbox" id="lArrows" checked>Show pull arrows</label>
         <label class="toggle"><input type="checkbox" id="lBalance" checked>Show balance point (two fixed balls)</label>
         <label class="toggle"><input type="checkbox" id="lSnap" checked>Snap to the balance point when you let go</label>
@@ -1211,7 +1223,75 @@ function drawSand() {
    ====================================================== */
 const LG = 60000;
 const BALL_COLORS = ['#ffc94a', '#5fd3c7', '#ff7a6b', '#a596ff', '#7cb8ff', '#9fe08a'];
-const L = { balls: [], sel: null, newR: 24, newFixed: false, running: true, arrows: true, field: false, balance: true, snap: true, snapR: 40, snapTarget: null, preset: 'middle', drag: null, nextId: 0, uiT: 0, time: 0 };
+// Accessible visuals: each ball gets a surface pattern and a trail style that
+// pair with its colour (same index), so balls never depend on colour alone.
+const BALL_PATTERNS = ['stripes', 'dots', 'crosshatch', 'diagonal lines', 'rings', 'checks'];
+const TRAIL_DASHES = [[], [2, 6], [12, 7], [14, 5, 3, 5], [5, 5], [18, 5, 3, 5, 3, 5]];
+const TRAIL_NAMES = ['solid', 'dotted', 'dashed', 'dash-dot', 'short-dash', 'dash-dot-dot'];
+const styleOf = b => b.id % BALL_PATTERNS.length;
+function drawPattern(ctx, x, y, r, kind) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
+  const s = Math.max(4.5, r * 0.38);
+  ctx.strokeStyle = 'rgba(6,11,31,.62)'; ctx.fillStyle = 'rgba(6,11,31,.62)';
+  ctx.lineWidth = Math.max(1.2, r * 0.11); ctx.lineCap = 'butt';
+  ctx.beginPath();
+  if (kind === 'stripes') {
+    for (let yy = y - r + s / 2; yy < y + r; yy += s) { ctx.moveTo(x - r, yy); ctx.lineTo(x + r, yy); }
+  } else if (kind === 'diagonal lines' || kind === 'crosshatch') {
+    for (let k = -2 * r; k <= 2 * r; k += s) { ctx.moveTo(x + k - r, y - r); ctx.lineTo(x + k + r, y + r); }
+    if (kind === 'crosshatch') for (let k = -2 * r; k <= 2 * r; k += s) { ctx.moveTo(x + k + r, y - r); ctx.lineTo(x + k - r, y + r); }
+  } else if (kind === 'rings') {
+    for (let rad = s * 0.75; rad < r; rad += s) { ctx.moveTo(x + rad, y); ctx.arc(x, y, rad, 0, TAU); }
+  }
+  ctx.stroke();
+  if (kind === 'dots') {
+    const dr = Math.max(1.4, r * 0.11);
+    ctx.beginPath();
+    let row = 0;
+    for (let yy = y - r; yy <= y + r; yy += s, row++) {
+      for (let xx = x - r + (row % 2 ? s / 2 : 0); xx <= x + r; xx += s) { ctx.moveTo(xx + dr, yy); ctx.arc(xx, yy, dr, 0, TAU); }
+    }
+    ctx.fill();
+  } else if (kind === 'checks') {
+    const c = s * 0.9;
+    for (let i = 0, yy = y - r; yy < y + r; yy += c, i++) {
+      for (let j = 0, xx = x - r; xx < x + r; xx += c, j++) if ((i + j) % 2 === 0) ctx.fillRect(xx, yy, c, c);
+    }
+  }
+  ctx.restore();
+}
+const swatchCache = new Map();
+// A small picture of the ball (colour, pattern and bolt) for the panel.
+function ballSwatch(b) {
+  const key = styleOf(b) + b.color + (b.fixed ? 'f' : 'm');
+  if (swatchCache.has(key)) return swatchCache.get(key);
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const x = c.getContext('2d');
+  x.fillStyle = b.color; x.beginPath(); x.arc(16, 16, 13, 0, TAU); x.fill();
+  drawPattern(x, 16, 16, 13, BALL_PATTERNS[styleOf(b)]);
+  x.strokeStyle = 'rgba(255,255,255,.85)'; x.lineWidth = 2; x.beginPath(); x.arc(16, 16, 13, 0, TAU); x.stroke();
+  if (b.fixed) {
+    x.fillStyle = '#f4f6fb'; x.beginPath(); x.arc(16, 16, 5, 0, TAU); x.fill();
+    x.strokeStyle = '#2a2f48'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(13, 16); x.lineTo(19, 16); x.moveTo(16, 13); x.lineTo(16, 19); x.stroke();
+  }
+  const url = c.toDataURL();
+  swatchCache.set(key, url);
+  return url;
+}
+const swatchImg = b => '<img class="lab-sw" alt="" src="' + ballSwatch(b) + '">';
+function trailSample(b) {
+  const dash = TRAIL_DASHES[styleOf(b)];
+  return '<svg width="34" height="8" aria-hidden="true"><line x1="1" y1="4" x2="33" y2="4" stroke="' + b.color + '" stroke-width="2.5"' + (dash.length ? ' stroke-dasharray="' + dash.join(' ') + '"' : '') + '/></svg>';
+}
+// Direction of a pull in screen terms (up is toward the top of the lab).
+function directionOf(x, y) {
+  const deg = (Math.atan2(-y, x) * 180 / Math.PI + 360) % 360;
+  const k = Math.round(deg / 45) % 8;
+  return [['→', 'to the right'], ['↗', 'up and to the right'], ['↑', 'up'], ['↖', 'up and to the left'], ['←', 'to the left'], ['↙', 'down and to the left'], ['↓', 'down'], ['↘', 'down and to the right']][k];
+}
+const listNames = names => names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+const L = { a11y: true, balls: [], sel: null, newR: 24, newFixed: false, running: true, arrows: true, field: false, balance: true, snap: true, snapR: 40, snapTarget: null, preset: 'middle', drag: null, nextId: 0, uiT: 0, time: 0 };
 const LC = $('#labCanvas');
 const labToast = $('#labToast');
 const LS = makeCanvas(LC, (ow, oh, w, h) => {
@@ -1402,6 +1482,8 @@ function deleteSel() { if (!L.sel) return; L.balls = L.balls.filter(b => b !== L
 function nudge(dx) { const b = L.sel; if (!b || b.fixed) return; b.x += dx; b.vx = 0; b.vy = 0; b.trail = []; if (!L.running) toast(labToast, 'Press Play to see what happens.'); }
 $('#nudgeL').addEventListener('click', () => nudge(-10));
 $('#nudgeR').addEventListener('click', () => nudge(10));
+// Only changes how things are drawn and described; balls, selection and the simulation carry on.
+$('#lA11y').addEventListener('change', e => { L.a11y = e.target.checked; syncSel(); updatePulls(); });
 $('#lArrows').addEventListener('change', e => L.arrows = e.target.checked);
 $('#lBalance').addEventListener('change', e => L.balance = e.target.checked);
 $('#lField').addEventListener('change', e => L.field = e.target.checked);
@@ -1415,11 +1497,24 @@ window.addEventListener('keydown', e => {
   if ((e.key === 'Delete' || e.key === 'Backspace') && !(e.target && e.target.tagName === 'INPUT')) { e.preventDefault(); deleteSel(); }
 });
 const fmtM = m => m < 10 ? m.toFixed(1) : Math.round(m).toString();
+// The key lists every ball's letter, pattern and trail, and is rebuilt only when they change.
+function updateLabKey() {
+  const key = $('#labKey');
+  key.hidden = !L.a11y || !L.balls.length;
+  if (key.hidden) return;
+  const sig = L.balls.map(b => b.id + (b.fixed ? 'f' : 'm')).join(',');
+  if (key.dataset.sig === sig) return;
+  key.dataset.sig = sig;
+  key.innerHTML = L.balls.map(b => '<li>' + swatchImg(b) + '<b>' + b.name + '</b><span>' + BALL_PATTERNS[styleOf(b)] + ', ' +
+    (b.fixed ? 'fixed <small>(no trail)</small>' : TRAIL_NAMES[styleOf(b)] + ' trail') + '</span>' + (b.fixed ? '<span></span>' : trailSample(b)) + '</li>').join('');
+}
 function syncSel() {
   const b = L.sel;
+  updateLabKey();
   $('#selBody').hidden = !b; $('#selHint').hidden = !!b;
   if (!b) { $('#selTitle').textContent = 'No ball selected'; return; }
-  $('#selTitle').innerHTML = '<span class="sw ' + (b.fixed ? 'fixed' : 'move') + '" style="' + (b.fixed ? '' : 'background:' + b.color) + '"></span>Ball ' + b.name;
+  if (L.a11y) $('#selTitle').innerHTML = swatchImg(b) + 'Selected: Ball ' + b.name + ' <small>(' + (b.fixed ? 'fixed' : 'movable') + ')</small>';
+  else $('#selTitle').innerHTML = '<span class="sw ' + (b.fixed ? 'fixed' : 'move') + '" style="' + (b.fixed ? '' : 'background:' + b.color) + '"></span>Ball ' + b.name;
   $('#selR').value = b.r; $('#selROut').textContent = b.r + ' (mass ' + fmtM(b.m) + ')';
   setSeg($('#selMove'), $('#selFixed'), b.fixed);
   $('#nudgeL').disabled = b.fixed; $('#nudgeR').disabled = b.fixed;
@@ -1440,7 +1535,7 @@ function updatePulls() {
   ps.forEach(p => {
     nx += p.F * p.ux; ny += p.F * p.uy; maxF = Math.max(maxF, p.F);
     const ang = Math.atan2(p.uy, p.ux) * 180 / Math.PI;
-    html += '<div class="pull"><span class="sw" style="background:' + p.o.color + '"></span><span>Ball ' + p.o.name + ' <small style="color:var(--muted)">(' + (p.o.fixed ? 'fixed' : 'movable') + ', mass ' + fmtM(p.o.m) + ', ' + Math.round(p.d) + ' px away)</small></span><span class="dir" style="transform:rotate(' + ang.toFixed(0) + 'deg)">→</span><b>' + p.F.toFixed(1) + '</b></div>';
+    html += '<div class="pull">' + (L.a11y ? swatchImg(p.o) : '<span class="sw" style="background:' + p.o.color + '"></span>') + '<span>Ball ' + p.o.name + ' <small style="color:var(--muted)">(' + (p.o.fixed ? 'fixed' : 'movable') + ', mass ' + fmtM(p.o.m) + ', ' + Math.round(p.d) + ' px away)</small></span><span class="dir" style="transform:rotate(' + ang.toFixed(0) + 'deg)">→</span><b>' + p.F.toFixed(1) + '</b></div>';
   });
   const net = Math.hypot(nx, ny);
   const balanced = net < maxF * 0.005;
@@ -1448,7 +1543,15 @@ function updatePulls() {
   html += '<div class="pull net"><span></span><span><b style="text-align:left;color:var(--ink)">Net pull</b></span><span class="dir" style="' + (balanced ? 'opacity:0' : 'transform:rotate(' + nang.toFixed(0) + 'deg)') + '">→</span><b>' + (balanced ? '0.0' : net.toFixed(1)) + '</b></div>';
   box.innerHTML = html;
   if (b.fixed) { verdict.className = 'verdict'; verdict.textContent = 'Fixed balls feel these pulls too, but they are pinned in place.'; }
-  else if (balanced) { verdict.className = 'verdict ok'; verdict.textContent = 'Balanced! The pulls cancel, so Ball ' + b.name + ' stays put.'; }
+  else if (balanced) { verdict.className = 'verdict ok'; verdict.textContent = L.a11y ? '✓ Balanced — pulls cancel, so Ball ' + b.name + ' stays put.' : 'Balanced! The pulls cancel, so Ball ' + b.name + ' stays put.'; }
+  else if (L.a11y) {
+    // worded from the summed pulls: one source is named only when it is the only pull
+    const [sym, words] = directionOf(nx, ny);
+    verdict.className = 'verdict go';
+    verdict.textContent = ps.length === 1
+      ? sym + ' Net pull toward Ball ' + ps[0].o.name + '. Ball ' + b.name + ' speeds up that way.'
+      : sym + ' Net pull points ' + words + ', from the pulls of ' + listNames(ps.map(p => 'Ball ' + p.o.name)) + ' combined. Ball ' + b.name + ' speeds up that way.';
+  }
   else { verdict.className = 'verdict go'; verdict.textContent = 'Unbalanced. Ball ' + b.name + ' speeds up in the direction of the net pull.'; }
 }
 function tickLab(dt) {
@@ -1478,6 +1581,11 @@ function drawBall(ctx, b) {
   ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = Math.max(1, b.r * 0.08);
   ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.9, Math.PI * 0.15, Math.PI * 0.75); ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.ellipse(b.x - b.r * 0.38, b.y - b.r * 0.42, b.r * 0.16, b.r * 0.1, -0.6, 0, TAU); ctx.fill();
+  if (L.a11y) {
+    drawPattern(ctx, b.x, b.y, b.r, BALL_PATTERNS[styleOf(b)]);
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 0.75, 0, TAU); ctx.stroke();
+  }
   if (b.fixed) {
     // bolted to the table: a steel bolt in the middle and a dashed anchor ring
     ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5;
@@ -1490,16 +1598,65 @@ function drawBall(ctx, b) {
     ctx.beginPath(); ctx.moveTo(b.x - br * 0.55, b.y); ctx.lineTo(b.x + br * 0.55, b.y); ctx.moveTo(b.x, b.y - br * 0.55); ctx.lineTo(b.x, b.y + br * 0.55); ctx.stroke();
   }
   if (b.name) {
-    ctx.font = '700 ' + Math.round(Math.max(12, Math.min(16, b.r * 0.5))) + 'px ' + FONT_D;
+    const fs = Math.round(Math.max(12, Math.min(16, b.r * 0.5)));
+    const ly = b.y - b.r - (b.fixed ? 8 : 4) - (L.a11y && b === L.sel ? 8 : 0);
+    ctx.font = '700 ' + fs + 'px ' + FONT_D;
     ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(6,11,31,.85)'; ctx.strokeText(b.name, b.x, b.y - b.r - (b.fixed ? 8 : 4));
-    ctx.fillStyle = '#ffffff'; ctx.fillText(b.name, b.x, b.y - b.r - (b.fixed ? 8 : 4));
+    if (L.a11y) {
+      // a solid backing keeps the letter readable over trails, arrows and the grid
+      const tw = ctx.measureText(b.name).width;
+      rr(ctx, b.x - tw / 2 - 5, ly - fs - 3, tw + 10, fs + 5, 5, 'rgba(6,11,31,.9)', 'rgba(255,255,255,.55)', 1);
+    }
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(6,11,31,.85)'; ctx.strokeText(b.name, b.x, ly);
+    ctx.fillStyle = '#ffffff'; ctx.fillText(b.name, b.x, ly);
   }
-  if (b === L.sel) {
+  if (b === L.sel && L.a11y) {
+    // a double outline: two white rings with a dark gap, readable on any background
+    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(6,11,31,.9)';
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 8, 0, TAU); ctx.stroke();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 5, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 11, 0, TAU); ctx.stroke();
+  } else if (b === L.sel) {
     ctx.setLineDash([5, 5]); ctx.lineDashOffset = reduceMotion ? 0 : -L.time * 12;
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 9, 0, TAU); ctx.stroke();
     ctx.setLineDash([]); ctx.lineDashOffset = 0;
+  }
+}
+// Places arrow labels in priority order and skips any that would cover
+// another label, a ball or a ball's letter.
+function drawArrowLabels(ctx, labels) {
+  const { w, h } = LS;
+  const placed = [];
+  for (const b of L.balls) {
+    placed.push({ x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 });
+    placed.push({ x: b.x - 13, y: b.y - b.r - 34, w: 26, h: 30 });
+  }
+  const hits = (a, c) => a.x < c.x + c.w && a.x + a.w > c.x && a.y < c.y + c.h && a.y + a.h > c.y;
+  labels.sort((a, b) => a.rank - b.rank || a.order - b.order || (b.F || 0) - (a.F || 0));
+  for (const l of labels) {
+    ctx.font = (l.bold ? '700 ' : '600 ') + '12px ' + FONT_D;
+    const pw = ctx.measureText(l.text).width + 12, ph = 19;
+    // try past the arrow tip first, then beside the middle of the arrow
+    const tries = [0, 1, -1, 2, -2].map(k => ({ x: l.x + l.ux * 7 - l.uy * k * 21, y: l.y + l.uy * 7 + l.ux * k * 21, dx: l.ux, dy: l.uy }));
+    if (l.mx !== undefined) for (const side of [1, -1]) {
+      tries.push({ x: l.mx - l.uy * side * 12, y: l.my + l.ux * side * 12, dx: -l.uy * side, dy: l.ux * side });
+    }
+    let spot = null;
+    for (const t of tries) {
+      const box = {
+        x: Math.max(2, Math.min(w - pw - 2, t.dx > 0.35 ? t.x : t.dx < -0.35 ? t.x - pw : t.x - pw / 2)),
+        y: Math.max(2, Math.min(h - ph - 2, t.dy > 0.35 ? t.y : t.dy < -0.35 ? t.y - ph : t.y - ph / 2)),
+        w: pw, h: ph
+      };
+      if (!placed.some(p => hits(box, p))) { spot = box; break; }
+    }
+    if (!spot) continue;
+    placed.push(spot);
+    rr(ctx, spot.x, spot.y, spot.w, spot.h, 6, 'rgba(6,11,31,.9)', l.border, l.bold ? 2 : 1.5);
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(l.text, spot.x + 6, spot.y + ph / 2 + 0.5);
   }
 }
 function drawLab() {
@@ -1567,34 +1724,63 @@ function drawLab() {
   // trails
   for (const b of L.balls) {
     const t = b.trail; if (t.length < 4) continue;
-    ctx.strokeStyle = b.color; ctx.globalAlpha = 0.35; ctx.lineWidth = 2;
+    ctx.strokeStyle = b.color; ctx.globalAlpha = L.a11y ? 0.75 : 0.35; ctx.lineWidth = L.a11y ? 2.5 : 2;
+    if (L.a11y) ctx.setLineDash(TRAIL_DASHES[styleOf(b)]);
     ctx.beginPath(); ctx.moveTo(t[0], t[1]); for (let k = 2; k < t.length; k += 2) ctx.lineTo(t[k], t[k + 1]); ctx.stroke();
-    ctx.globalAlpha = 1;
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
   for (const b of L.balls) drawBall(ctx, b);
   // pull arrows
   if (L.arrows && L.balls.length > 1) {
     const movers = L.balls.filter(b => !b.fixed);
     const targets = movers.length > 6 ? (L.sel ? [L.sel] : []) : movers.concat(L.sel && L.sel.fixed ? [L.sel] : []);
+    const labels = [];
     for (const b of targets) {
       const ps = pullsOn(b); if (!ps.length) continue;
       const maxF = Math.max(...ps.map(p => p.F));
       let nx = 0, ny = 0; ps.forEach(p => { nx += p.F * p.ux; ny += p.F * p.uy; });
       const net = Math.hypot(nx, ny);
       const base = b.r + 4;
+      // the selected ball's labels are placed first, so they win any overlap
+      const rank = b === L.sel ? 0 : 1;
+      // with three or more balls showing arrows, only the selected ball's are labelled; the rest are dimmed
+      const quiet = L.a11y && targets.length > 2 && b !== L.sel;
+      if (quiet) ctx.globalAlpha = 0.4;
       if (net >= maxF * 0.005) {
         const ux = nx / net, uy = ny / net, len = 18 + 72 * net / maxF;
-        arrow(ctx, b.x + ux * base, b.y + uy * base, b.x + ux * (base + len), b.y + uy * (base + len), 'rgba(255,255,255,.95)', 7, 14);
+        const x1 = b.x + ux * base, y1 = b.y + uy * base, x2 = b.x + ux * (base + len), y2 = b.y + uy * (base + len);
+        if (L.a11y) {
+          arrow(ctx, x1, y1, x2, y2, 'rgba(6,11,31,.95)', 12, 18);
+          arrow(ctx, x1, y1, x2, y2, '#ffffff', 8, 15);
+          // with one source the net and pull arrows coincide, so they share one label
+          const text = ps.length === 1 ? 'Net pull, from ' + ps[0].o.name : 'Net pull';
+          if (!quiet) labels.push({ rank, order: 0, text, x: x2, y: y2, mx: (x1 + x2) / 2, my: (y1 + y2) / 2, ux, uy, border: '#ffffff', bold: true });
+        } else {
+          arrow(ctx, x1, y1, x2, y2, 'rgba(255,255,255,.95)', 7, 14);
+        }
       }
       ps.forEach(p => {
         const len = 18 + 72 * p.F / maxF; if (p.F / maxF < 0.03) return;
-        arrow(ctx, b.x + p.ux * base, b.y + p.uy * base, b.x + p.ux * (base + len), b.y + p.uy * (base + len), p.o.color, 3, 10);
+        const x1 = b.x + p.ux * base, y1 = b.y + p.uy * base, x2 = b.x + p.ux * (base + len), y2 = b.y + p.uy * (base + len);
+        if (L.a11y) {
+          arrow(ctx, x1, y1, x2, y2, 'rgba(6,11,31,.9)', 6, 13);
+          arrow(ctx, x1, y1, x2, y2, p.o.color, 3, 10);
+          if (!quiet && (ps.length > 1 || net < maxF * 0.005)) labels.push({ rank, order: 1, F: p.F, text: 'Pull from ' + p.o.name, x: x2, y: y2, mx: (x1 + x2) / 2, my: (y1 + y2) / 2, ux: p.ux, uy: p.uy, border: p.o.color });
+        } else {
+          arrow(ctx, x1, y1, x2, y2, p.o.color, 3, 10);
+        }
       });
+      ctx.globalAlpha = 1;
       if (net < maxF * 0.005 && !b.fixed) {
-        ctx.font = '700 13px ' + FONT_D; ctx.fillStyle = '#5fd3c7'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText('balanced', b.x, b.y - b.r - 22);
+        if (L.a11y) {
+          if (!quiet) labels.push({ rank, order: 0, text: '✓ Balanced', x: b.x, y: b.y - b.r - 30, ux: 0, uy: -1, border: '#5fd3c7', bold: true });
+        } else {
+          ctx.font = '700 13px ' + FONT_D; ctx.fillStyle = '#5fd3c7'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          ctx.fillText('balanced', b.x, b.y - b.r - 22);
+        }
       }
     }
+    if (L.a11y) drawArrowLabels(ctx, labels);
   }
   if (!L.balls.length) {
     ctx.font = '600 20px ' + FONT_D; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

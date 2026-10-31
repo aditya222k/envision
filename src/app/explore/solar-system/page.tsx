@@ -15,8 +15,8 @@ export default function Page() {
         </Link>
         <h1 className="chalk-title text-5xl sm:text-6xl">Solar System</h1>
         <p className="max-w-[56ch] text-lg leading-7 text-chalk-dim">
-          Drag to spin the solar system, scroll or pinch to zoom, and pick a
-          planet to learn about it.
+          Explore our cosmic neighborhood in 3D, or follow the clues to uncover
+          a mystery planet and test your knowledge.
         </p>
       </div>
       <div className="pb-8">

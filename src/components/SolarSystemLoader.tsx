@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 // The explorer needs the browser's WebGL, so it loads only on the page.
-const SolarSystemExplorer = dynamic(() => import("./SolarSystemExplorer"), {
+const SolarSystemActivities = dynamic(() => import("./SolarSystemActivities"), {
   ssr: false,
   loading: () => (
     <div className="explorer-stage">
@@ -15,5 +15,5 @@ const SolarSystemExplorer = dynamic(() => import("./SolarSystemExplorer"), {
 });
 
 export function SolarSystemLoader() {
-  return <SolarSystemExplorer />;
+  return <SolarSystemActivities />;
 }

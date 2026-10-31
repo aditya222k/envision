@@ -61,9 +61,13 @@ function SceneError({ onRetry }: { onRetry?: () => void }) {
 function PlanetCard({
   planet,
   onClose,
+  onInspect,
+  inspecting,
 }: {
   planet: Planet;
   onClose: () => void;
+  onInspect: () => void;
+  inspecting: boolean;
 }) {
   return (
     <section
@@ -83,6 +87,9 @@ function PlanetCard({
         </button>
       </div>
       <p className="leading-7 text-ink">{planet.description}</p>
+      <button type="button" onClick={onInspect} className="action h-11 px-4">
+        {inspecting ? "Back to solar system" : "Inspect planet"}
+      </button>
       <dl className="planet-facts">
         <div>
           <dt>Position from the Sun</dt>
@@ -101,18 +108,28 @@ function PlanetCard({
   );
 }
 
-export default function SolarSystemExplorer() {
+export default function SolarSystemExplorer({ active = true, onStartQuiz }: {
+  active?: boolean;
+  onStartQuiz?: () => void;
+}) {
   const [canRender] = useState(hasWebGL);
   const [playing, setPlaying] = useState(() => !prefersReducedMotion());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [resetSignal, setResetSignal] = useState(0);
   const [sceneKey, setSceneKey] = useState(0);
   const [contextLost, setContextLost] = useState(false);
+  const [useExternalModels, setUseExternalModels] = useState(true);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
   const selected = PLANETS.find((planet) => planet.id === selectedId) ?? null;
 
   function retry() {
     setContextLost(false);
     setSceneKey((key) => key + 1);
+  }
+
+  function selectPlanet(id: string | null) {
+    setSelectedId(id);
+    if (focusedId) setFocusedId(id);
   }
 
   return (
@@ -125,13 +142,15 @@ export default function SolarSystemExplorer() {
             <SceneError onRetry={retry} />
           ) : (
             <SceneBoundary key={sceneKey} fallback={<SceneError onRetry={retry} />}>
-              <SolarSystemScene
+              {active && <SolarSystemScene
                 playing={playing}
                 selectedId={selectedId}
                 resetSignal={resetSignal}
-                onSelect={setSelectedId}
+                onSelect={selectPlanet}
                 onContextLost={() => setContextLost(true)}
-              />
+                useExternalModels={useExternalModels}
+                focusedId={focusedId}
+              />}
             </SceneBoundary>
           )}
 
@@ -139,14 +158,20 @@ export default function SolarSystemExplorer() {
             <div className="explorer-controls">
               <button
                 type="button"
-                onClick={() => setPlaying(!playing)}
+                onClick={() => {
+                  if (!playing) setFocusedId(null);
+                  setPlaying(!playing);
+                }}
                 className="stage-button stage-button-primary"
               >
                 {playing ? "Pause orbits" : "Play orbits"}
               </button>
               <button
                 type="button"
-                onClick={() => setResetSignal((signal) => signal + 1)}
+                onClick={() => {
+                  setFocusedId(null);
+                  setResetSignal((signal) => signal + 1);
+                }}
                 className="stage-button"
               >
                 Reset view
@@ -157,7 +182,15 @@ export default function SolarSystemExplorer() {
 
         <div aria-live="polite" className="explorer-card-slot">
           {selected ? (
-            <PlanetCard planet={selected} onClose={() => setSelectedId(null)} />
+            <PlanetCard
+              planet={selected}
+              onClose={() => selectPlanet(null)}
+              inspecting={focusedId === selected.id}
+              onInspect={() => {
+                setFocusedId(focusedId ? null : selected.id);
+                setPlaying(false);
+              }}
+            />
           ) : (
             <p className="explorer-hint">
               Click or tap a planet to learn about it.
@@ -177,7 +210,7 @@ export default function SolarSystemExplorer() {
             key={planet.id}
             type="button"
             aria-pressed={planet.id === selectedId}
-            onClick={() => setSelectedId(planet.id)}
+            onClick={() => selectPlanet(planet.id)}
             className="planet-chip"
           >
             <span
@@ -189,6 +222,27 @@ export default function SolarSystemExplorer() {
           </button>
         ))}
       </div>
+      <div className="flex flex-col gap-2 text-sm text-chalk-dim">
+        <label className="flex min-h-11 items-center gap-3">
+          <input
+            type="checkbox"
+            checked={useExternalModels}
+            onChange={(event) => setUseExternalModels(event.target.checked)}
+          />
+          Use detailed NASA models for the Sun and all eight planets
+        </label>
+        <p>
+          Models courtesy of NASA/JPL-Caltech and NASA VTAD.
+          {" "}
+          <a href="/solar-system/models/README.md" className="underline">
+            Sources and credits
+          </a>
+        </p>
+      </div>
+      {onStartQuiz && <div className="sheet flex flex-wrap items-center justify-between gap-4 p-5">
+        <div><h2 className="font-display text-2xl text-ink">Ready for a mystery?</h2><p className="text-ink-soft">Identify eight hidden planets, then test what you know.</p></div>
+        <button className="action min-h-12 px-5" onClick={onStartQuiz}>Test your planet knowledge</button>
+      </div>}
     </div>
   );
 }

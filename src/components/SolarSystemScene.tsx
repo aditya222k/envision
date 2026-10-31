@@ -9,6 +9,7 @@ import {
 } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { ExternalPlanetModel, NASA_PLANETS, modelReach } from "./ExternalPlanetModel";
 import {
   PLANETS,
   SCENE,
@@ -30,6 +31,22 @@ const ORBIT = "#b9cbbf";
 const MAX_CLICK_DRIFT = 6;
 
 type CameraControls = { target: THREE.Vector3; update: () => void };
+
+export function ContextLossHandler({ onLost }: { onLost: () => void }) {
+  const gl = useThree((state) => state.gl);
+  useEffect(() => {
+    const canvas = gl.domElement;
+    function handle(event: Event) {
+      event.preventDefault();
+      onLost();
+    }
+    canvas.addEventListener("webglcontextlost", handle);
+    // R3F releases its context on unmount. That is expected when switching
+    // activities and must not mark the explorer as broken on the next visit.
+    return () => canvas.removeEventListener("webglcontextlost", handle);
+  }, [gl, onLost]);
+  return null;
+}
 
 function Stars() {
   const geometry = useMemo(() => {
@@ -57,16 +74,29 @@ function Stars() {
   );
 }
 
-function Sun() {
+function Sun({ useExternalModels, playing }: { useExternalModels: boolean; playing: boolean }) {
   const glow = useMemo(() => makeGlowTexture(SUN.glow), []);
+  const surface = useRef<THREE.Group>(null);
   useEffect(() => () => glow.dispose(), [glow]);
+  useFrame((_, delta) => {
+    if (playing && surface.current) {
+      surface.current.rotation.y += Math.min(delta, 0.1) * 0.08;
+    }
+  });
+  const original = (
+    <mesh>
+      <sphereGeometry args={[SUN.radius, 48, 48]} />
+      <meshBasicMaterial color={SUN.color} />
+    </mesh>
+  );
 
   return (
     <group>
-      <mesh>
-        <sphereGeometry args={[SUN.radius, 48, 48]} />
-        <meshBasicMaterial color={SUN.color} />
-      </mesh>
+      <group ref={surface}>
+        {useExternalModels ? (
+          <ExternalPlanetModel id="sun" radius={SUN.radius} fallback={original} />
+        ) : original}
+      </group>
       <sprite scale={[SUN.radius * 5, SUN.radius * 5, 1]}>
         <spriteMaterial
           map={glow}
@@ -136,29 +166,46 @@ function SaturnRing({ ring }: { ring: NonNullable<Planet["scene"]["ring"]> }) {
   );
 }
 
+export function ProceduralPlanet({ planet }: { planet: Planet }) {
+  const { scene } = planet;
+  const texture = useMemo(
+    () => makePlanetTexture(planet.id, scene.surface, scene.colors),
+    [planet.id, scene.surface, scene.colors],
+  );
+  useEffect(() => () => texture.dispose(), [texture]);
+  return (
+    <group>
+      <mesh>
+        <sphereGeometry args={[scene.radius, 48, 32]} />
+        <meshStandardMaterial map={texture} roughness={1} metalness={0} />
+      </mesh>
+      {scene.ring && <SaturnRing ring={scene.ring} />}
+    </group>
+  );
+}
+
 function PlanetBody({
   planet,
   playing,
   selected,
+  useExternalModels,
   onSelect,
 }: {
   planet: Planet;
   playing: boolean;
   selected: boolean;
+  useExternalModels: boolean;
   onSelect: (id: string) => void;
 }) {
   const { scene } = planet;
   const orbitRef = useRef<THREE.Group>(null);
-  const spinRef = useRef<THREE.Mesh>(null);
+  const spinRef = useRef<THREE.Group>(null);
   const angle = useRef(scene.startAngle);
-  const texture = useMemo(
-    () => makePlanetTexture(planet.id, scene.surface, scene.colors),
-    [planet.id, scene.surface, scene.colors],
-  );
-  const reach = Math.max(scene.radius, scene.ring?.outer ?? 0);
+  const reach = useExternalModels
+    ? modelReach(planet.id, scene.radius)
+    : Math.max(scene.radius, scene.ring?.outer ?? 0);
   const hitRadius = Math.max(reach * 1.5, 1.6);
 
-  useEffect(() => () => texture.dispose(), [texture]);
   useEffect(
     () => () => {
       document.body.style.cursor = "";
@@ -186,23 +233,30 @@ function PlanetBody({
     }
   }
 
+  const original = <ProceduralPlanet planet={planet} />;
+
   return (
     <group
       ref={orbitRef}
+      name={`planet-${planet.id}`}
       position={planetPosition(scene.orbitRadius, scene.startAngle)}
     >
       <group rotation-z={THREE.MathUtils.degToRad(scene.tilt)}>
-        <mesh ref={spinRef}>
-          <sphereGeometry args={[scene.radius, 48, 32]} />
-          <meshStandardMaterial map={texture} roughness={1} metalness={0} />
-        </mesh>
-        {scene.ring && <SaturnRing ring={scene.ring} />}
+        <group ref={spinRef}>
+          {useExternalModels && NASA_PLANETS.has(planet.id) ? (
+            <ExternalPlanetModel
+              id={planet.id}
+              radius={scene.radius}
+              fallback={original}
+            />
+          ) : original}
+        </group>
       </group>
 
       {selected && (
         <Billboard>
           <mesh>
-            <ringGeometry args={[reach * 1.35, reach * 1.35 + 0.22, 64]} />
+            <ringGeometry args={[reach * 1.2, reach * 1.24, 64]} />
             <meshBasicMaterial color={HIGHLIGHT} side={THREE.DoubleSide} />
           </mesh>
         </Billboard>
@@ -227,22 +281,72 @@ function PlanetBody({
 }
 
 // Places the camera for the current screen shape, at the start and on reset.
-function CameraRig({ resetSignal }: { resetSignal: number }) {
+function InspectionLight({ enabled }: { enabled: boolean }) {
+  const light = useRef<THREE.PointLight>(null);
+  useFrame(({ camera }) => {
+    light.current?.position.copy(camera.position);
+  });
+  return <pointLight ref={light} intensity={enabled ? 3.5 : 0} decay={0} />;
+}
+
+function CameraRig({ resetSignal, focusedId, useExternalModels }: {
+  resetSignal: number;
+  focusedId: string | null;
+  useExternalModels: boolean;
+}) {
   const controls = useThree(
     (state) => state.controls,
   ) as unknown as CameraControls | null;
   const get = useThree((state) => state.get);
+  const transition = useRef<{
+    elapsed: number;
+    from: THREE.Vector3;
+    fromTarget: THREE.Vector3;
+    to: THREE.Vector3;
+    target: THREE.Vector3;
+  } | null>(null);
 
   useEffect(() => {
     if (!controls) {
       return;
     }
     const { camera, size, invalidate } = get();
-    camera.position.set(...cameraPositionFor(size.width / size.height));
-    controls.target.set(0, 0, 0);
-    controls.update();
+    const planet = PLANETS.find((item) => item.id === focusedId);
+    const target = new THREE.Vector3();
+    let to = new THREE.Vector3(...cameraPositionFor(size.width / size.height));
+    if (planet) {
+      // Read the current world position, including its animated orbit.
+      const object = get().scene.getObjectByName(`planet-${planet.id}`);
+      object?.getWorldPosition(target);
+      const reach = useExternalModels
+        ? modelReach(planet.id, planet.scene.radius)
+        : planet.scene.ring?.outer ?? planet.scene.radius;
+      const fit = Math.max(1, size.height / size.width);
+      to = target.clone().add(new THREE.Vector3(0, reach * 2 * fit, reach * 5 * fit));
+    }
+    transition.current = {
+      elapsed: 0,
+      from: camera.position.clone(),
+      fromTarget: controls.target.clone(),
+      to,
+      target,
+    };
     invalidate();
-  }, [resetSignal, controls, get]);
+  }, [resetSignal, focusedId, useExternalModels, controls, get]);
+
+  useFrame((_, delta) => {
+    const move = transition.current;
+    if (!move || !controls) return;
+    move.elapsed += Math.min(delta, 0.1);
+    const t = Math.min(move.elapsed / 0.8, 1);
+    const eased = t * t * (3 - 2 * t);
+    const { camera, invalidate } = get();
+    camera.position.lerpVectors(move.from, move.to, eased);
+    controls.target.lerpVectors(move.fromTarget, move.target, eased);
+    controls.update();
+    if (t === 1) transition.current = null;
+    else invalidate();
+  });
 
   return null;
 }
@@ -253,12 +357,16 @@ export default function SolarSystemScene({
   resetSignal,
   onSelect,
   onContextLost,
+  useExternalModels,
+  focusedId,
 }: {
   playing: boolean;
   selectedId: string | null;
   resetSignal: number;
   onSelect: (id: string) => void;
   onContextLost: () => void;
+  useExternalModels: boolean;
+  focusedId: string | null;
 }) {
   return (
     <Canvas
@@ -272,39 +380,42 @@ export default function SolarSystemScene({
       }}
       dpr={[1, 2]}
       frameloop={playing ? "always" : "demand"}
-      onCreated={({ gl }) => {
-        gl.domElement.addEventListener("webglcontextlost", onContextLost);
-      }}
     >
+      <ContextLossHandler onLost={onContextLost} />
       <color attach="background" args={[SCENE.background]} />
-      <ambientLight intensity={0.35} />
+      <ambientLight intensity={useExternalModels ? 1.2 : 0.35} />
       <pointLight position={[0, 0, 0]} intensity={3.2} decay={0} />
+      <InspectionLight enabled={Boolean(focusedId)} />
       <Stars />
-      <Sun />
-      {PLANETS.map((planet) => (
+      <group visible={!focusedId}>
+        <Sun useExternalModels={useExternalModels} playing={playing} />
+        {PLANETS.map((planet) => (
         <Orbit
           key={planet.id}
           radius={planet.scene.orbitRadius}
           selected={planet.id === selectedId}
         />
-      ))}
+        ))}
+      </group>
       {PLANETS.map((planet) => (
-        <PlanetBody
-          key={planet.id}
+        <group key={planet.id} visible={!focusedId || focusedId === planet.id}>
+          <PlanetBody
           planet={planet}
           playing={playing}
           selected={planet.id === selectedId}
+          useExternalModels={useExternalModels}
           onSelect={onSelect}
-        />
+          />
+        </group>
       ))}
       <OrbitControls
         makeDefault
         enablePan={false}
         enableDamping={false}
-        minDistance={SCENE.minDistance}
+        minDistance={focusedId ? 2 : SCENE.minDistance}
         maxDistance={SCENE.maxDistance}
       />
-      <CameraRig resetSignal={resetSignal} />
+      <CameraRig resetSignal={resetSignal} focusedId={focusedId} useExternalModels={useExternalModels} />
     </Canvas>
   );
 }
