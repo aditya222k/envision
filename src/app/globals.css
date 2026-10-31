@@ -102,6 +102,130 @@ body {
     color: var(--pencil);
   }
 
+  .action-stop {
+    background: var(--history);
+    color: #ffffff;
+  }
+
+  .action-quiet {
+    background: var(--paper);
+  }
+
+  .drawer-button {
+    min-height: 40px;
+    padding: 0 1rem;
+    border: 3px solid var(--ink);
+    border-radius: 4px;
+    background: var(--paper);
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .drawer-button:hover:enabled {
+    background: var(--pencil-light);
+  }
+
+  .drawer-button:disabled {
+    color: #4e5e59;
+    cursor: not-allowed;
+  }
+
+  .drawer {
+    width: min(400px, 100vw);
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    border-right: 3px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .drawer::backdrop {
+    background: rgba(21, 35, 31, 0.6);
+  }
+
+  .drawer-game {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1.25rem;
+    border-bottom: 3px solid var(--ink);
+    text-align: left;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .drawer-game:hover {
+    background: var(--pencil-light);
+  }
+
+  .drawer-game[aria-current="true"] {
+    background: var(--pencil-light);
+    box-shadow: inset 6px 0 0 var(--ink);
+  }
+
+  .incognito {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    color: var(--paper);
+    cursor: pointer;
+  }
+
+  .incognito:disabled {
+    cursor: not-allowed;
+  }
+
+  .incognito-track {
+    display: inline-flex;
+    width: 44px;
+    height: 24px;
+    padding: 2px;
+    border: 2px solid var(--paper);
+    border-radius: 12px;
+  }
+
+  .incognito-track span {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--paper);
+  }
+
+  .incognito[aria-checked="true"] .incognito-track {
+    justify-content: flex-end;
+    border-color: var(--pencil);
+    background: var(--pencil);
+  }
+
+  .incognito[aria-checked="true"] .incognito-track span {
+    background: var(--ink);
+  }
+
+  .link-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .progress {
+    height: 22px;
+    overflow: hidden;
+    border: 3px solid var(--ink);
+    border-radius: 4px;
+    background: #ffffff;
+  }
+
+  .progress span {
+    display: block;
+    height: 100%;
+    background: var(--pencil);
+  }
+
   .action:disabled {
     background: var(--paper);
     color: #4e5e59;
@@ -109,7 +233,21 @@ body {
   }
 }
 
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  .drawer[open] {
+    animation: drawer-in 180ms ease-out;
+  }
+
+  .progress span {
+    transition: width 400ms ease-out;
+  }
+
   .action:active:enabled,
   .square:active {
     transform: translateY(2px);

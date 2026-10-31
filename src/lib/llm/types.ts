@@ -19,11 +19,14 @@ export type ProviderSummary = {
 };
 
 export type GenerateRequest = {
+  system: string;
   prompt: string;
+  schema: object;
+  signal?: AbortSignal;
+  onCharacters?: (count: number) => void;
 };
 
 export type GenerateResult = {
-  provider: ProviderId;
   model: string;
   text: string;
 };
@@ -31,9 +34,12 @@ export type GenerateResult = {
 export type LlmProvider = {
   id: ProviderId;
   generate: (request: GenerateRequest) => Promise<GenerateResult>;
+  unload?: () => Promise<boolean>;
 };
 
 export class ProviderRequestError extends Error {}
+
+export class GenerationStoppedError extends Error {}
 
 export class NotImplementedError extends Error {
   constructor(provider: ProviderId) {
