@@ -7,12 +7,9 @@ import {
   parseLabSpec,
   type LabKit,
 } from "./lab";
-import {
-  checkDecide,
-  checkSystems,
-  findDoubtfulActivities,
-} from "./labChecks";
+import { checkDecide, findDoubtfulActivities } from "./labChecks";
 import { parseJson, type EventReporter, type ProgressReporter } from "./pipeline";
+import { checkSystems, tuneSystems } from "./simulation";
 import type { GameSpec } from "./spec";
 
 const MAX_ATTEMPTS = 3;
@@ -55,6 +52,7 @@ async function generateLab(
 ) {
   let lastDraft = "";
   let feedback = "";
+  let lastProblem = "";
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     onProgress({
@@ -82,6 +80,9 @@ async function generateLab(
 
     const value = parseJson(text);
     const spec = parseLabSpec(kit, value);
+    if (spec?.lab?.kit === "systems") {
+      spec.lab = tuneSystems(spec.lab);
+    }
     const problems = spec
       ? await findProblems(provider, spec, signal, onProgress)
       : describeLabProblems(kit, value);
@@ -92,11 +93,12 @@ async function generateLab(
     }
 
     console.warn(`Lab attempt ${attempt} rejected:`, problems);
+    lastProblem = problems[0] ?? lastProblem;
     feedback = `\n\nYour last design had these problems. Fix every one and reply with the complete design:\n- ${problems.join("\n- ")}`;
   }
 
   throw new ProviderRequestError(
-    "Envision couldn't make that game work properly. Add more detail, or choose a different type of game.",
+    `Envision tried ${MAX_ATTEMPTS} times, but the game still had a problem: ${lastProblem} Try again, or choose Custom game.`,
   );
 }
 

@@ -19,6 +19,12 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 
 ## Timeline
 
+### 2026-10-31: Simulation numbers tuned by code
+
+- A simulation lab was being rejected over its numbers alone, wasting about 4 minutes.
+- The model now sets the relationships, and Envision tests different speeds and graph ranges to find values that work. All rules change speed together, so their relationships stay the same.
+- Failure messages now say what the problem was.
+
 ### 2026-10-31: NASA planet models and Who's That Planet quiz
 
 - The Solar System explorer now shows detailed NASA 3D models of the Sun and all eight planets, with a switch back to the drawn planets.
