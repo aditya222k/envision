@@ -622,7 +622,191 @@ body {
     border-radius: 5px;
     background: var(--pencil-deep);
   }
+
+  /* Solar System explorer: the scene sits in a dark window on the board. */
+  .explorer-layout {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .explorer-stage {
+    position: relative;
+    height: min(62vh, 560px);
+    min-height: 380px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #070d1f;
+    color: var(--chalk);
+    box-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.25),
+      0 24px 48px -28px rgba(0, 0, 0, 0.7);
+  }
+
+  .explorer-status {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--chalk);
+  }
+
+  .explorer-controls {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stage-button {
+    min-height: 44px;
+    padding: 0 1rem;
+    border-radius: 12px;
+    background: rgba(237, 243, 236, 0.16);
+    font-weight: 700;
+    color: var(--chalk);
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+
+  .stage-button:hover {
+    background: rgba(237, 243, 236, 0.26);
+  }
+
+  .stage-button-primary {
+    background: var(--pencil);
+    color: var(--ink);
+  }
+
+  .stage-button-primary:hover {
+    background: var(--pencil-deep);
+  }
+
+  .explorer-hint {
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: rgba(237, 243, 236, 0.12);
+    font-weight: 700;
+    color: var(--chalk);
+  }
+
+  .planet-facts {
+    display: grid;
+    gap: 0.75rem;
+    color: var(--ink);
+  }
+
+  .planet-facts dt {
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+  }
+
+  .planet-facts dd {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+  }
+
+  .explorer-note {
+    max-width: 72ch;
+    padding-left: 0.875rem;
+    border-left: 3px solid var(--pencil);
+    color: var(--chalk-dim);
+  }
+
+  .planet-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 0.875rem;
+    border: 1.5px solid var(--chalk-line);
+    border-radius: 12px;
+    font-weight: 700;
+    color: var(--chalk);
+    cursor: pointer;
+  }
+
+  .planet-chip:hover {
+    background: rgba(237, 243, 236, 0.1);
+  }
+
+  .planet-chip[aria-pressed="true"] {
+    border-color: var(--chalk);
+    background: var(--chalk);
+    color: var(--ink);
+  }
+
+  .planet-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  }
+
+  /* On wide screens the planet card floats over the top right of the scene. */
+  @media (min-width: 1024px) {
+    /* Fits the window under the page title, so the controls stay in view. */
+    .explorer-stage {
+      height: clamp(420px, calc(100svh - 340px), 680px);
+    }
+
+    .explorer-layout > * {
+      grid-area: 1 / 1;
+    }
+
+    /* Keeps the message clear of the planet card on the right. */
+    .explorer-error {
+      padding-right: 372px;
+    }
+
+    .explorer-card-slot {
+      z-index: 1;
+      align-self: start;
+      justify-self: end;
+      width: 340px;
+      max-height: calc(100% - 2rem);
+      margin: 1rem;
+      overflow-y: auto;
+    }
+  }
 }
+
+.solar-activity-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.solar-activity-tabs button { min-height: 48px; padding: 0.65rem 1.25rem; border: 1.5px solid var(--chalk-line); border-radius: 14px; color: var(--chalk); font-weight: 700; cursor: pointer; }
+.solar-activity-tabs button[aria-selected="true"] { background: var(--pencil); color: var(--ink); border-color: var(--pencil); }
+.solar-activity-tabs button:focus-visible, .quiz-answer:focus-visible, .quiz-text-button:focus-visible { outline: 3px solid var(--pencil); outline-offset: 4px; }
+.planet-quiz-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.quiz-planet-window { position: relative; height: clamp(400px, 58vh, 620px); overflow: hidden; border: 1px solid var(--chalk-line); border-radius: 20px; background: radial-gradient(ellipse at 50% 45%, #223354 0%, #10182e 45%, #070d1f 80%); color: var(--chalk); }
+.quiz-planet-window::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.45; background-image: radial-gradient(circle, #fff 1px, transparent 1.5px), radial-gradient(circle, #fff 1px, transparent 1.5px); background-size: 83px 97px, 137px 113px; background-position: 13px 9px, 37px 47px; }
+.quiz-mystery { position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; text-align: center; }
+.quiz-eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: #b9c9e7; }
+.quiz-silhouette { display: grid; place-items: center; width: clamp(150px, 18vw, 220px); aspect-ratio: 1; border-radius: 50%; background: #070a13; border: 2px solid #7889b4; box-shadow: -16px 0 50px #687ee52b, inset -15px 0 28px #232d48; }
+.quiz-silhouette span { font-size: 5rem; font-weight: 800; color: #c8d2ee; }
+.quiz-reveal-title { position: absolute; top: 1rem; left: 1rem; right: 1rem; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; text-align: center; pointer-events: none; }
+.quiz-reveal-title span { color: #c2d6ec; font-size: 0.875rem; }
+.quiz-reveal-title strong { font-size: 2rem; color: #fff; }
+.quiz-drag-hint { position: absolute; bottom: 1rem; left: 1rem; right: 1rem; font-size: 0.8rem; text-align: center; color: #c2d6ec; pointer-events: none; }
+.quiz-preview-fallback { position: absolute; inset: 5rem 1rem; display: grid; place-items: center; text-align: center; }
+.quiz-question-panel { display: flex; flex-direction: column; gap: 1.15rem; color: var(--ink); line-height: 1.6; min-width: 0; }
+.quiz-question-panel h2:focus, .quiz-results h2:focus { outline: none; }
+.quiz-clues { display: grid; gap: 0.8rem; list-style: none; padding: 0; }
+.quiz-clues li { display: flex; align-items: flex-start; gap: 0.75rem; }
+.quiz-clues li > span { display: grid; place-items: center; flex-shrink: 0; width: 1.7rem; height: 1.7rem; border: 1px solid var(--ink-soft); border-radius: 50%; font-size: 0.8rem; font-weight: 700; }
+.quiz-feedback:empty { display: none; }
+.quiz-feedback { font-weight: 700; }
+.quiz-text-button { min-height: 44px; padding: 0.4rem; text-decoration: underline; cursor: pointer; }
+.quiz-answer { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.8rem 1rem; min-height: 48px; border: 2px solid #9da99e; border-radius: 12px; text-align: left; background: #fff; color: #172a24; cursor: pointer; }
+.quiz-answer:hover:enabled { border-color: #183e31; background: #f1f4ec; }
+.quiz-answer:disabled { opacity: 1; cursor: default; }
+.quiz-answer-correct { border: 3px solid #245540; background: #e5f3e7; }
+.quiz-answer-wrong { border: 3px dashed #874126; background: #fff0e5; }
+.quiz-answer strong { font-size: 0.8rem; }
+.quiz-explanation { padding: 0.8rem 1rem; border-left: 3px solid #245540; background: #eef2e8; }
+.quiz-progress { width: 100%; height: 0.5rem; accent-color: var(--pencil); }
+.quiz-results { display: flex; flex-direction: column; gap: 1.25rem; color: var(--ink); line-height: 1.7; }
+@media (max-width: 767px) { .planet-quiz-layout { grid-template-columns: 1fr; } .quiz-planet-window { height: 320px; } }
 
 @keyframes drawer-in {
   from {
