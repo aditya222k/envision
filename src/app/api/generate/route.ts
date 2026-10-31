@@ -1,4 +1,7 @@
+import { buildGame } from "@/lib/games/pipeline";
+import { finishRun, startRun } from "@/lib/games/runs";
 import {
+  GenerationStoppedError,
   getProvider,
   isProviderId,
   NotImplementedError,
@@ -24,10 +27,16 @@ export async function POST(request: Request) {
     );
   }
 
+  const runId = typeof body.runId === "string" ? body.runId : crypto.randomUUID();
+  const run = startRun(runId);
+
   try {
-    const result = await provider.generate({ prompt: body.prompt });
-    return Response.json(result);
+    const signal = AbortSignal.any([request.signal, run.signal]);
+    return Response.json(await buildGame(provider, body.prompt, signal));
   } catch (error) {
+    if (error instanceof GenerationStoppedError) {
+      return Response.json({ stopped: true }, { status: 499 });
+    }
     if (error instanceof NotImplementedError) {
       return Response.json({ error: error.message }, { status: 501 });
     }
@@ -35,5 +44,7 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message }, { status: 502 });
     }
     throw error;
+  } finally {
+    finishRun(runId);
   }
 }

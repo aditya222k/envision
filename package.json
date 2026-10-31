@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "eval:games": "node scripts/eval-games.mjs",
+    "preview:worlds": "node scripts/preview-worlds.mjs"
   },
   "dependencies": {
     "next": "16.4.3",
+    "phaser": "4.2.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -21,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "playwright": "1.64.0-alpha-1790635538000",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

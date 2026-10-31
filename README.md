@@ -17,9 +17,11 @@ npm run dev
 
 Then open http://localhost:3000.
 
+If you change `src/app/globals.css`, restart `npm run dev` to see it. CSS edits don't reach a running dev server yet.
+
 ## AI providers
 
-Games will be generated through `POST /api/generate`, which can use Claude, OpenAI, Gemini or a local Ollama host. Ollama works today and defaults to the `gemma4:e2b` model (run `ollama pull gemma4:e2b` to get it). Claude, OpenAI and Gemini are still stubs in `src/lib/llm/providers/`, so they return a 501. Generated games run in a sandboxed iframe.
+Games will be generated through `POST /api/generate`, which can use Claude, OpenAI, Gemini or a local Ollama host. Ollama works today and defaults to the `gemma4:e2b` model (run `ollama pull gemma4:e2b` to get it). Claude, OpenAI and Gemini are still stubs in `src/lib/llm/providers/`, so they return a 501. The model fills in a structured game design (`src/lib/games/spec.ts`), and Envision draws the game with code in `src/lib/games/engine/world.js`, so a game has no image files. Games run in a sandboxed iframe. **Stop building** cancels the run and unloads the model. To test games, run `npm run preview:worlds` (no model needed) or `npm run eval:games` (builds and plays the example games).
 
 To configure a provider, do one of the following:
 

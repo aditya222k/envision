@@ -102,6 +102,11 @@ body {
     color: var(--pencil);
   }
 
+  .action-stop {
+    background: var(--history);
+    color: #ffffff;
+  }
+
   .action:disabled {
     background: var(--paper);
     color: #4e5e59;

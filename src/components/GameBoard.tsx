@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EXAMPLE_GAMES, type Subject } from "@/lib/games/examples";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   PROVIDER_IDS,
@@ -8,7 +9,6 @@ import {
   type ProviderId,
 } from "@/lib/llm/types";
 
-type Subject = "Science" | "Math" | "History" | "English";
 
 const SUBJECT_COLORS: Record<Subject, string> = {
   Science: "bg-science text-paper",
@@ -16,91 +16,6 @@ const SUBJECT_COLORS: Record<Subject, string> = {
   History: "bg-history text-paper",
   English: "bg-pencil text-ink",
 };
-
-const EXAMPLE_GAMES: {
-  title: string;
-  subject: Subject;
-  grade: string;
-  prompt: string;
-}[] = [
-  {
-    title: "Food web survival",
-    subject: "Science",
-    grade: "Grade 8",
-    prompt:
-      "A grade 8 survival game where students play an animal in a food web and choose what to eat and avoid to last through three seasons.",
-  },
-  {
-    title: "Balance the equation",
-    subject: "Science",
-    grade: "High school",
-    prompt:
-      "A high school chemistry puzzle game where students balance equations against the clock, with hints after each wrong answer.",
-  },
-  {
-    title: "Fraction dash",
-    subject: "Math",
-    grade: "Grade 8",
-    prompt:
-      "A grade 8 running game where students jump through the gate showing the correct answer to fraction and ratio questions.",
-  },
-  {
-    title: "Slope skate park",
-    subject: "Math",
-    grade: "High school",
-    prompt:
-      "A high school algebra game where students build skate ramps by choosing the slope and intercept of each line.",
-  },
-  {
-    title: "Trade route race",
-    subject: "History",
-    grade: "Grade 8",
-    prompt:
-      "A grade 8 strategy game where teams move goods along Silk Road trade routes and answer history questions to pass each city.",
-  },
-  {
-    title: "Spot the fallacy",
-    subject: "English",
-    grade: "High school",
-    prompt:
-      "A high school debate game where students read short arguments and call out the logical fallacy in each one before time runs out.",
-  },
-  {
-    title: "Cell city",
-    subject: "Science",
-    grade: "Grade 8",
-    prompt:
-      "A grade 8 city-building game where each part of a cell is a building, and students keep the city running by matching organelles to their jobs.",
-  },
-  {
-    title: "Poetry heist",
-    subject: "English",
-    grade: "Grade 8",
-    prompt:
-      "A grade 8 mystery game where students crack clues hidden in poems by identifying metaphor, rhyme scheme and tone.",
-  },
-  {
-    title: "Probability fair",
-    subject: "Math",
-    grade: "Grade 8",
-    prompt:
-      "A grade 8 carnival game where students predict the odds of each stall and earn points for choosing the fairest games.",
-  },
-  {
-    title: "Constitution showdown",
-    subject: "History",
-    grade: "High school",
-    prompt:
-      "A high school quiz battle where two teams argue real court cases using the amendments to the Constitution.",
-  },
-  {
-    title: "Empire builder",
-    subject: "History",
-    grade: "High school",
-    prompt:
-      "A high school turn-based game where students lead an empire and see how their choices on trade, war and religion change its history.",
-  },
-];
 
 export function GameBoard() {
   const [provider, setProvider] = useState<ProviderId>("ollama");
@@ -110,8 +25,13 @@ export function GameBoard() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLElement>(null);
+  const runRef = useRef<{ id: string; controller: AbortController } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (result) {
@@ -125,16 +45,24 @@ export function GameBoard() {
     setResult(null);
     setError(null);
     setNeedsSetup(false);
+    setNotice(null);
 
     const label = PROVIDER_LABELS[provider];
+    const run = { id: crypto.randomUUID(), controller: new AbortController() };
+    runRef.current = run;
+
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, provider }),
+        body: JSON.stringify({ prompt, provider, runId: run.id }),
+        signal: run.controller.signal,
       });
       const data = await response.json().catch(() => null);
 
+      if (data?.stopped) {
+        return;
+      }
       if (response.ok && typeof data?.text === "string") {
         setResult(data.text);
       } else if (response.status === 503) {
@@ -146,9 +74,42 @@ export function GameBoard() {
         setError(data?.error ?? "The game wasn't built. Try again.");
       }
     } catch {
-      setError("Envision couldn't reach the server. Try again.");
+      if (!run.controller.signal.aborted) {
+        setError("Envision couldn't reach the server. Try again.");
+      }
     } finally {
       setIsLoading(false);
+      runRef.current = null;
+    }
+  }
+
+  async function handleStop() {
+    const run = runRef.current;
+    if (!run) {
+      return;
+    }
+
+    setIsStopping(true);
+    run.controller.abort();
+
+    try {
+      const response = await fetch("/api/generate/stop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runId: run.id, provider }),
+      });
+      const data = await response.json().catch(() => null);
+      setNotice(
+        data?.unloaded
+          ? "Stopped. The game wasn't built, and the AI model was closed."
+          : "Stopped. The game wasn't built, but the AI model is still open. It will close on its own.",
+      );
+    } catch {
+      setError(
+        "The build stopped on this page, but Envision couldn't reach the server to close the AI model.",
+      );
+    } finally {
+      setIsStopping(false);
     }
   }
 
@@ -223,6 +184,22 @@ export function GameBoard() {
             </button>
           </div>
 
+          {(isLoading || isStopping) && (
+            <button
+              type="button"
+              onClick={handleStop}
+              disabled={isStopping}
+              className="action action-stop h-12 px-6"
+            >
+              {isStopping ? "Stopping..." : "Stop building"}
+            </button>
+          )}
+
+          {notice && (
+            <p role="status" className="font-bold text-ink">
+              {notice}
+            </p>
+          )}
           {error && (
             <p role="alert" className="font-bold text-history">
               {error}{" "}
