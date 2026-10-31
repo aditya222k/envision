@@ -4,7 +4,12 @@ import {
   customSpec,
   reviseCustomGame,
 } from "@/lib/games/customGame";
-import { runDemoBuild, runDemoChange, runPrebuiltBuild } from "@/lib/games/demo";
+import {
+  runDemoBuild,
+  runDemoChange,
+  runPrebuiltBuild,
+  runPrebuiltChange,
+} from "@/lib/games/demo";
 import { LAB_KITS, type LabKit } from "@/lib/games/lab";
 import { buildGame } from "@/lib/games/pipeline";
 import { researchLesson, withResearch } from "@/lib/games/research";
@@ -60,8 +65,10 @@ export async function POST(request: Request) {
 
   const gameId: string | null =
     typeof body.gameId === "string" ? body.gameId : null;
-  const currentSpec = gameId ? await getLatestSpec(gameId) : null;
-  if (gameId && !currentSpec) {
+  // Ready-made games aren't saved, so they're changed by their own route.
+  const prebuiltId = gameId?.startsWith("prebuilt-") ? gameId : null;
+  const currentSpec = gameId && !prebuiltId ? await getLatestSpec(gameId) : null;
+  if (gameId && !prebuiltId && !currentSpec) {
     return Response.json({ error: "That game no longer exists." }, { status: 404 });
   }
 
@@ -97,7 +104,17 @@ export async function POST(request: Request) {
         send({ type: "progress", ...progress });
 
       try {
-        if (isDemo && !gameId && !storyline) {
+        if (prebuiltId) {
+          send({
+            type: "result",
+            game: await runPrebuiltChange(
+              prebuiltId,
+              Number(body.versionCount) || 1,
+              signal,
+              onProgress,
+            ),
+          });
+        } else if (isDemo && !gameId && !storyline) {
           send({
             type: "result",
             game: await runPrebuiltBuild(body.prompt, signal, onProgress),

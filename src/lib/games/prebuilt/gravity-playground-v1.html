@@ -1,0 +1,2172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important} img{max-width:100%}</style>
+<title>Gravity Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: tabbed game console. Big canvas stage on the left, control deck on the right, teacher notes underneath. One deliberate night-sky look for projectors. */
+:root{
+  --space:#0e1733; --space-hi:#142150; --void:#060b1f; --deck:#16224a; --deck-2:#1f2d5c; --line:#2c3d74;
+  --ink:#eef1ff; --muted:#a6b1da; --sun:#ffc94a; --on-sun:#1d1640; --coral:#ff7a6b; --mint:#5fd3c7; --violet:#a596ff; --sky:#7cb8ff;
+  --display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--space);color:var(--ink)}
+body{font-family:var(--body);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--space-hi),var(--space))}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand svg{flex:none}
+.brand h1{font-family:var(--display);font-weight:700;font-size:1.65rem;margin:0;line-height:1.1}
+.brand p{margin:0;color:var(--muted);font-size:.9rem}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font-family:var(--display);font-weight:600;font-size:1rem;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--deck);color:var(--ink);cursor:pointer}
+.tab:hover{border-color:var(--muted)}
+.tab .dot{width:10px;height:10px;border-radius:50%}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--space);border-color:var(--ink)}
+main{padding-block:20px 48px}
+.intro{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;margin-bottom:14px}
+.intro h2{font-family:var(--display);font-weight:700;font-size:clamp(1.6rem,3vw,2.2rem);margin:0;line-height:1.1;text-wrap:balance}
+.intro p{margin:4px 0 0;color:var(--muted);max-width:64ch}
+.bigidea{display:inline-block;margin-top:10px;padding:6px 12px;border-radius:10px;background:rgba(255,201,74,.12);color:var(--sun);font-weight:700;font-size:.92rem}
+.stage-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+@media (max-width:920px){.stage-grid{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;height:clamp(360px,66vh,660px);border-radius:20px;overflow:hidden;border:1px solid var(--line);background:var(--void)}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#sandCanvas,#labCanvas{cursor:crosshair}
+.toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(14,23,51,.94);border:1px solid var(--line);color:var(--ink);font-family:var(--display);font-weight:600;font-size:1.05rem;padding:8px 18px;border-radius:999px;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1}
+.panel{background:var(--deck);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.label{font-size:.74rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.group{display:flex;flex-direction:column;gap:8px;min-width:0}
+.hint{margin:0;font-size:.88rem;color:var(--muted)}
+.btn{font-family:var(--display);font-weight:600;font-size:1rem;background:var(--deck-2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:9px 14px;cursor:pointer;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--sun);color:var(--on-sun);border-color:var(--sun)}
+.btn.big{font-size:1.3rem;padding:14px;width:100%}
+.btn.ghost{background:transparent}
+kbd{font-family:var(--mono);font-size:.7rem;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.18);margin-left:8px;vertical-align:middle}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px}
+.btn-row .btn{flex:1 1 auto}
+.chip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.chip{font-family:var(--display);font-weight:500;font-size:.92rem;display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:10px;border:1px solid var(--line);background:var(--deck-2);color:var(--ink);cursor:pointer;text-align:left;min-width:0}
+.chip .dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:inset -2px -2px 0 rgba(0,0,0,.25)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--space);border-color:var(--ink)}
+.chip:disabled{opacity:.5;cursor:not-allowed}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg .chip{justify-content:center}
+input[type=range]{width:100%;accent-color:var(--sun)}
+output{font-family:var(--mono);color:var(--ink);font-size:.85rem;letter-spacing:0;text-transform:none;font-weight:500}
+.readouts{margin:0;display:grid;border-top:1px solid var(--line)}
+.readouts div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.readouts dt{color:var(--muted)}
+.readouts dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;font-size:.92rem}
+.readouts dd.wait{color:var(--muted);font-family:var(--body);font-style:italic}
+.fact{margin:0;font-size:.92rem;color:var(--muted);padding:10px 12px;border-radius:12px;background:var(--deck-2)}
+.fact b{color:var(--ink)}
+.msg{margin:0;font-size:.95rem}
+.msg.good{color:var(--mint)}
+.msg.bad{color:var(--coral)}
+.score{font-family:var(--mono);color:var(--sun);font-size:.85rem;letter-spacing:0;text-transform:none}
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.95rem}
+.toggle input{width:18px;height:18px;accent-color:var(--mint);flex:none}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.log li{display:grid;grid-template-columns:72px minmax(0,1fr) 62px;align-items:center;gap:8px;font-size:.88rem}
+.log .bar{height:10px;border-radius:5px;background:var(--deck-2);overflow:hidden}
+.log .bar i{display:block;height:100%;border-radius:5px}
+.log .v{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:.9rem;margin:0}
+.meter{height:12px;border-radius:6px;background:var(--deck-2);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--mint)}
+.meter.done i{background:var(--sun)}
+.timer-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.88rem;font-variant-numeric:tabular-nums}
+.timer-row span:last-child{color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:50%;display:inline-block;flex:none}
+.sw.fixed{background:radial-gradient(circle,#eef1fb 0 26%,#2a2f48 27% 36%,var(--sun) 37%);outline:1.5px dashed rgba(255,255,255,.6);outline-offset:1px}
+.sw.move{background:var(--sun)}
+.sel-box{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--deck-2)}
+.sel-box .chip{background:var(--deck)}
+.sel-box .chip[aria-pressed="true"]{background:var(--ink)}
+.sel-title{font-family:var(--display);font-weight:600;font-size:1.1rem;display:flex;align-items:center;gap:8px}
+.pulls{display:flex;flex-direction:column;gap:4px;font-size:.9rem}
+.pull{display:grid;grid-template-columns:14px minmax(0,1fr) 22px 64px;gap:8px;align-items:center}
+.pull .dir{display:inline-block;text-align:center;font-weight:700}
+.pull b{font-family:var(--mono);font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.pull.net{border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+.pull.net b{color:var(--sun);font-weight:700}
+.verdict{margin:0;font-size:.92rem;font-weight:700}
+.verdict.ok{color:var(--mint)}
+.verdict.go{color:var(--coral)}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;margin-top:16px}
+.note{padding:16px 18px;border-radius:16px;border:1px solid var(--line);min-width:0}
+.note h3{font-family:var(--display);font-weight:600;font-size:1.1rem;margin:0 0 8px;color:var(--sun)}
+.note ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;max-width:65ch}
+.formula{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--deck-2);display:flex;flex-direction:column;gap:10px}
+.eq{font-family:var(--display);font-weight:600;font-size:1.5rem;text-align:center;color:var(--sun)}
+.eq sub{font-size:.6em}
+.givens{margin:0;display:grid;gap:4px}
+.givens div{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:baseline}
+.givens dt{font-family:var(--display);font-weight:600;color:var(--violet);font-size:1.1rem}
+.givens dd{margin:0;font-family:var(--mono);font-size:.95rem}
+.givens sup,.steps sup{font-size:.7em}
+.ans-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.ans-row input{font-family:var(--mono);font-size:1.2rem;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--void);color:var(--ink);min-width:0;width:100%}
+.seg.unit{grid-template-columns:auto auto}
+.launch-row .big{flex:3 1 0;width:auto}
+.launch-row #resetBtn{flex:1 1 auto}
+.steps{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.view:fullscreen{background:var(--space);overflow:auto;padding:16px}
+.view:fullscreen .stage{height:calc(100vh - 160px)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><ellipse cx="22" cy="22" rx="19" ry="8" fill="none" stroke="#5fd3c7" stroke-width="2" transform="rotate(-20 22 22)"/><circle cx="22" cy="22" r="9" fill="#ffc94a"/><circle cx="39" cy="16" r="3.5" fill="#ff7a6b"/></svg>
+      <div>
+        <h1>Gravity Playground</h1>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Games">
+      <button class="tab" role="tab" data-route="jump" id="tab-jump"><span class="dot" style="background:var(--coral)"></span>Planet Jump</button>
+      <button class="tab" role="tab" data-route="sandbox" id="tab-sandbox"><span class="dot" style="background:var(--sun)"></span>Space Sandbox</button>
+      <button class="tab" role="tab" data-route="lab" id="tab-lab"><span class="dot" style="background:var(--mint)"></span>Gravity Lab</button>
+      <button class="tab" role="tab" data-route="rocket" id="tab-rocket"><span class="dot" style="background:var(--violet)"></span>Rocket Escape</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- PLANET JUMP -->
+<section class="view" id="view-jump">
+  <div class="intro">
+    <div>
+      <h2>Planet Jump</h2>
+      <p>Same astronaut, same legs, same push. Pick a world and jump. The only thing that changes is gravity.</p>
+      <span class="bigidea">Big idea: your mass stays the same everywhere. Your weight depends on the world's gravity.</span>
+    </div>
+    <button class="btn ghost fs-btn" id="fs-jump">Full screen</button>
+  </div>
+  <div class="stage-grid">
+    <div class="stage"><canvas id="jumpCanvas" aria-label="Astronaut jumping on the selected world"></canvas><div class="toast" id="jumpToast"></div></div>
+    <aside class="panel">
+      <div class="group">
+        <div class="label">Pick a world</div>
+        <div class="chip-grid" id="planetGrid"></div>
+      </div>
+      <div class="group">
+        <label class="label" for="massRange">Astronaut's mass <output id="massOut">50 kg</output></label>
+        <input type="range" id="massRange" min="25" max="120" step="1" value="50">
+      </div>
+      <button class="btn primary big" id="jumpBtn">Jump!<kbd>Space</kbd></button>
+      <dl class="readouts">
+        <div><dt>Gravity</dt><dd id="rG"></dd></div>
+        <div><dt>Mass</dt><dd id="rM"></dd></div>
+        <div><dt>Weight</dt><dd id="rW"></dd></div>
+        <div><dt>Bathroom scale shows</dt><dd id="rS"></dd></div>
+        <div><dt>Jump height</dt><dd id="rH"></dd></div>
+        <div><dt>Time in the air</dt><dd id="rT"></dd></div>
+      </dl>
+      <p class="fact" id="planetFact"></p>
+      <div class="group">
+        <div class="label">Star challenge <span class="score" id="starScore"></span></div>
+        <p class="msg" id="challengeMsg">A star appears at a random height. Pick the world where your outstretched hands can reach it.</p>
+        <button class="btn" id="challengeBtn">Start star challenge</button>
+      </div>
+      <div class="group">
+        <div class="label">Jump log</div>
+        <ol class="log" id="jumpLog"></ol>
+      </div>
+    </aside>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>What to notice</h3><ul>
+      <li>The mass number never changes from world to world. Weight is the pull of gravity on that mass, so weight changes.</li>
+      <li>Same push from the legs, very different heights. Stronger gravity slows you down and pulls you back faster.</li>
+      <li>Watch the time in the air. On the Moon and Pluto the jump plays out in slow motion.</li>
+      <li>Saturn is huge, yet its gravity is close to Earth's. Size alone does not decide gravity; mass and radius both matter.</li>
+    </ul></div>
+    <div class="note"><h3>Ask the class</h3><ul>
+      <li>Before jumping on Jupiter: higher or lower than Earth? By how much?</li>
+      <li>Why does the bathroom scale give a different number when nobody's mass changed?</li>
+      <li>On which world would a basketball game be the most fun? The hardest?</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- SPACE SANDBOX -->
+<section class="view" id="view-sandbox" hidden>
+  <div class="intro">
+    <div>
+      <h2>Space Sandbox</h2>
+      <p>Drop stars, planets and moons into space and watch every object pull on every other one. Drag to throw. Try to build a system that stays together.</p>
+      <span class="bigidea">Big idea: an orbit is an object falling around another one while moving sideways fast enough to keep missing it.</span>
+    </div>
+    <button class="btn ghost fs-btn" id="fs-sandbox">Full screen</button>
+  </div>
+  <div class="stage-grid">
+    <div class="stage"><canvas id="sandCanvas" aria-label="Space sandbox"></canvas><div class="toast" id="sandToast"></div></div>
+    <aside class="panel">
+      <div class="group">
+        <div class="label">Add to space</div>
+        <div class="chip-grid" id="toolGrid"></div>
+        <p class="hint">Click to drop it. Drag to throw it: the arrow sets its starting speed and direction, and the dotted line predicts its path.</p>
+        <p class="hint">With Moon selected, a dashed ring around each planet shows its moon zone. Click inside a ring and the moon orbits that planet.</p>
+      </div>
+      <div class="group">
+        <label class="toggle"><input type="checkbox" id="sAuto" checked>Short click puts it in orbit</label>
+        <label class="toggle"><input type="checkbox" id="sLock" checked>Hold stars in place</label>
+        <label class="toggle"><input type="checkbox" id="sTrails" checked>Show trails</label>
+        <label class="toggle"><input type="checkbox" id="sArrows">Show pull arrows</label>
+      </div>
+      <div class="group">
+        <div class="label">Orbit challenge</div>
+        <p class="hint">Keep every planet and moon on screen with no crashes for 30 seconds.</p>
+        <div class="meter" id="sMeter"><i></i></div>
+        <div class="timer-row"><span id="sTime">0.0 s</span><span id="sBest">Best: 0.0 s</span></div>
+      </div>
+      <div class="group">
+        <div class="label">Ready-made systems</div>
+        <div class="btn-row">
+          <button class="btn" data-spreset="solar">Star + 3 planets</button>
+          <button class="btn" data-spreset="moon">Planet with a moon</button>
+          <button class="btn" data-spreset="binary">Two stars</button>
+          <button class="btn" data-spreset="empty">Empty space</button>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="sPlay">Pause</button>
+        <button class="btn" id="sClear">Clear all</button>
+      </div>
+    </aside>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>What to notice</h3><ul>
+      <li>Turn off <b>Short click puts it in orbit</b> and click once. With no sideways push, the planet falls straight into the star.</li>
+      <li>Throw too slowly and it crashes. Too fast and it escapes. In between, it orbits.</li>
+      <li>Closer planets move faster and finish their laps sooner.</li>
+      <li>A moon only stays with its planet inside the moon zone (dashed ring). Farther out, the star's pull wins and steals it.</li>
+      <li>Turn off <b>Hold stars in place</b>. The star wobbles too, because planets pull on stars as well.</li>
+    </ul></div>
+    <div class="note"><h3>Ask the class</h3><ul>
+      <li>Why doesn't the Moon fall into Earth if gravity is always pulling it?</li>
+      <li>What would happen to Earth if the Sun's gravity suddenly switched off?</li>
+      <li>Who can build a system with two planets and a moon that survives 30 seconds?</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- GRAVITY LAB -->
+<section class="view" id="view-lab" hidden>
+  <div class="intro">
+    <div>
+      <h2>Gravity Lab</h2>
+      <p>Drop balls of any size. Pin some in place, let others move, and watch the pulls between them. Bigger balls have more mass and pull harder.</p>
+      <span class="bigidea">Big idea: gravity grows with mass and weakens with distance. Equal pulls in opposite directions cancel out.</span>
+    </div>
+    <button class="btn ghost fs-btn" id="fs-lab">Full screen</button>
+  </div>
+  <div class="stage-grid">
+    <div class="stage"><canvas id="labCanvas" aria-label="Gravity lab with adjustable balls"></canvas><div class="toast" id="labToast"></div></div>
+    <aside class="panel">
+      <div class="group">
+        <div class="label">Experiments</div>
+        <div class="btn-row">
+          <button class="btn" data-lpreset="middle">Small ball between equals</button>
+          <button class="btn" data-lpreset="unequal">Big vs. small balance</button>
+          <button class="btn" data-lpreset="pair">Two balls pull together</button>
+          <button class="btn" data-lpreset="orbit">Ball in orbit</button>
+          <button class="btn" data-lpreset="empty">Blank lab</button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label">New ball</div>
+        <label class="label" for="newR" style="text-transform:none;letter-spacing:0;font-size:.9rem;font-weight:400">Radius <output id="newROut">24</output></label>
+        <input type="range" id="newR" min="6" max="60" step="1" value="24">
+        <div class="seg" role="group" aria-label="New ball type">
+          <button class="chip" id="newMove" aria-pressed="true">Movable</button>
+          <button class="chip" id="newFixed" aria-pressed="false">Fixed</button>
+        </div>
+        <p class="hint">Click empty space to drop a ball. Drag any ball to move it.</p>
+        <div class="legend"><span><i class="sw move"></i>Solid = movable</span><span><i class="sw fixed"></i>Bolt in the middle = fixed</span></div>
+      </div>
+      <div class="sel-box" id="selBox">
+        <div class="sel-title" id="selTitle">No ball selected</div>
+        <div id="selBody">
+          <div class="group">
+            <label class="label" for="selR" style="text-transform:none;letter-spacing:0;font-size:.9rem;font-weight:400">Radius <output id="selROut"></output></label>
+            <input type="range" id="selR" min="6" max="60" step="1" value="24">
+            <div class="seg" role="group" aria-label="Selected ball type">
+              <button class="chip" id="selMove" aria-pressed="true">Movable</button>
+              <button class="chip" id="selFixed" aria-pressed="false">Fixed</button>
+            </div>
+            <div class="pulls" id="pulls"></div>
+            <p class="verdict" id="verdict"></p>
+            <div class="btn-row">
+              <button class="btn" id="nudgeL">Nudge left</button>
+              <button class="btn" id="nudgeR">Nudge right</button>
+              <button class="btn" id="selDel">Delete</button>
+            </div>
+          </div>
+        </div>
+        <p class="hint" id="selHint">Click a ball to see every pull acting on it.</p>
+      </div>
+      <div class="group">
+        <label class="toggle"><input type="checkbox" id="lArrows" checked>Show pull arrows</label>
+        <label class="toggle"><input type="checkbox" id="lBalance" checked>Show balance point (two fixed balls)</label>
+        <label class="toggle"><input type="checkbox" id="lSnap" checked>Snap to the balance point when you let go</label>
+        <label class="label" for="snapR" style="text-transform:none;letter-spacing:0;font-size:.9rem;font-weight:400">Snap range <output id="snapROut">40 px</output></label>
+        <input type="range" id="snapR" min="10" max="120" step="5" value="40">
+        <label class="toggle"><input type="checkbox" id="lField">Show gravity field</label>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="lPlay">Pause</button>
+        <button class="btn" id="lReset">Reset experiment</button>
+      </div>
+    </aside>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>What to notice</h3><ul>
+      <li>Between two equal fixed balls, the small ball sits still. The two pulls are the same size and point in opposite directions, so they cancel.</li>
+      <li>Press <b>Nudge left</b>. Now the left ball is closer, its pull wins, and the small ball slides toward it.</li>
+      <li>With a big and a small fixed ball, the balance point moves toward the smaller ball. You have to be closer to a small mass to feel an equal pull.</li>
+      <li>In <b>Two balls pull together</b>, both balls feel the same size pull, but the lighter ball speeds up more.</li>
+    </ul></div>
+    <div class="note"><h3>Ask the class</h3><ul>
+      <li>Where is the balance point between Earth and the Moon? (About 90% of the way to the Moon.)</li>
+      <li>If you double the distance between two balls, what happens to the pull? Use the numbers to check.</li>
+      <li>Can you place three fixed balls so a small ball floats in balance between all of them?</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ROCKET ESCAPE -->
+<section class="view" id="view-rocket" hidden>
+  <div class="intro">
+    <div>
+      <h2>Rocket Escape</h2>
+      <p>Your rocket gets one big push at launch, then the engine shuts off and it coasts. Use the formula to work out the escape velocity. Too slow and gravity pulls it back down. Just right and it drifts away and never returns. Faster than that and it races off into space.</p>
+      <span class="bigidea">Big idea: escape velocity is the launch speed needed to coast away from a world and never fall back.</span>
+    </div>
+    <button class="btn ghost fs-btn" id="fs-rocket">Full screen</button>
+  </div>
+  <div class="stage-grid">
+    <div class="stage"><canvas id="rocketCanvas" aria-label="Rocket launch from the selected world"></canvas><div class="toast" id="rocketToast"></div></div>
+    <aside class="panel">
+      <div class="group">
+        <div class="label">Pick a world <span class="score" id="rScore"></span></div>
+        <div class="chip-grid" id="worldGrid"></div>
+      </div>
+      <div class="formula">
+        <div class="eq">v<sub>esc</sub> = √(2GM ÷ R)</div>
+        <dl class="givens">
+          <div><dt>G</dt><dd id="gG"></dd></div>
+          <div><dt>M</dt><dd id="gM"></dd></div>
+          <div><dt>R</dt><dd id="gR"></dd></div>
+        </dl>
+        <p class="hint">G is the gravitational constant, M is the mass of <span id="rWorldName"></span>, and R is its radius.</p>
+      </div>
+      <div class="group">
+        <label class="label" for="vAns">Your launch speed</label>
+        <div class="ans-row">
+          <input id="vAns" type="text" inputmode="decimal" placeholder="Your answer" autocomplete="off">
+          <div class="seg unit" role="group" aria-label="Unit">
+            <button class="chip" id="uKm" aria-pressed="true">km/s</button>
+            <button class="chip" id="uM" aria-pressed="false">m/s</button>
+          </div>
+        </div>
+        <div class="btn-row launch-row">
+          <button class="btn primary big" id="launchBtn">Launch!</button>
+          <button class="btn" id="resetBtn">Reset</button>
+        </div>
+        <p class="msg" id="rMsg"></p>
+      </div>
+      <dl class="readouts">
+        <div><dt>Speed now</dt><dd id="rv">0 km/s</dd></div>
+        <div><dt>Distance to planet</dt><dd id="ralt">0 km</dd></div>
+        <div><dt>Gravity here</dt><dd id="rgrav">100% of surface</dd></div>
+        <div><dt>Mission clock</dt><dd id="rclock">T+ 00:00</dd></div>
+        <div><dt>Engine</dt><dd id="reng">Ready</dd></div>
+      </dl>
+      <div class="group">
+        <div class="label">Stuck?</div>
+        <ol class="steps" id="hintSteps"></ol>
+        <div class="btn-row">
+          <button class="btn" id="hintBtn">Show a hint</button>
+          <button class="btn" id="ansBtn">Show answer</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>What to notice</h3><ul>
+      <li>The engine only fires at launch. After that the rocket coasts, and gravity slows it the whole way up. Watch the speed readout drop.</li>
+      <li>The rocket's own mass is not in the formula. A pebble and a spaceship need the same escape velocity.</li>
+      <li>More mass M means a higher escape velocity. A bigger radius R means a lower one, because you start farther from the center.</li>
+      <li>As the rocket climbs, the planet shrinks behind it and its gravity fades. At twice the distance from the center, gravity is only a quarter as strong.</li>
+      <li>Answers within 1.5% of the true value count as a perfect escape.</li>
+      <li>This game gives the rocket all its speed in one launch boost and ignores air resistance. Real rockets build up speed over several minutes, but the energy needed to escape is the same.</li>
+    </ul></div>
+    <div class="note"><h3>Ask the class</h3><ul>
+      <li>Why doesn't a heavier rocket need a bigger launch speed?</li>
+      <li>Which world is easiest to escape from? Which is hardest? Predict before you calculate.</li>
+      <li>Real rockets keep their engines burning instead of leaving the ground at 11 km/s. Why might that be? (Think about air.)</li>
+    </ul></div>
+  </div>
+</section>
+</main>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const TAU = Math.PI * 2;
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- shared helpers ---------- */
+function makeCanvas(canvas, onResize) {
+  const ctx = canvas.getContext('2d');
+  const st = { ctx, w: 0, h: 0, dpr: 1 };
+  const ro = new ResizeObserver(() => {
+    const r = canvas.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    const ow = st.w, oh = st.h;
+    st.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    st.w = r.width; st.h = r.height;
+    canvas.width = Math.round(st.w * st.dpr); canvas.height = Math.round(st.h * st.dpr);
+    ctx.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
+    if (onResize) onResize(ow, oh, st.w, st.h);
+  });
+  ro.observe(canvas);
+  return st;
+}
+function pos(canvas, e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function makeStars(n) { const a = []; for (let i = 0; i < n; i++) a.push({ x: Math.random(), y: Math.random(), r: Math.random() * 1.3 + 0.3, p: Math.random() * TAU }); return a; }
+function drawStars(ctx, stars, w, h, t, alpha) {
+  if (alpha <= 0) return;
+  ctx.fillStyle = '#ffffff';
+  for (const s of stars) {
+    const tw = reduceMotion ? 0.8 : 0.6 + 0.4 * Math.sin(t * 1.5 + s.p);
+    ctx.globalAlpha = alpha * tw;
+    ctx.beginPath(); ctx.arc(s.x * w, s.y * h, s.r, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w, head) {
+  w = w || 3; head = head || 10;
+  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+  if (L < 2) return;
+  const ux = dx / L, uy = dy / L, hh = Math.min(head, L * 0.7);
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * hh * 0.6, y2 - uy * hh * 0.6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - ux * hh - uy * hh * 0.55, y2 - uy * hh + ux * hh * 0.55);
+  ctx.lineTo(x2 - ux * hh + uy * hh * 0.55, y2 - uy * hh - ux * hh * 0.55);
+  ctx.closePath(); ctx.fill();
+}
+function rr(ctx, x, y, w, h, r, fill, stroke, lw) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+function toast(el, text, ms) {
+  el.textContent = text; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), ms || 2200);
+}
+const FONT_D = '"Fredoka","Trebuchet MS",system-ui,sans-serif';
+const FONT_M = '"JetBrains Mono",ui-monospace,Menlo,monospace';
+
+/* ======================================================
+   GAME 1: PLANET JUMP
+   ====================================================== */
+const PLANETS = [
+  { name: 'Mercury', g: 3.70, ground: '#8d8379', ground2: '#6f665e', sky: ['#05070f', '#1b1a2b'], starA: 1, solid: true, fact: 'The smallest planet and closest to the Sun. Low mass means weak gravity.' },
+  { name: 'Venus', g: 8.87, ground: '#c98a3d', ground2: '#9e6a2c', sky: ['#4a2a12', '#d39a4f'], starA: 0, solid: true, fact: 'Almost the same size and mass as Earth, so gravity feels nearly normal. The 465 °C heat would not.' },
+  { name: 'Earth', g: 9.81, ground: '#4f9a5a', ground2: '#3c7a45', sky: ['#173a7a', '#7cb8ff'], starA: 0, solid: true, fact: 'Our baseline. Every other world is compared to this 9.81 m/s² pull.' },
+  { name: 'Moon', g: 1.62, ground: '#b9b9c2', ground2: '#8e8e99', sky: ['#020308', '#121524'], starA: 1, solid: true, fact: 'About 1/6 of Earth\'s gravity. Apollo astronauts found it easier to hop than walk.' },
+  { name: 'Mars', g: 3.71, ground: '#c1583a', ground2: '#9a4229', sky: ['#3a1d1a', '#c98b6b'], starA: 0.25, solid: true, fact: 'About 3/8 of Earth\'s gravity. Nearly the same as Mercury, even though Mars is bigger.' },
+  { name: 'Jupiter', g: 24.79, ground: '#c9a27a', ground2: '#a07a55', sky: ['#3d2a1e', '#d6b58e'], starA: 0.15, solid: false, fact: 'The most massive planet, with 2.5 times Earth\'s gravity. It has no solid ground, so imagine a floating platform.' },
+  { name: 'Saturn', g: 10.44, ground: '#d8c48f', ground2: '#b5a06b', sky: ['#2d2617', '#e3d3a3'], starA: 0.2, solid: false, fact: 'Saturn has 95 times Earth\'s mass, but it is so wide that the pull at its cloud tops is close to Earth\'s.' },
+  { name: 'Uranus', g: 8.69, ground: '#86d3d8', ground2: '#5fb0b6', sky: ['#0f2d3a', '#9fe3e8'], starA: 0.3, solid: false, fact: 'An ice giant that spins tipped on its side. Gravity is a little weaker than Earth\'s.' },
+  { name: 'Neptune', g: 11.15, ground: '#4a6fd8', ground2: '#3655ad', sky: ['#0a1440', '#4b6fd6'], starA: 0.4, solid: false, fact: 'The windiest planet. Gravity is a bit stronger than Earth\'s.' },
+  { name: 'Pluto', g: 0.62, ground: '#d9c2a8', ground2: '#b39c83', sky: ['#020308', '#0d0f1d'], starA: 1, solid: true, fact: 'A dwarf planet with only 6% of Earth\'s gravity. One jump lasts about 10 seconds.' }
+];
+const V0 = 3.13, REACH = 2.0;
+const jumpHeight = g => V0 * V0 / (2 * g);
+const hangTime = g => 2 * V0 / g;
+const J = { i: 2, mass: 50, jumping: false, prep: 0, landT: 0, dust: [], t: 0, h: 0, peak: null, challenge: false, starH: null, points: 0, tries: 0, log: {}, time: 0, sparkle: 0, starfield: makeStars(110), lock: false };
+// how far each world is from the Sun (sets the Sun's size in its sky) and how much air slows dust
+const SUN_AU = { Mercury: 0.39, Venus: 0.72, Earth: 1, Moon: 1, Mars: 1.52, Jupiter: 5.2, Saturn: 9.5, Uranus: 19.2, Neptune: 30.1, Pluto: 39.5 };
+const DUST_DRAG = { Earth: 8, Venus: 25, Mars: 1.5 };
+const JC = $('#jumpCanvas');
+const JS = makeCanvas(JC);
+const jumpToast = $('#jumpToast');
+
+const planetGrid = $('#planetGrid');
+PLANETS.forEach((p, i) => {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.type = 'button';
+  b.innerHTML = '<span class="dot" style="background:' + p.ground + '"></span>' + p.name;
+  b.addEventListener('click', () => selectPlanet(i));
+  planetGrid.appendChild(b);
+});
+function selectPlanet(i) {
+  if (J.jumping || J.prep > 0) return;
+  J.i = i; J.peak = null; J.h = 0; J.dust = []; J.landT = 0;
+  updateJumpUI();
+}
+function updateJumpUI() {
+  const p = PLANETS[J.i];
+  [...planetGrid.children].forEach((b, k) => { b.setAttribute('aria-pressed', k === J.i ? 'true' : 'false'); b.disabled = J.jumping && k !== J.i; });
+  $('#massOut').textContent = J.mass + ' kg';
+  $('#rG').textContent = p.g.toFixed(2) + ' m/s² (' + (p.g / 9.81).toFixed(2) + '× Earth)';
+  $('#rM').textContent = J.mass + ' kg';
+  $('#rW').textContent = Math.round(J.mass * p.g) + ' N';
+  $('#rS').textContent = Math.round(J.mass * p.g / 9.81 * 2.20462) + ' lb';
+  const known = J.log[p.name] != null;
+  const rH = $('#rH'), rT = $('#rT');
+  rH.textContent = known ? jumpHeight(p.g).toFixed(2) + ' m' : 'Jump to find out';
+  rT.textContent = known ? hangTime(p.g).toFixed(2) + ' s' : 'Jump to find out';
+  rH.className = known ? '' : 'wait'; rT.className = known ? '' : 'wait';
+  $('#planetFact').innerHTML = '<b>' + p.name + ':</b> ' + p.fact;
+  $('#starScore').textContent = J.challenge ? 'Points: ' + J.points + ' · Jumps: ' + J.tries : '';
+  $('#jumpBtn').disabled = J.jumping || J.prep > 0;
+}
+$('#massRange').addEventListener('input', e => { J.mass = +e.target.value; updateJumpUI(); });
+$('#jumpBtn').addEventListener('click', startJump);
+function startJump() {
+  if (J.jumping || J.prep > 0 || J.lock) return;
+  J.prep = 0.18; J.peak = null; J.landT = 0;
+  if (J.challenge) J.tries++;
+  updateJumpUI();
+}
+function renderLog() {
+  const ol = $('#jumpLog'); ol.innerHTML = '';
+  const done = PLANETS.filter(p => J.log[p.name] != null);
+  if (!done.length) { ol.innerHTML = '<li class="empty" style="display:block">No jumps yet. Start on Earth, then try another world.</li>'; return; }
+  done.forEach(p => {
+    const h = J.log[p.name];
+    const li = document.createElement('li');
+    li.innerHTML = '<span>' + p.name + '</span><span class="bar"><i style="width:' + Math.max(2, Math.min(100, h / 8 * 100)) + '%;background:' + p.ground + '"></i></span><span class="v">' + h.toFixed(2) + ' m</span>';
+    ol.appendChild(li);
+  });
+}
+function newStar() {
+  // pick a height reachable by at least one world, spread across the range
+  J.starH = Math.round((2.6 + Math.random() * 7.2) * 10) / 10;
+  const msg = $('#challengeMsg');
+  msg.className = 'msg';
+  msg.textContent = 'The star is ' + J.starH.toFixed(1) + ' m up. Your hands reach 2.0 m above your feet. Pick a world, then jump!';
+  J.lock = false;
+}
+$('#challengeBtn').addEventListener('click', () => {
+  J.challenge = !J.challenge;
+  if (J.challenge) { J.points = 0; J.tries = 0; newStar(); $('#challengeBtn').textContent = 'End challenge'; }
+  else { J.starH = null; J.lock = false; $('#challengeBtn').textContent = 'Start star challenge'; const m = $('#challengeMsg'); m.className = 'msg'; m.textContent = 'Final score: ' + J.points + ' points in ' + J.tries + ' jumps. Start again any time.'; }
+  updateJumpUI();
+});
+function landed() {
+  const p = PLANETS[J.i];
+  const H = jumpHeight(p.g);
+  J.peak = H; J.log[p.name] = H; J.h = 0;
+  renderLog();
+  if (J.challenge && J.starH != null) {
+    const msg = $('#challengeMsg');
+    if (H + REACH >= J.starH - 0.12) {
+      let best = null;
+      PLANETS.forEach(q => { if (jumpHeight(q.g) + REACH >= J.starH - 0.12 && (!best || q.g > best.g)) best = q; });
+      J.sparkle = 1;
+      if (best === p) { J.points += 2; msg.className = 'msg good'; msg.textContent = 'Perfect pick! ' + p.name + ' is the strongest-gravity world that still reaches it. +2 points.'; toast(jumpToast, 'Perfect pick! +2'); }
+      else { J.points += 1; msg.className = 'msg good'; msg.textContent = 'Got it! +1 point. For a perfect pick, find the world with the strongest gravity that still reaches (try ' + best.name + ').'; toast(jumpToast, 'Star collected! +1'); }
+      J.lock = true;
+      setTimeout(() => { if (J.challenge) newStar(); }, 1600);
+    } else {
+      const miss = J.starH - (H + REACH);
+      msg.className = 'msg bad';
+      msg.textContent = 'Missed by ' + miss.toFixed(2) + ' m on ' + p.name + '. You need a world with weaker gravity.';
+    }
+  }
+  updateJumpUI();
+}
+function tickJump(dt) {
+  J.time += dt;
+  const P = PLANETS[J.i];
+  if (J.prep > 0) {
+    J.prep -= dt;
+    if (J.prep <= 0) { J.prep = 0; J.jumping = true; J.t = 0; kickDust(10, 1); updateJumpUI(); }
+  }
+  if (J.jumping) {
+    J.t += dt;
+    if (J.t >= hangTime(P.g)) { J.jumping = false; J.landT = 0.22; kickDust(16, 1.3); landed(); }
+    else J.h = V0 * J.t - P.g * J.t * J.t / 2;
+  }
+  if (J.landT > 0) J.landT = Math.max(0, J.landT - dt);
+  // dust falls on the same gravity as the astronaut; air (if any) slows it down
+  const k = DUST_DRAG[P.name] || 0;
+  for (const d of J.dust) {
+    d.life += dt;
+    if (d.y <= 0 && d.vy <= 0) { d.rest = (d.rest || 0) + dt; continue; }
+    if (k) { const e = Math.exp(-k * dt); d.vx *= e; d.vy = d.vy * e - P.g / k * (1 - e); }
+    else d.vy -= P.g * dt;
+    d.x += d.vx * dt; d.y += d.vy * dt;
+    if (d.y < 0) { d.y = 0; d.vy = 0; d.vx = 0; }
+  }
+  J.dust = J.dust.filter(d => d.life < 14 && (d.rest || 0) < 0.7);
+  if (J.sparkle > 0) J.sparkle = Math.max(0, J.sparkle - dt * 0.8);
+  drawJump();
+}
+function kickDust(n, power) {
+  const P = PLANETS[J.i]; if (!P.solid) return;
+  for (let k = 0; k < n; k++) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    J.dust.push({ x: side * (0.08 + Math.random() * 0.15), y: 0.02, vx: side * (0.4 + Math.random() * 1.5) * power, vy: (0.5 + Math.random() * 1.6) * power, life: 0, r: 0.02 + Math.random() * 0.03 });
+  }
+}
+function drawStarShape(ctx, x, y, R, rot, fill) {
+  ctx.beginPath();
+  for (let k = 0; k < 10; k++) { const r = k % 2 ? R * 0.45 : R; const a = rot + k * Math.PI / 5 - Math.PI / 2; ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+  ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+function drawAstronaut(ctx, x, f, s, air, bend) {
+  bend = bend || 0;
+  const lw = Math.max(1.5, s * 0.045);
+  const suit = '#f3f5ff', edge = '#1a2350';
+  const drop = 0.18 * bend * s;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const limb = (pts, width, col) => {
+    for (const [wd, c] of [[width + lw * 2, edge], [width, col]]) {
+      ctx.strokeStyle = c; ctx.lineWidth = wd;
+      ctx.beginPath(); pts.forEach((q, k) => k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke();
+    }
+  };
+  // life-support backpack peeking out behind the body
+  rr(ctx, x - 0.34 * s, f - 1.44 * s + drop, 0.68 * s, 0.56 * s, 0.08 * s, '#b9c0db', edge, lw);
+  // legs bend at the knee when crouching to jump and when landing
+  const hipY = f - 0.8 * s + drop;
+  [-1, 1].forEach(sd => {
+    const hx = x + sd * 0.11 * s, fy = f - 0.1 * s;
+    const kx = hx + sd * (0.02 + 0.13 * bend) * s, ky = (hipY + fy) / 2;
+    limb([[hx, hipY], [kx, ky], [hx, fy]], 0.17 * s, suit);
+    rr(ctx, hx - 0.12 * s, f - 0.13 * s, 0.24 * s, 0.13 * s, 0.04 * s, '#5d6690', edge, lw);
+  });
+  const tg = ctx.createLinearGradient(x - 0.25 * s, 0, x + 0.25 * s, 0); tg.addColorStop(0, '#ffffff'); tg.addColorStop(1, '#c9cfe8');
+  rr(ctx, x - 0.25 * s, f - 1.42 * s + drop, 0.5 * s, 0.66 * s, 0.12 * s, tg, edge, lw);
+  rr(ctx, x - 0.12 * s, f - 1.26 * s + drop, 0.24 * s, 0.14 * s, 0.03 * s, '#d9dceb', edge, lw * 0.6);
+  ctx.fillStyle = '#ff7a6b'; ctx.fillRect(x - 0.08 * s, f - 1.22 * s + drop, 0.05 * s, 0.05 * s);
+  ctx.fillStyle = '#5fd3c7'; ctx.fillRect(x + 0.02 * s, f - 1.22 * s + drop, 0.05 * s, 0.05 * s);
+  ctx.beginPath(); ctx.arc(x - 0.15 * s, f - 1.0 * s + drop, 0.05 * s, 0, TAU); ctx.fillStyle = '#a596ff'; ctx.fill();
+  const sy = f - 1.32 * s + drop;
+  const hands = air ? [[x - 0.3 * s, f - REACH * s], [x + 0.3 * s, f - REACH * s]]
+    : [[x - (0.4 + 0.06 * bend) * s, f - 0.8 * s + drop], [x + (0.4 + 0.06 * bend) * s, f - 0.8 * s + drop]];
+  [[x - 0.24 * s, hands[0], -1], [x + 0.24 * s, hands[1], 1]].forEach(([sx, hnd, sd]) => {
+    const ex = (sx + hnd[0]) / 2 + sd * 0.06 * s, ey = (sy + hnd[1]) / 2;
+    limb([[sx, sy], [ex, ey], hnd], 0.15 * s, suit);
+    ctx.beginPath(); ctx.arc(hnd[0], hnd[1], 0.08 * s, 0, TAU); ctx.fillStyle = '#5d6690'; ctx.fill(); ctx.strokeStyle = edge; ctx.lineWidth = lw; ctx.stroke();
+  });
+  // helmet with a gold sun visor
+  const hy = f - 1.63 * s + drop;
+  ctx.beginPath(); ctx.arc(x, hy, 0.22 * s, 0, TAU); ctx.fillStyle = suit; ctx.fill(); ctx.strokeStyle = edge; ctx.lineWidth = lw; ctx.stroke();
+  const vg = ctx.createLinearGradient(x - 0.15 * s, hy - 0.1 * s, x + 0.15 * s, hy + 0.1 * s);
+  vg.addColorStop(0, '#ffe7a0'); vg.addColorStop(0.5, '#d99a3a'); vg.addColorStop(1, '#7a4a1a');
+  ctx.beginPath(); ctx.ellipse(x, hy + 0.01 * s, 0.16 * s, 0.12 * s, 0, 0, TAU); ctx.fillStyle = vg; ctx.fill(); ctx.lineWidth = lw * 0.8; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse(x - 0.06 * s, hy - 0.04 * s, 0.05 * s, 0.025 * s, -0.5, 0, TAU); ctx.fill();
+}
+const JT = {};
+function jumpTerrain(i) {
+  if (JT[i]) return JT[i];
+  const rnd = seeded(i * 97 + 5);
+  const wave = n => Array.from({ length: n }, (_, k) => ({ f: (k + 1) * (0.6 + rnd() * 0.9), p: rnd() * TAU, a: 1 / (k + 1) }));
+  return (JT[i] = {
+    far: wave(5), mid: wave(4),
+    rocks: Array.from({ length: 24 }, () => ({ x: rnd(), y: rnd(), r: 0.05 + rnd() * 0.16, sx: 1 + rnd() * 0.8 })),
+    craters: Array.from({ length: 5 }, () => ({ x: rnd(), y: rnd(), r: 0.5 + rnd() * 1.5 })),
+    clouds: Array.from({ length: 30 }, () => ({ x: rnd(), y: rnd(), r: 0.06 + rnd() * 0.12 }))
+  });
+}
+function ridge(ctx, w, baseY, amp, waves, scale, color) {
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(-4, baseY + 2);
+  for (let x = -4; x <= w + 8; x += 6) {
+    let n = 0; for (const q of waves) n += q.a * Math.sin(x / w * q.f * scale + q.p);
+    ctx.lineTo(x, baseY - amp * (0.55 + 0.32 * n));
+  }
+  ctx.lineTo(w + 8, baseY + 2); ctx.closePath(); ctx.fill();
+}
+function mixHex(a, b, t) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const c = k => Math.round(((pa >> k) & 255) * (1 - t) + ((pb >> k) & 255) * t);
+  return 'rgb(' + c(16) + ',' + c(8) + ',' + c(0) + ')';
+}
+function drawMiniWorld(ctx, x, y, r, base, spots) {
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
+  ctx.fillStyle = base; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  const rnd = seeded(Math.round(r * 13) + 7);
+  for (let k = 0; k < 8; k++) {
+    ctx.globalAlpha = 0.85; ctx.fillStyle = spots[k % spots.length];
+    ctx.beginPath(); ctx.ellipse(x + (rnd() - 0.5) * 1.4 * r, y + (rnd() - 0.5) * 1.4 * r, r * (0.15 + rnd() * 0.25), r * (0.08 + rnd() * 0.14), rnd() * 3, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const g = ctx.createLinearGradient(x + r, y, x - r, y);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.45, 'rgba(0,0,0,.1)'); g.addColorStop(0.7, 'rgba(0,0,8,.88)');
+  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  ctx.restore();
+}
+function drawJump() {
+  const { ctx, w, h } = JS; if (!w) return;
+  const p = PLANETS[J.i], T = jumpTerrain(J.i);
+  const hasAir = !!DUST_DRAG[p.name] || !p.solid;
+  const sky = ctx.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, p.sky[0]); sky.addColorStop(1, p.sky[1]);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+  drawStars(ctx, J.starfield, w, h * 0.85, J.time, p.starA);
+  const groundY = h - Math.max(50, h * 0.11);
+  const ppm = (groundY - 36) / 10;
+  const rx = Math.max(44, w * 0.07);
+  const cx = Math.max(rx + 120, w * 0.5);
+  // the Sun looks smaller the farther a world is from it
+  const sunX = w * 0.66, sunY = h * 0.17, au = SUN_AU[p.name] || 1;
+  if (p.name === 'Venus') {
+    const vg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, h * 0.35);
+    vg.addColorStop(0, 'rgba(255,240,200,.55)'); vg.addColorStop(1, 'rgba(255,240,200,0)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, w, h);
+  } else {
+    const sr = Math.max(1.3, 15 / au), gr = sr * (hasAir ? 7 : 4) + 6;
+    const gl = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, gr);
+    gl.addColorStop(0, 'rgba(255,244,214,.8)'); gl.addColorStop(1, 'rgba(255,244,214,0)');
+    ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(sunX, sunY, gr, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#fff8e4'; ctx.beginPath(); ctx.arc(sunX, sunY, sr, 0, TAU); ctx.fill();
+  }
+  if (p.name === 'Moon') drawMiniWorld(ctx, w * 0.3, h * 0.2, Math.max(10, h * 0.035), '#2f6fb8', ['#4f8a4a', '#ffffff', '#ffffff']);
+  if (p.name === 'Pluto') drawMiniWorld(ctx, w * 0.3, h * 0.22, Math.max(14, h * 0.05), '#9a958f', ['#6f6a66', '#b9b4ad']);
+  if (p.name === 'Saturn') {
+    ctx.save(); ctx.globalAlpha = 0.5;
+    ['#efe2c0', '#d8c69a', '#f5ebd2', '#c9b688'].forEach((c, k) => { ctx.strokeStyle = c; ctx.lineWidth = 3 + k * 1.5; ctx.beginPath(); ctx.ellipse(w * 0.5, h * 1.3, w * (0.9 + k * 0.05), h * (1.0 + k * 0.05), 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke(); });
+    ctx.restore();
+  }
+  if (p.solid) {
+    ridge(ctx, w, groundY, h * 0.2, T.far, 6, mixHex(p.ground2, p.sky[1], hasAir ? 0.55 : 0.2));
+    ridge(ctx, w, groundY, h * 0.08, T.mid, 10, mixHex(p.ground, p.ground2, 0.6));
+    const gg = ctx.createLinearGradient(0, groundY, 0, h); gg.addColorStop(0, p.ground); gg.addColorStop(1, p.ground2);
+    ctx.fillStyle = gg; ctx.fillRect(0, groundY, w, h - groundY);
+    for (const c of T.craters) {
+      const yy = groundY + 6 + c.y * (h - groundY - 10), d = 0.4 + 0.6 * c.y, rr2 = c.r * ppm * d;
+      ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(c.x * w, yy, rr2, rr2 * 0.18, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(c.x * w, yy + 1, rr2, rr2 * 0.18, 0, 0.1, Math.PI - 0.1); ctx.stroke();
+    }
+    const hi = mixHex(p.ground, '#ffffff', 0.22);
+    for (const r of T.rocks) {
+      const yy = groundY + 3 + r.y * (h - groundY - 6), d = 0.4 + 0.6 * r.y, rs = r.r * ppm * d, xx = r.x * w;
+      if (Math.abs(xx - cx) < 0.45 * ppm) continue;
+      ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(xx + rs * 0.35, yy + rs * 0.12, rs * r.sx, rs * 0.3, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = p.ground2; ctx.beginPath(); ctx.ellipse(xx, yy - rs * 0.25, rs * r.sx, rs * 0.55, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = hi; ctx.beginPath(); ctx.ellipse(xx + rs * 0.2, yy - rs * 0.45, rs * r.sx * 0.5, rs * 0.22, 0, 0, TAU); ctx.fill();
+    }
+  } else {
+    ridge(ctx, w, groundY + 6, h * 0.06, T.mid, 14, mixHex(p.ground, p.sky[1], 0.5));
+    const gg = ctx.createLinearGradient(0, groundY, 0, h); gg.addColorStop(0, p.ground); gg.addColorStop(1, p.ground2);
+    ctx.fillStyle = gg; ctx.fillRect(0, groundY + 4, w, h - groundY);
+    const cols = [p.ground, p.ground2, mixHex(p.ground, '#ffffff', 0.35)];
+    T.clouds.forEach((c, k) => { ctx.globalAlpha = 0.7; ctx.fillStyle = cols[k % 3]; ctx.beginPath(); ctx.arc(c.x * w, groundY + 10 + c.y * (h - groundY), c.r * h * 0.45, 0, TAU); ctx.fill(); });
+    ctx.globalAlpha = 1;
+    // floating research platform
+    const pw = Math.max(70, 2.2 * ppm);
+    ctx.strokeStyle = '#3a3f5c'; ctx.lineWidth = 3;
+    for (const sx of [-0.7, -0.2, 0.3, 0.8]) { ctx.beginPath(); ctx.moveTo(cx + sx * pw, groundY + 6); ctx.lineTo(cx + sx * pw * 1.2, h); ctx.stroke(); }
+    const tg = ctx.createRadialGradient(cx, groundY + 14, 0, cx, groundY + 14, pw * 0.6);
+    tg.addColorStop(0, 'rgba(124,184,255,.55)'); tg.addColorStop(1, 'rgba(124,184,255,0)');
+    ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(cx, groundY + 14, pw * 0.6, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#8a90ad'; ctx.lineWidth = 2;
+    for (const sx of [-1, 1]) { ctx.beginPath(); ctx.moveTo(cx + sx * (pw - 6), groundY); ctx.lineTo(cx + sx * (pw - 6), groundY - 1.0 * ppm); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(cx - pw + 6, groundY - 1.0 * ppm); ctx.lineTo(cx + pw - 6, groundY - 1.0 * ppm); ctx.stroke();
+    rr(ctx, cx - pw, groundY - 2, 2 * pw, 9, 3, '#59607e', '#2a2f48', 1);
+    ctx.font = '600 12px ' + FONT_D; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('floating platform (no solid ground)', cx, groundY + 14);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fillRect(0, groundY, w, 1.5);
+  // ruler
+  ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(rx, groundY); ctx.lineTo(rx, groundY - 10 * ppm); ctx.stroke();
+  ctx.font = '500 12px ' + FONT_M; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let m = 0; m <= 10; m += 0.5) {
+    const y = groundY - m * ppm; const major = m % 1 === 0;
+    ctx.beginPath(); ctx.moveTo(rx, y); ctx.lineTo(rx + (major ? 12 : 6), y); ctx.stroke();
+    if (major) { ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillText(m + ' m', rx - 6, y); }
+  }
+  if (p.name !== 'Earth') {
+    const ey = groundY - jumpHeight(9.81) * ppm;
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(124,184,255,.85)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(rx, ey); ctx.lineTo(w - 16, ey); ctx.stroke(); ctx.setLineDash([]);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.font = '600 12px ' + FONT_D; ctx.fillStyle = 'rgba(160,205,255,.95)';
+    ctx.fillText('Earth jump: 0.50 m', w - 16, ey - 4);
+  }
+  if (J.peak != null) {
+    const py = groundY - J.peak * ppm;
+    ctx.setLineDash([10, 6]); ctx.strokeStyle = '#ffc94a'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(rx, py); ctx.lineTo(w - 16, py); ctx.stroke(); ctx.setLineDash([]);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.font = '700 15px ' + FONT_D; ctx.fillStyle = '#ffc94a';
+    ctx.fillText('Feet reached ' + J.peak.toFixed(2) + ' m', rx + 18, py - 5);
+  }
+  if (J.challenge && J.starH != null) {
+    const sy = groundY - J.starH * ppm, R = Math.max(12, ppm * 0.3);
+    ctx.save(); ctx.shadowColor = '#ffc94a'; ctx.shadowBlur = 20;
+    drawStarShape(ctx, cx, sy, R, reduceMotion ? 0 : J.time * 0.8, '#ffd96b'); ctx.restore();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = '700 14px ' + FONT_D; ctx.fillStyle = '#ffe9a8';
+    ctx.fillText(J.starH.toFixed(1) + ' m', cx + R + 8, sy);
+    if (J.sparkle > 0) { ctx.strokeStyle = 'rgba(255,217,107,' + J.sparkle + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, sy, R + (1 - J.sparkle) * 60, 0, TAU); ctx.stroke(); }
+  }
+  // shadow on the ground, then dust, then the astronaut
+  const feetY = groundY - J.h * ppm;
+  const sh = 1 / (1 + J.h * 0.6);
+  ctx.fillStyle = 'rgba(0,0,0,' + (0.32 * sh) + ')';
+  ctx.beginPath(); ctx.ellipse(cx + J.h * 0.08 * ppm, groundY + 3, 0.45 * ppm * sh + 6, 4, 0, 0, TAU); ctx.fill();
+  const dustCol = mixHex(p.ground, '#ffffff', 0.3);
+  for (const d of J.dust) {
+    ctx.globalAlpha = Math.max(0, 0.85 - (d.rest || 0) * 1.2); ctx.fillStyle = dustCol;
+    ctx.beginPath(); ctx.arc(cx + d.x * ppm, groundY - d.y * ppm, Math.max(1.2, d.r * ppm), 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  let bend = 0;
+  if (J.prep > 0) bend = Math.sin((1 - J.prep / 0.18) * Math.PI / 2);
+  else if (J.landT > 0) bend = Math.sin(J.landT / 0.22 * Math.PI / 2);
+  drawAstronaut(ctx, cx, feetY, ppm, J.jumping, bend);
+  // heads-up text
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.font = '700 28px ' + FONT_D; ctx.fillStyle = '#ffffff';
+  ctx.fillText(p.name, w - 18, 14);
+  ctx.font = '500 14px ' + FONT_M; ctx.fillStyle = 'rgba(255,255,255,.85)';
+  ctx.fillText('g = ' + p.g.toFixed(2) + ' m/s²', w - 18, 48);
+  if (J.jumping) ctx.fillText('time ' + J.t.toFixed(1) + ' s', w - 18, 68);
+}
+window.addEventListener('keydown', e => {
+  if (route !== 'jump') return;
+  if (e.code === 'Space' && !(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON'))) { e.preventDefault(); startJump(); }
+});
+JC.addEventListener('pointerdown', startJump);
+
+/* ======================================================
+   GAME 2: SPACE SANDBOX
+   ====================================================== */
+const SG = 250, SEPS = 4;
+const TYPES = {
+  star: { m: 8000, r: 22, color: '#ffc94a', label: 'Star' },
+  planet: { m: 150, r: 9, color: '#5fd3c7', label: 'Planet' },
+  moon: { m: 4, r: 4, color: '#d9dcf0', label: 'Moon' },
+  asteroid: { m: 0.5, r: 3, color: '#ff7a6b', label: 'Asteroid' }
+};
+const PLANET_COLORS = ['#5fd3c7', '#7cb8ff', '#a596ff', '#9fe08a', '#ff9f6b'];
+const S = { bodies: [], tool: 'planet', auto: true, lock: true, trails: true, arrows: false, running: true, drag: null, preview: null, timer: 0, best: 0, celebrated: false, flashes: [], debris: [], neb: null, time: 0, pc: 0, starfield: makeStars(160), uiT: 0, prevT: 0 };
+const SC = $('#sandCanvas');
+const sandToast = $('#sandToast');
+const SS = makeCanvas(SC, (ow, oh, w, h) => {
+  S.neb = makeNebula(w, h);
+  if (!ow) { sandPreset('solar'); return; }
+  const dx = (w - ow) / 2, dy = (h - oh) / 2;
+  S.bodies.forEach(b => { b.x += dx; b.y += dy; b.trail = []; });
+});
+function mkBody(type, x, y, vx, vy, over) {
+  const t = TYPES[type];
+  let color = t.color;
+  if (type === 'planet') color = PLANET_COLORS[S.pc++ % PLANET_COLORS.length];
+  return Object.assign({ type, x, y, vx, vy, m: t.m, r: t.r, color, trail: [], off: false, locked: type === 'star' && S.lock, ax: 0, ay: 0 }, over || {});
+}
+function computeAcc(arr, G, eps) {
+  for (const b of arr) { b.ax = 0; b.ay = 0; }
+  const e2 = eps * eps;
+  for (let i = 0; i < arr.length; i++) {
+    const a = arr[i];
+    for (let j = i + 1; j < arr.length; j++) {
+      const b = arr[j];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d2 = dx * dx + dy * dy + e2, inv = 1 / (d2 * Math.sqrt(d2));
+      a.ax += G * b.m * dx * inv; a.ay += G * b.m * dy * inv;
+      b.ax -= G * a.m * dx * inv; b.ay -= G * a.m * dy * inv;
+    }
+  }
+}
+function integrate(arr, dt) {
+  computeAcc(arr, SG, SEPS);
+  for (const b of arr) {
+    if (b.locked) { b.vx = 0; b.vy = 0; continue; }
+    b.vx += b.ax * dt; b.vy += b.ay * dt; b.x += b.vx * dt; b.y += b.vy * dt;
+  }
+}
+function resetTimer(msg) {
+  if (msg && S.timer > 0.5) toast(sandToast, msg + ' Timer reset.');
+  else if (msg) toast(sandToast, msg);
+  S.timer = 0; S.celebrated = false;
+}
+function sandCollide() {
+  const B = S.bodies;
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const a = B[i], b = B[j];
+    if (a.dead || b.dead) continue;
+    const d = Math.hypot(b.x - a.x, b.y - a.y);
+    if (d < (a.r + b.r) * 0.8) {
+      let big = a, small = b;
+      if ((b.m > a.m && !a.locked) || (b.locked && !a.locked)) { big = b; small = a; }
+      const M = big.m + small.m;
+      if (!big.locked) {
+        big.vx = (big.vx * big.m + small.vx * small.m) / M; big.vy = (big.vy * big.m + small.vy * small.m) / M;
+        big.x = (big.x * big.m + small.x * small.m) / M; big.y = (big.y * big.m + small.y * small.m) / M;
+      }
+      big.m = M; big.r = Math.cbrt(big.r ** 3 + small.r ** 3);
+      small.dead = true;
+      S.flashes.push({ x: small.x, y: small.y, t: 0, color: small.color });
+      for (let k = 0; k < 18; k++) { const a = Math.random() * TAU, sp = 30 + Math.random() * 110; S.debris.push({ x: small.x, y: small.y, vx: big.vx + Math.cos(a) * sp, vy: big.vy + Math.sin(a) * sp, t: 0, max: 0.7 + Math.random() * 0.9, color: k % 3 ? small.color : '#ffd27a' }); }
+      if (small.type !== 'star') resetTimer('Crash! The ' + TYPES[small.type].label.toLowerCase() + ' hit the ' + TYPES[big.type].label.toLowerCase() + '.');
+    }
+  }
+  S.bodies = B.filter(b => !b.dead);
+}
+function strongestPull(x, y) {
+  let best = null, bp = 0;
+  for (const b of S.bodies) { const d = Math.hypot(b.x - x, b.y - y); if (d < 1) continue; const p = b.m / (d * d); if (p > bp) { bp = p; best = b; } }
+  return best;
+}
+function circSpeed(M, d) { const e2 = SEPS * SEPS; return Math.sqrt(SG * M * d * d / Math.pow(d * d + e2, 1.5)); }
+// the heavier body that pulls hardest on b (a planet's star, a moon's planet)
+function primaryOf(b) {
+  let best = null, bp = 0;
+  for (const o of S.bodies) { if (o === b || o.m <= b.m) continue; const d = Math.hypot(o.x - b.x, o.y - b.y); if (d < 1) continue; const p = o.m / (d * d); if (p > bp) { bp = p; best = o; } }
+  return best;
+}
+// moon zone: the region where a planet's pull beats the star's tug enough to hold a moon (about half the Hill radius)
+function moonZone(b) {
+  const p = primaryOf(b); if (!p) return 0;
+  const d = Math.hypot(p.x - b.x, p.y - b.y);
+  return 0.45 * d * Math.cbrt(b.m / (3 * p.m));
+}
+function orbitSense(b, p) { const rx = b.x - p.x, ry = b.y - p.y, vx = b.vx - p.vx, vy = b.vy - p.vy; return (rx * vy - ry * vx) >= 0 ? 1 : -1; }
+function autoOrbitVel(x, y, m) {
+  let host = null, hd = Infinity;
+  for (const b of S.bodies) {
+    if (b.m < m * 4) continue;
+    const z = moonZone(b); if (!z) continue;
+    const d = Math.hypot(b.x - x, b.y - y);
+    if (d < z && d < hd) { host = b; hd = d; }
+  }
+  if (!host) host = strongestPull(x, y);
+  if (!host) return { vx: 0, vy: 0 };
+  const dx = x - host.x, dy = y - host.y, d = Math.hypot(dx, dy) || 1;
+  const p = primaryOf(host); const sense = p ? orbitSense(host, p) : 1;
+  const v = circSpeed(host.m, d) * sense;
+  return { vx: host.vx + (-dy / d) * v, vy: host.vy + (dx / d) * v };
+}
+function launchVel() {
+  const D = S.drag; const dx = D.x - D.x0, dy = D.y - D.y0;
+  if (Math.hypot(dx, dy) < 8) return S.auto ? autoOrbitVel(D.x0, D.y0, TYPES[S.tool].m) : { vx: 0, vy: 0 };
+  return { vx: dx * 1.6, vy: dy * 1.6 };
+}
+function updatePreview() {
+  if (!S.drag) { S.preview = null; return; }
+  const v = launchVel(); const t = TYPES[S.tool];
+  const arr = S.bodies.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, m: b.m, r: b.r, locked: b.locked }));
+  const nb = { x: S.drag.x0, y: S.drag.y0, vx: v.vx, vy: v.vy, m: t.m, r: t.r, locked: S.tool === 'star' && S.lock };
+  arr.push(nb);
+  const pts = [[nb.x, nb.y]]; let hit = false;
+  for (let k = 0; k < 300 && !hit; k++) {
+    integrate(arr, 1 / 120); integrate(arr, 1 / 120);
+    if (k % 2 === 0) pts.push([nb.x, nb.y]);
+    for (const o of arr) if (o !== nb && Math.hypot(o.x - nb.x, o.y - nb.y) < (o.r + nb.r) * 0.8) { hit = true; pts.push([nb.x, nb.y]); break; }
+  }
+  S.preview = { pts, hit };
+}
+SC.addEventListener('pointerdown', e => {
+  const p = pos(SC, e); try { SC.setPointerCapture(e.pointerId); } catch (_) {}
+  S.drag = { x0: p.x, y0: p.y, x: p.x, y: p.y }; updatePreview();
+});
+SC.addEventListener('pointermove', e => { if (!S.drag) return; const p = pos(SC, e); S.drag.x = p.x; S.drag.y = p.y; updatePreview(); });
+SC.addEventListener('pointerup', () => {
+  if (!S.drag) return;
+  if (S.bodies.length >= 60) { toast(sandToast, 'That sky is crowded. Clear some space first.'); S.drag = null; S.preview = null; return; }
+  const v = launchVel();
+  S.bodies.push(mkBody(S.tool, S.drag.x0, S.drag.y0, v.vx, v.vy));
+  S.drag = null; S.preview = null; S.timer = 0; S.celebrated = false;
+});
+SC.addEventListener('pointercancel', () => { S.drag = null; S.preview = null; });
+
+const toolGrid = $('#toolGrid');
+Object.keys(TYPES).forEach(k => {
+  const t = TYPES[k];
+  const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.dataset.tool = k;
+  b.innerHTML = '<span class="dot" style="background:' + t.color + '"></span>' + t.label;
+  b.addEventListener('click', () => { S.tool = k; syncTools(); });
+  toolGrid.appendChild(b);
+});
+function syncTools() { [...toolGrid.children].forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === S.tool ? 'true' : 'false')); }
+syncTools();
+$('#sAuto').addEventListener('change', e => S.auto = e.target.checked);
+$('#sTrails').addEventListener('change', e => { S.trails = e.target.checked; S.bodies.forEach(b => b.trail = []); });
+$('#sArrows').addEventListener('change', e => S.arrows = e.target.checked);
+$('#sLock').addEventListener('change', e => { S.lock = e.target.checked; S.bodies.forEach(b => { if (b.type === 'star') { b.locked = S.lock; if (S.lock) { b.vx = 0; b.vy = 0; } } }); });
+$('#sPlay').addEventListener('click', () => { S.running = !S.running; $('#sPlay').textContent = S.running ? 'Pause' : 'Play'; });
+$('#sClear').addEventListener('click', () => { S.bodies = []; S.flashes = []; S.debris = []; resetTimer(); });
+document.querySelectorAll('[data-spreset]').forEach(b => b.addEventListener('click', () => sandPreset(b.dataset.spreset)));
+function setLock(v) { S.lock = v; $('#sLock').checked = v; }
+function circ(center, d, ang) {
+  const x = center.x + Math.cos(ang) * d, y = center.y + Math.sin(ang) * d;
+  const v = circSpeed(center.m, d);
+  return { x, y, vx: center.vx - Math.sin(ang) * v, vy: center.vy + Math.cos(ang) * v };
+}
+function sandPreset(name) {
+  const { w, h } = SS; if (!w) return;
+  S.bodies = []; S.flashes = []; S.debris = []; S.pc = 0; resetTimer();
+  const cx = w / 2, cy = h / 2, dmax = Math.min(w, h) / 2 - 24;
+  if (name === 'solar') {
+    setLock(true);
+    const star = mkBody('star', cx, cy, 0, 0); S.bodies.push(star);
+    [0.3, 0.58, 0.9].forEach((f, k) => { const c = circ(star, dmax * f, k * 2.1); S.bodies.push(mkBody('planet', c.x, c.y, c.vx, c.vy, k === 2 ? { r: 11, m: 80 } : { m: 50 })); });
+  } else if (name === 'moon') {
+    setLock(true);
+    const star = mkBody('star', cx, cy, 0, 0); S.bodies.push(star);
+    const pd = dmax * 0.75;
+    const c = circ(star, pd, 0);
+    const planet = mkBody('planet', c.x, c.y, c.vx, c.vy, { m: 800, r: 12 }); S.bodies.push(planet);
+    const hill = pd * Math.cbrt(planet.m / (3 * star.m));
+    const md = Math.max(planet.r + 4 + 6, 0.33 * hill);
+    const mc = circ(planet, md, Math.PI / 2);
+    S.bodies.push(mkBody('moon', mc.x, mc.y, mc.vx, mc.vy));
+  } else if (name === 'binary') {
+    setLock(false);
+    const a = dmax * 0.17, m = 4000, v = Math.sqrt(SG * m / (4 * a));
+    S.bodies.push(mkBody('star', cx - a, cy, 0, -v, { m, r: 16, locked: false }));
+    S.bodies.push(mkBody('star', cx + a, cy, 0, v, { m, r: 16, locked: false, color: '#ff9f6b' }));
+    const d = dmax * 0.92, vp = Math.sqrt(SG * 2 * m / d);
+    S.bodies.push(mkBody('planet', cx, cy - d, vp, 0));
+  }
+  updateSandUI(true);
+}
+function updateSandUI(force) {
+  const t = S.timer;
+  const m = $('#sMeter'); m.firstElementChild.style.width = Math.min(100, t / 30 * 100) + '%';
+  m.classList.toggle('done', t >= 30);
+  $('#sTime').textContent = t.toFixed(1) + ' s' + (t >= 30 ? ' · Stable!' : '');
+  $('#sBest').textContent = 'Best: ' + S.best.toFixed(1) + ' s';
+}
+function tickSand(dt) {
+  S.time += dt;
+  const { w, h } = SS; if (!w) return;
+  if (S.running) {
+    const n = 8, sdt = dt / n;
+    for (let k = 0; k < n; k++) { integrate(S.bodies, sdt); sandCollide(); }
+    for (const b of S.bodies) {
+      if (S.trails) { b.trail.push(b.x, b.y); if (b.trail.length > 320) b.trail.splice(0, 2); }
+      const off = b.x < -15 || b.x > w + 15 || b.y < -15 || b.y > h + 15;
+      if (off && !b.off && b.type !== 'star') resetTimer('A ' + TYPES[b.type].label.toLowerCase() + ' flew off the screen.');
+      b.off = off;
+      if (b.x < -1500 || b.x > w + 1500 || b.y < -1500 || b.y > h + 1500) b.dead = true;
+    }
+    S.bodies = S.bodies.filter(b => !b.dead);
+    const movers = S.bodies.filter(b => b.type !== 'star').length;
+    if (movers > 0) {
+      S.timer += dt; if (S.timer > S.best) S.best = S.timer;
+      if (S.timer >= 30 && !S.celebrated) { S.celebrated = true; toast(sandToast, '30 seconds of stable orbits. Nice work!', 3000); }
+    }
+    S.flashes.forEach(f => f.t += dt); S.flashes = S.flashes.filter(f => f.t < 0.8);
+    S.debris.forEach(d => { d.t += dt; d.x += d.vx * dt; d.y += d.vy * dt; }); S.debris = S.debris.filter(d => d.t < d.max);
+  }
+  if (S.drag) { S.prevT += dt; if (S.prevT > 0.1) { S.prevT = 0; updatePreview(); } }
+  S.uiT += dt; if (S.uiT > 0.1) { S.uiT = 0; updateSandUI(); }
+  drawSand();
+}
+function makeNebula(w, h) {
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
+  const x = c.getContext('2d');
+  const g0 = x.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, Math.max(w, h) * 0.75);
+  g0.addColorStop(0, '#0b1533'); g0.addColorStop(1, '#03060f');
+  x.fillStyle = g0; x.fillRect(0, 0, w, h);
+  const cols = ['120,90,220', '60,170,190', '210,100,140', '90,120,230'];
+  for (let k = 0; k < 10; k++) {
+    const nx = Math.random() * w, ny = Math.random() * h, r = (0.18 + Math.random() * 0.35) * Math.max(w, h);
+    const g = x.createRadialGradient(nx, ny, 0, nx, ny, r), c0 = cols[k % cols.length];
+    g.addColorStop(0, 'rgba(' + c0 + ',.09)'); g.addColorStop(1, 'rgba(' + c0 + ',0)');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+  }
+  x.fillStyle = '#ffffff';
+  for (let k = 0; k < 900; k++) { x.globalAlpha = 0.12 + Math.random() * 0.5; x.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
+  return c;
+}
+function lightFor(b) {
+  let best = null, bp = 0;
+  for (const o of S.bodies) { if (o === b || o.type !== 'star') continue; const p = o.m / ((o.x - b.x) ** 2 + (o.y - b.y) ** 2 + 1); if (p > bp) { bp = p; best = o; } }
+  return best;
+}
+function drawBody(ctx, b, t) {
+  if (b.type === 'star') {
+    const R = b.r * (reduceMotion ? 1 : 1 + 0.035 * Math.sin((t || 0) * 3 + b.x));
+    const g = ctx.createRadialGradient(b.x, b.y, R * 0.6, b.x, b.y, R * 4.5);
+    g.addColorStop(0, 'rgba(255,210,120,.5)'); g.addColorStop(0.35, 'rgba(255,170,80,.14)'); g.addColorStop(1, 'rgba(255,150,60,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, R * 4.5, 0, TAU); ctx.fill();
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const a of [0.3, 0.3 + Math.PI / 2]) {
+      const L = R * 5, dx = Math.cos(a) * L, dy = Math.sin(a) * L;
+      const sg = ctx.createLinearGradient(b.x - dx, b.y - dy, b.x + dx, b.y + dy);
+      sg.addColorStop(0, 'rgba(255,230,170,0)'); sg.addColorStop(0.5, 'rgba(255,230,170,.4)'); sg.addColorStop(1, 'rgba(255,230,170,0)');
+      ctx.strokeStyle = sg; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(b.x - dx, b.y - dy); ctx.lineTo(b.x + dx, b.y + dy); ctx.stroke();
+    }
+    ctx.restore();
+    const c = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, R);
+    c.addColorStop(0, '#fffdf2'); c.addColorStop(0.55, '#ffe7a0'); c.addColorStop(1, b.color);
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill();
+    return;
+  }
+  // planets and moons are lit on the side that faces their star
+  let lx = -0.7, ly = -0.7;
+  if (b.light) { const dx = b.light.x - b.x, dy = b.light.y - b.y, d = Math.hypot(dx, dy) || 1; lx = dx / d; ly = dy / d; }
+  ctx.save(); ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.clip();
+  ctx.fillStyle = b.color; ctx.fillRect(b.x - b.r, b.y - b.r, 2 * b.r, 2 * b.r);
+  if (b.r >= 8) {
+    ctx.fillStyle = shade(b.color); ctx.globalAlpha = 0.28;
+    for (const [o, hh] of [[-0.5, 0.16], [-0.05, 0.12], [0.38, 0.2]]) ctx.fillRect(b.x - b.r, b.y + o * b.r, 2 * b.r, hh * b.r);
+    ctx.globalAlpha = 1;
+  }
+  const gx = b.x + lx * b.r * 0.45, gy = b.y + ly * b.r * 0.45;
+  const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, b.r * 1.7);
+  g.addColorStop(0, 'rgba(255,255,255,.45)'); g.addColorStop(0.28, 'rgba(255,255,255,0)'); g.addColorStop(0.55, 'rgba(0,0,12,.35)'); g.addColorStop(0.8, 'rgba(0,0,12,.92)');
+  ctx.fillStyle = g; ctx.fillRect(b.x - b.r, b.y - b.r, 2 * b.r, 2 * b.r);
+  ctx.restore();
+}
+function shade(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) * 0.45 | 0, g = ((n >> 8) & 255) * 0.45 | 0, b = (n & 255) * 0.45 | 0;
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+function drawSand() {
+  const { ctx, w, h } = SS;
+  if (S.neb) ctx.drawImage(S.neb, 0, 0, w, h); else { ctx.fillStyle = '#050918'; ctx.fillRect(0, 0, w, h); }
+  drawStars(ctx, S.starfield, w, h, S.time, 0.7);
+  if (S.trails) for (const b of S.bodies) {
+    const t = b.trail, n = t.length / 2; if (n < 2) continue;
+    ctx.strokeStyle = b.color; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    const chunks = 8, per = Math.ceil(n / chunks);
+    for (let c = 0; c < chunks; c++) {
+      const s0 = c * per, s1 = Math.min(n - 1, (c + 1) * per); if (s1 <= s0) continue;
+      ctx.globalAlpha = 0.04 + 0.5 * (c + 1) / chunks;
+      ctx.beginPath(); ctx.moveTo(t[s0 * 2], t[s0 * 2 + 1]); for (let k = s0 + 1; k <= s1; k++) ctx.lineTo(t[k * 2], t[k * 2 + 1]); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  for (const f of S.flashes) {
+    const a = 1 - f.t / 0.8;
+    ctx.strokeStyle = f.color; ctx.globalAlpha = a; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(f.x, f.y, 6 + f.t * 50, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  for (const d of S.debris) { ctx.globalAlpha = 1 - d.t / d.max; ctx.fillStyle = d.color; ctx.beginPath(); ctx.arc(d.x, d.y, 1.6, 0, TAU); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  if (S.tool === 'moon' || S.tool === 'asteroid') for (const b of S.bodies) {
+    if (b.type !== 'planet') continue;
+    const z = moonZone(b); if (z < b.r + 8) continue;
+    ctx.setLineDash([3, 5]); ctx.strokeStyle = 'rgba(95,211,199,.6)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(b.x, b.y, z, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+  }
+  for (const b of S.bodies) { if (b.type !== 'star') b.light = lightFor(b); drawBody(ctx, b, S.time); }
+  if (S.arrows) for (const b of S.bodies) {
+    if (b.locked) continue;
+    const a = Math.hypot(b.ax, b.ay); if (a < 0.01) continue;
+    const L = Math.min(80, Math.sqrt(a) * 2.4); const ux = b.ax / a, uy = b.ay / a;
+    arrow(ctx, b.x + ux * (b.r + 3), b.y + uy * (b.r + 3), b.x + ux * (b.r + 3 + L), b.y + uy * (b.r + 3 + L), '#ffffff', 2.5, 9);
+  }
+  if (S.drag) {
+    const t = TYPES[S.tool];
+    if (S.preview) {
+      ctx.setLineDash([4, 6]); ctx.strokeStyle = S.preview.hit ? '#ff7a6b' : '#ffffff'; ctx.globalAlpha = 0.75; ctx.lineWidth = 2;
+      ctx.beginPath(); S.preview.pts.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+    ctx.globalAlpha = 0.85; drawBody(ctx, { type: S.tool, x: S.drag.x0, y: S.drag.y0, r: t.r, color: S.tool === 'planet' ? PLANET_COLORS[S.pc % PLANET_COLORS.length] : t.color }); ctx.globalAlpha = 1;
+    const short = Math.hypot(S.drag.x - S.drag.x0, S.drag.y - S.drag.y0) < 8;
+    if (!short) arrow(ctx, S.drag.x0, S.drag.y0, S.drag.x, S.drag.y, '#ffc94a', 3, 12);
+    ctx.font = '600 13px ' + FONT_D; ctx.fillStyle = '#ffe9a8'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText(short ? (S.auto ? 'Release to orbit' : 'Release to drop (no push)') : 'Release to throw', S.drag.x0 + t.r + 8, S.drag.y0 - t.r - 4);
+  }
+  ctx.font = '500 13px ' + FONT_M; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('Objects: ' + S.bodies.length, 14, 12);
+  if (!S.bodies.length && !S.drag) {
+    ctx.font = '600 20px ' + FONT_D; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Empty space. Pick a Star and click to start a system.', w / 2, h / 2);
+  }
+  if (!S.running) {
+    ctx.font = '700 22px ' + FONT_D; ctx.fillStyle = '#ffc94a'; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText('Paused', w - 16, 12);
+  }
+}
+
+/* ======================================================
+   GAME 3: GRAVITY LAB
+   ====================================================== */
+const LG = 60000;
+const BALL_COLORS = ['#ffc94a', '#5fd3c7', '#ff7a6b', '#a596ff', '#7cb8ff', '#9fe08a'];
+const L = { balls: [], sel: null, newR: 24, newFixed: false, running: true, arrows: true, field: false, balance: true, snap: true, snapR: 40, snapTarget: null, preset: 'middle', drag: null, nextId: 0, uiT: 0, time: 0 };
+const LC = $('#labCanvas');
+const labToast = $('#labToast');
+const LS = makeCanvas(LC, (ow, oh, w, h) => {
+  if (!ow) { labPreset('middle'); return; }
+  const dx = Math.round((w - ow) / 2), dy = Math.round((h - oh) / 2);
+  L.balls.forEach(b => { b.x += dx; b.y += dy; b.trail = []; });
+});
+const massOf = r => (r / 10) ** 3;
+function addBall(x, y, r, fixed, vx, vy) {
+  const id = L.nextId++;
+  const b = { id, name: String.fromCharCode(65 + (id % 26)), x, y, vx: vx || 0, vy: vy || 0, r, m: massOf(r), fixed, color: BALL_COLORS[id % BALL_COLORS.length], trail: [], ax: 0, ay: 0, held: false };
+  L.balls.push(b); return b;
+}
+function labAcc() {
+  const B = L.balls;
+  for (const b of B) { b.ax = 0; b.ay = 0; b.sum = 0; }
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const a = B[i], b = B[j];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    let d2 = dx * dx + dy * dy; if (d2 < 1) d2 = 1;
+    const d = Math.sqrt(d2), inv = 1 / (d2 * d);
+    a.ax += LG * b.m * dx * inv; a.ay += LG * b.m * dy * inv; a.sum += LG * b.m / d2;
+    b.ax -= LG * a.m * dx * inv; b.ay -= LG * a.m * dy * inv; b.sum += LG * a.m / d2;
+  }
+  for (const b of B) if (Math.hypot(b.ax, b.ay) < b.sum * 1e-9) { b.ax = 0; b.ay = 0; }
+}
+function labCollide() {
+  const B = L.balls;
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const a = B[i], b = B[j];
+    const am = !(a.fixed || a.held), bm = !(b.fixed || b.held);
+    if (!am && !bm) continue;
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.001, min = a.r + b.r;
+    if (d >= min) continue;
+    const nx = dx / d, ny = dy / d, over = min - d;
+    if (am && bm) {
+      const tot = a.m + b.m;
+      a.x -= nx * over * b.m / tot; a.y -= ny * over * b.m / tot;
+      b.x += nx * over * a.m / tot; b.y += ny * over * a.m / tot;
+      // a slightly bouncy collision (fast hits bounce a little, slow touches just settle)
+      const rel = (a.vx * nx + a.vy * ny) - (b.vx * nx + b.vy * ny);
+      if (rel > 0) {
+        const e = rel > 25 ? 0.4 : 0, j = (1 + e) * rel / (1 / a.m + 1 / b.m);
+        a.vx -= j / a.m * nx; a.vy -= j / a.m * ny;
+        b.vx += j / b.m * nx; b.vy += j / b.m * ny;
+      }
+    } else if (am) {
+      a.x -= nx * over; a.y -= ny * over;
+      const vn = a.vx * nx + a.vy * ny;
+      if (vn > 0) { const e = vn > 25 ? 0.4 : 0; a.vx -= (1 + e) * vn * nx; a.vy -= (1 + e) * vn * ny; }
+      a.vx *= 0.99; a.vy *= 0.99;
+    } else {
+      b.x += nx * over; b.y += ny * over;
+      const vn = b.vx * nx + b.vy * ny;
+      if (vn < 0) { const e = -vn > 25 ? 0.4 : 0; b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny; }
+      b.vx *= 0.99; b.vy *= 0.99;
+    }
+  }
+}
+function labWalls() {
+  const { w, h } = LS;
+  for (const b of L.balls) {
+    if (b.fixed || b.held) continue;
+    if (b.x < b.r) { b.x = b.r; if (b.vx < 0) b.vx = 0; }
+    if (b.x > w - b.r) { b.x = w - b.r; if (b.vx > 0) b.vx = 0; }
+    if (b.y < b.r) { b.y = b.r; if (b.vy < 0) b.vy = 0; }
+    if (b.y > h - b.r) { b.y = h - b.r; if (b.vy > 0) b.vy = 0; }
+  }
+}
+function labStep(dt) {
+  labAcc();
+  for (const b of L.balls) {
+    if (b.fixed || b.held) { b.vx = 0; b.vy = 0; continue; }
+    b.vx += b.ax * dt; b.vy += b.ay * dt; b.x += b.vx * dt; b.y += b.vy * dt;
+  }
+  labCollide(); labWalls();
+}
+function labPreset(name) {
+  const { w, h } = LS; if (!w) return;
+  L.balls = []; L.nextId = 0; L.sel = null; L.preset = name;
+  const cx = Math.round(w / 2), cy = Math.round(h / 2);
+  const span = Math.round(Math.min(260, w / 2 - 70));
+  if (name === 'pair') { addBall(cx - Math.round(span * 0.8), cy, 36, false); L.sel = addBall(cx + Math.round(span * 0.8), cy, 16, false); }
+  else if (name === 'middle') { addBall(cx - span, cy, 44, true); addBall(cx + span, cy, 44, true); L.sel = addBall(cx, cy, 10, false); }
+  else if (name === 'unequal') {
+    const a = addBall(cx - span, cy, 52, true), b = addBall(cx + span, cy, 26, true);
+    const d = 2 * span, x = a.x + d * Math.sqrt(a.m) / (Math.sqrt(a.m) + Math.sqrt(b.m));
+    L.sel = addBall(x, cy, 10, false);
+  }
+  else if (name === 'orbit') {
+    addBall(cx, cy, 46, true);
+    const r = Math.min(170, Math.min(w, h) / 2 - 30);
+    const v = Math.sqrt(LG * massOf(46) / r);
+    L.sel = addBall(cx + r, cy, 9, false, 0, -v);
+  }
+  L.running = true; $('#lPlay').textContent = 'Pause';
+  syncSel(); updatePulls();
+}
+// pull from the fixed balls only (the ones that never move), used to find balance points
+function fixedField(x, y, skip) {
+  let gx = 0, gy = 0, sum = 0;
+  for (const b of L.balls) {
+    if (!b.fixed || b === skip) continue;
+    const dx = b.x - x, dy = b.y - y; let d2 = dx * dx + dy * dy; if (d2 < 1) d2 = 1;
+    const d = Math.sqrt(d2); gx += b.m * dx / (d2 * d); gy += b.m * dy / (d2 * d); sum += b.m / d2;
+  }
+  return { gx, gy, sum };
+}
+// nearest spot where the fixed balls' pulls cancel, if it is within snap range of (x0,y0)
+function findBalance(x0, y0, ball) {
+  const fx = L.balls.filter(b => b.fixed && b !== ball);
+  if (fx.length < 2) return null;
+  let x = x0, y = y0;
+  if (fx.length === 2) {
+    const [a, b] = fx; const f = Math.sqrt(a.m) / (Math.sqrt(a.m) + Math.sqrt(b.m));
+    x = a.x + (b.x - a.x) * f; y = a.y + (b.y - a.y) * f;
+  } else {
+    for (let k = 0; k < 40; k++) {
+      const g = fixedField(x, y, ball);
+      if (Math.hypot(g.gx, g.gy) < g.sum * 1e-13) break;
+      const h = 0.5;
+      const xp = fixedField(x + h, y, ball), xm = fixedField(x - h, y, ball), yp = fixedField(x, y + h, ball), ym = fixedField(x, y - h, ball);
+      const a11 = (xp.gx - xm.gx) / (2 * h), a21 = (xp.gy - xm.gy) / (2 * h), a12 = (yp.gx - ym.gx) / (2 * h), a22 = (yp.gy - ym.gy) / (2 * h);
+      const det = a11 * a22 - a12 * a21; if (!det) return null;
+      let sx = -(a22 * g.gx - a12 * g.gy) / det, sy = -(-a21 * g.gx + a11 * g.gy) / det;
+      const sl = Math.hypot(sx, sy); if (sl > 25) { sx *= 25 / sl; sy *= 25 / sl; }
+      x += sx; y += sy;
+    }
+    const g = fixedField(x, y, ball);
+    if (Math.hypot(g.gx, g.gy) > g.sum * 1e-10) return null;
+  }
+  if (Math.hypot(x - x0, y - y0) > L.snapR) return null;
+  for (const b of fx) if (Math.hypot(b.x - x, b.y - y) < b.r + ball.r) return null;
+  const { w, h } = LS;
+  if (x < ball.r || x > w - ball.r || y < ball.r || y > h - ball.r) return null;
+  return { x, y };
+}
+function updateSnapTarget() {
+  const b = L.drag && L.drag.b;
+  L.snapTarget = (b && L.snap && !b.fixed) ? findBalance(b.x, b.y, b) : null;
+}
+function hitBall(p) {
+  for (let k = L.balls.length - 1; k >= 0; k--) { const b = L.balls[k]; if (Math.hypot(b.x - p.x, b.y - p.y) <= b.r + 6) return b; }
+  return null;
+}
+LC.addEventListener('pointerdown', e => {
+  const p = pos(LC, e); try { LC.setPointerCapture(e.pointerId); } catch (_) {}
+  let b = hitBall(p);
+  if (!b) {
+    if (L.balls.length >= 40) { toast(labToast, 'Lab is full. Delete a ball first.'); return; }
+    b = addBall(p.x, p.y, L.newR, L.newFixed);
+  }
+  L.sel = b; b.held = true; b.vx = 0; b.vy = 0; b.trail = [];
+  L.drag = { b, ox: b.x - p.x, oy: b.y - p.y };
+  updateSnapTarget();
+  syncSel(); updatePulls();
+});
+LC.addEventListener('pointermove', e => {
+  const p = pos(LC, e);
+  if (!L.drag) { LC.style.cursor = hitBall(p) ? 'grab' : 'crosshair'; return; }
+  const b = L.drag.b, { w, h } = LS;
+  b.x = Math.max(b.r, Math.min(w - b.r, p.x + L.drag.ox));
+  b.y = Math.max(b.r, Math.min(h - b.r, p.y + L.drag.oy));
+  b.vx = 0; b.vy = 0; b.trail = [];
+  updateSnapTarget();
+  LC.style.cursor = 'grabbing';
+});
+function endLabDrag() {
+  if (!L.drag) return;
+  const b = L.drag.b;
+  updateSnapTarget();
+  if (L.snapTarget) { b.x = L.snapTarget.x; b.y = L.snapTarget.y; b.vx = 0; b.vy = 0; b.trail = []; toast(labToast, 'Snapped to the balance point'); }
+  b.held = false; L.drag = null; L.snapTarget = null; LC.style.cursor = 'crosshair';
+  updatePulls();
+}
+LC.addEventListener('pointerup', endLabDrag);
+LC.addEventListener('pointercancel', endLabDrag);
+
+function setSeg(aBtn, bBtn, second) { aBtn.setAttribute('aria-pressed', second ? 'false' : 'true'); bBtn.setAttribute('aria-pressed', second ? 'true' : 'false'); }
+$('#newR').addEventListener('input', e => { L.newR = +e.target.value; $('#newROut').textContent = L.newR; });
+$('#newMove').addEventListener('click', () => { L.newFixed = false; setSeg($('#newMove'), $('#newFixed'), false); });
+$('#newFixed').addEventListener('click', () => { L.newFixed = true; setSeg($('#newMove'), $('#newFixed'), true); });
+$('#selR').addEventListener('input', e => { if (!L.sel) return; L.sel.r = +e.target.value; L.sel.m = massOf(L.sel.r); $('#selROut').textContent = L.sel.r + ' (mass ' + fmtM(L.sel.m) + ')'; updatePulls(); });
+$('#selMove').addEventListener('click', () => { if (!L.sel) return; L.sel.fixed = false; syncSel(); updatePulls(); });
+$('#selFixed').addEventListener('click', () => { if (!L.sel) return; L.sel.fixed = true; L.sel.vx = 0; L.sel.vy = 0; L.sel.trail = []; syncSel(); updatePulls(); });
+$('#selDel').addEventListener('click', deleteSel);
+function deleteSel() { if (!L.sel) return; L.balls = L.balls.filter(b => b !== L.sel); L.sel = null; syncSel(); updatePulls(); }
+function nudge(dx) { const b = L.sel; if (!b || b.fixed) return; b.x += dx; b.vx = 0; b.vy = 0; b.trail = []; if (!L.running) toast(labToast, 'Press Play to see what happens.'); }
+$('#nudgeL').addEventListener('click', () => nudge(-10));
+$('#nudgeR').addEventListener('click', () => nudge(10));
+$('#lArrows').addEventListener('change', e => L.arrows = e.target.checked);
+$('#lBalance').addEventListener('change', e => L.balance = e.target.checked);
+$('#lField').addEventListener('change', e => L.field = e.target.checked);
+$('#lSnap').addEventListener('change', e => L.snap = e.target.checked);
+$('#snapR').addEventListener('input', e => { L.snapR = +e.target.value; $('#snapROut').textContent = L.snapR + ' px'; });
+$('#lPlay').addEventListener('click', () => { L.running = !L.running; $('#lPlay').textContent = L.running ? 'Pause' : 'Play'; });
+$('#lReset').addEventListener('click', () => labPreset(L.preset));
+document.querySelectorAll('[data-lpreset]').forEach(b => b.addEventListener('click', () => labPreset(b.dataset.lpreset)));
+window.addEventListener('keydown', e => {
+  if (route !== 'lab' || !L.sel) return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !(e.target && e.target.tagName === 'INPUT')) { e.preventDefault(); deleteSel(); }
+});
+const fmtM = m => m < 10 ? m.toFixed(1) : Math.round(m).toString();
+function syncSel() {
+  const b = L.sel;
+  $('#selBody').hidden = !b; $('#selHint').hidden = !!b;
+  if (!b) { $('#selTitle').textContent = 'No ball selected'; return; }
+  $('#selTitle').innerHTML = '<span class="sw ' + (b.fixed ? 'fixed' : 'move') + '" style="' + (b.fixed ? '' : 'background:' + b.color) + '"></span>Ball ' + b.name;
+  $('#selR').value = b.r; $('#selROut').textContent = b.r + ' (mass ' + fmtM(b.m) + ')';
+  setSeg($('#selMove'), $('#selFixed'), b.fixed);
+  $('#nudgeL').disabled = b.fixed; $('#nudgeR').disabled = b.fixed;
+}
+function pullsOn(b) {
+  return L.balls.filter(o => o !== b).map(o => {
+    const dx = o.x - b.x, dy = o.y - b.y; const d2 = Math.max(dx * dx + dy * dy, 1), d = Math.sqrt(d2);
+    return { o, ux: dx / d, uy: dy / d, F: b.m * o.m / d2 * 1e5, d };
+  });
+}
+function updatePulls() {
+  const box = $('#pulls'), verdict = $('#verdict');
+  const b = L.sel; if (!b) { box.innerHTML = ''; verdict.textContent = ''; return; }
+  const ps = pullsOn(b);
+  if (!ps.length) { box.innerHTML = '<p class="empty">No other balls, so nothing is pulling on Ball ' + b.name + '.</p>'; verdict.textContent = ''; return; }
+  let nx = 0, ny = 0, maxF = 0;
+  let html = '<div class="pull" style="color:var(--muted);font-size:.78rem"><span></span><span>Pull from</span><span></span><b style="color:var(--muted)">Strength</b></div>';
+  ps.forEach(p => {
+    nx += p.F * p.ux; ny += p.F * p.uy; maxF = Math.max(maxF, p.F);
+    const ang = Math.atan2(p.uy, p.ux) * 180 / Math.PI;
+    html += '<div class="pull"><span class="sw" style="background:' + p.o.color + '"></span><span>Ball ' + p.o.name + ' <small style="color:var(--muted)">(' + (p.o.fixed ? 'fixed' : 'movable') + ', mass ' + fmtM(p.o.m) + ', ' + Math.round(p.d) + ' px away)</small></span><span class="dir" style="transform:rotate(' + ang.toFixed(0) + 'deg)">→</span><b>' + p.F.toFixed(1) + '</b></div>';
+  });
+  const net = Math.hypot(nx, ny);
+  const balanced = net < maxF * 0.005;
+  const nang = Math.atan2(ny, nx) * 180 / Math.PI;
+  html += '<div class="pull net"><span></span><span><b style="text-align:left;color:var(--ink)">Net pull</b></span><span class="dir" style="' + (balanced ? 'opacity:0' : 'transform:rotate(' + nang.toFixed(0) + 'deg)') + '">→</span><b>' + (balanced ? '0.0' : net.toFixed(1)) + '</b></div>';
+  box.innerHTML = html;
+  if (b.fixed) { verdict.className = 'verdict'; verdict.textContent = 'Fixed balls feel these pulls too, but they are pinned in place.'; }
+  else if (balanced) { verdict.className = 'verdict ok'; verdict.textContent = 'Balanced! The pulls cancel, so Ball ' + b.name + ' stays put.'; }
+  else { verdict.className = 'verdict go'; verdict.textContent = 'Unbalanced. Ball ' + b.name + ' speeds up in the direction of the net pull.'; }
+}
+function tickLab(dt) {
+  L.time += dt;
+  const { w } = LS; if (!w) return;
+  if (L.running) {
+    const n = 8; for (let k = 0; k < n; k++) labStep(dt / n);
+    for (const b of L.balls) {
+      if (b.fixed || b.held) continue;
+      const t = b.trail; const lx = t[t.length - 2], ly = t[t.length - 1];
+      if (!t.length || Math.hypot(b.x - lx, b.y - ly) > 2) { t.push(b.x, b.y); if (t.length > 360) t.splice(0, 2); }
+    }
+  }
+  L.uiT += dt; if (L.uiT > 0.12) { L.uiT = 0; updatePulls(); }
+  drawLab();
+}
+function drawBall(ctx, b) {
+  // soft shadow on the lab table
+  const sx = b.x + b.r * 0.25, sy = b.y + b.r * 0.35;
+  const sh = ctx.createRadialGradient(sx, sy, b.r * 0.2, sx, sy, b.r * 1.25);
+  sh.addColorStop(0, 'rgba(0,0,0,.45)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(sx, sy, b.r * 1.25, 0, TAU); ctx.fill();
+  // the sphere: lit from the upper left, with a bright glint and a dark edge
+  const g = ctx.createRadialGradient(b.x - b.r * 0.35, b.y - b.r * 0.4, b.r * 0.05, b.x, b.y, b.r);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.22, b.color); g.addColorStop(0.85, shade(b.color)); g.addColorStop(1, '#0a0c1e');
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = Math.max(1, b.r * 0.08);
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.9, Math.PI * 0.15, Math.PI * 0.75); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.ellipse(b.x - b.r * 0.38, b.y - b.r * 0.42, b.r * 0.16, b.r * 0.1, -0.6, 0, TAU); ctx.fill();
+  if (b.fixed) {
+    // bolted to the table: a steel bolt in the middle and a dashed anchor ring
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    const br = Math.max(4, b.r * 0.24);
+    const bg = ctx.createRadialGradient(b.x - br * 0.3, b.y - br * 0.3, 0.5, b.x, b.y, br);
+    bg.addColorStop(0, '#f4f6fb'); bg.addColorStop(1, '#5a6080');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(b.x, b.y, br, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#2a2f48'; ctx.lineWidth = Math.max(1, br * 0.25);
+    ctx.beginPath(); ctx.moveTo(b.x - br * 0.55, b.y); ctx.lineTo(b.x + br * 0.55, b.y); ctx.moveTo(b.x, b.y - br * 0.55); ctx.lineTo(b.x, b.y + br * 0.55); ctx.stroke();
+  }
+  if (b.name) {
+    ctx.font = '700 ' + Math.round(Math.max(12, Math.min(16, b.r * 0.5))) + 'px ' + FONT_D;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(6,11,31,.85)'; ctx.strokeText(b.name, b.x, b.y - b.r - (b.fixed ? 8 : 4));
+    ctx.fillStyle = '#ffffff'; ctx.fillText(b.name, b.x, b.y - b.r - (b.fixed ? 8 : 4));
+  }
+  if (b === L.sel) {
+    ctx.setLineDash([5, 5]); ctx.lineDashOffset = reduceMotion ? 0 : -L.time * 12;
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 9, 0, TAU); ctx.stroke();
+    ctx.setLineDash([]); ctx.lineDashOffset = 0;
+  }
+}
+function drawLab() {
+  const { ctx, w, h } = LS;
+  ctx.fillStyle = '#081028'; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(124,184,255,.07)'; ctx.lineWidth = 1;
+  for (let x = (w / 2) % 40; x < w; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+  for (let y = (h / 2) % 40; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+  // scale bar
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(14, h - 16); ctx.lineTo(114, h - 16); ctx.moveTo(14, h - 21); ctx.lineTo(14, h - 11); ctx.moveTo(114, h - 21); ctx.lineTo(114, h - 11); ctx.stroke();
+  ctx.font = '500 11px ' + FONT_M; ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('100 px  (grid squares: 40 px)', 14, h - 24);
+  // field
+  if (L.field && L.balls.length) {
+    const sp = 34;
+    for (let y = sp / 2; y < h; y += sp) for (let x = sp / 2; x < w; x += sp) {
+      let gx = 0, gy = 0, inside = false;
+      for (const b of L.balls) {
+        const dx = b.x - x, dy = b.y - y, d2 = dx * dx + dy * dy;
+        if (d2 < (b.r + 4) ** 2) { inside = true; break; }
+        const d = Math.sqrt(d2); gx += b.m * dx / (d2 * d); gy += b.m * dy / (d2 * d);
+      }
+      if (inside) continue;
+      const g = Math.hypot(gx, gy) * 1e4; if (g < 0.01) continue;
+      const len = Math.min(sp * 0.8, 5 + Math.log(1 + g) * 6);
+      const ux = gx / Math.hypot(gx, gy), uy = gy / Math.hypot(gx, gy);
+      ctx.globalAlpha = Math.min(0.85, 0.2 + Math.log(1 + g) * 0.15);
+      arrow(ctx, x - ux * len / 2, y - uy * len / 2, x + ux * len / 2, y + uy * len / 2, '#7cb8ff', 1.5, 5);
+      ctx.globalAlpha = 1;
+    }
+  }
+  // balance point
+  const fixed = L.balls.filter(b => b.fixed);
+  if (L.balance && fixed.length === 2) {
+    const [a, b] = fixed; const d = Math.hypot(b.x - a.x, b.y - a.y);
+    if (d > a.r + b.r) {
+      const f = Math.sqrt(a.m) / (Math.sqrt(a.m) + Math.sqrt(b.m));
+      const px = a.x + (b.x - a.x) * f, py = a.y + (b.y - a.y) * f;
+      ctx.setLineDash([3, 6]); ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#5fd3c7';
+      ctx.beginPath(); ctx.arc(px, py, 3, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(px, py + 16); ctx.lineTo(px - 6, py + 26); ctx.lineTo(px + 6, py + 26); ctx.closePath(); ctx.fill();
+      ctx.font = '600 13px ' + FONT_D; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('Balance point', px, py + 30);
+      const pct = Math.round(f * 100);
+      ctx.font = '500 11px ' + FONT_M; ctx.fillStyle = 'rgba(95,211,199,.85)';
+      ctx.fillText(pct + '% of the way from ' + a.name + ' to ' + b.name, px, py + 48);
+      if (L.snap) {
+        ctx.fillStyle = 'rgba(95,211,199,.07)'; ctx.strokeStyle = 'rgba(95,211,199,.35)'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+        ctx.beginPath(); ctx.arc(px, py, L.snapR, 0, TAU); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
+  }
+  // snap preview while dragging
+  if (L.drag && L.snapTarget) {
+    const t = L.snapTarget, b = L.drag.b;
+    ctx.globalAlpha = 0.35; drawBall(ctx, { ...b, x: t.x, y: t.y, name: '' }); ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#5fd3c7'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(t.x, t.y, b.r + 8, 0, TAU); ctx.stroke();
+    ctx.font = '700 13px ' + FONT_D; ctx.fillStyle = '#5fd3c7'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('Let go to snap', t.x, t.y - b.r - 12);
+  }
+  // trails
+  for (const b of L.balls) {
+    const t = b.trail; if (t.length < 4) continue;
+    ctx.strokeStyle = b.color; ctx.globalAlpha = 0.35; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(t[0], t[1]); for (let k = 2; k < t.length; k += 2) ctx.lineTo(t[k], t[k + 1]); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  for (const b of L.balls) drawBall(ctx, b);
+  // pull arrows
+  if (L.arrows && L.balls.length > 1) {
+    const movers = L.balls.filter(b => !b.fixed);
+    const targets = movers.length > 6 ? (L.sel ? [L.sel] : []) : movers.concat(L.sel && L.sel.fixed ? [L.sel] : []);
+    for (const b of targets) {
+      const ps = pullsOn(b); if (!ps.length) continue;
+      const maxF = Math.max(...ps.map(p => p.F));
+      let nx = 0, ny = 0; ps.forEach(p => { nx += p.F * p.ux; ny += p.F * p.uy; });
+      const net = Math.hypot(nx, ny);
+      const base = b.r + 4;
+      if (net >= maxF * 0.005) {
+        const ux = nx / net, uy = ny / net, len = 18 + 72 * net / maxF;
+        arrow(ctx, b.x + ux * base, b.y + uy * base, b.x + ux * (base + len), b.y + uy * (base + len), 'rgba(255,255,255,.95)', 7, 14);
+      }
+      ps.forEach(p => {
+        const len = 18 + 72 * p.F / maxF; if (p.F / maxF < 0.03) return;
+        arrow(ctx, b.x + p.ux * base, b.y + p.uy * base, b.x + p.ux * (base + len), b.y + p.uy * (base + len), p.o.color, 3, 10);
+      });
+      if (net < maxF * 0.005 && !b.fixed) {
+        ctx.font = '700 13px ' + FONT_D; ctx.fillStyle = '#5fd3c7'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText('balanced', b.x, b.y - b.r - 22);
+      }
+    }
+  }
+  if (!L.balls.length) {
+    ctx.font = '600 20px ' + FONT_D; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Click anywhere to drop a ball', w / 2, h / 2);
+  }
+  if (!L.running) {
+    ctx.font = '700 22px ' + FONT_D; ctx.fillStyle = '#ffc94a'; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText('Paused', w - 16, 12);
+  }
+}
+
+/* ======================================================
+   GAME 4: ROCKET ESCAPE
+   ====================================================== */
+const GCONST = 6.674e-11, TOL = 0.015, CR = 0.5;
+function seeded(seed) { let s = (seed >>> 0) || 1; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+const WORLDS = [
+  { name: 'Moon', M: 7.342e22, R: 1.737e6, color: '#b9b9c2', kind: 'rock', base: '#a9a9b2', patch: '#6f6f7a', seed: 11 },
+  { name: 'Mercury', M: 3.301e23, R: 2.440e6, color: '#9a8f85', kind: 'rock', base: '#978b80', patch: '#6b6158', seed: 23 },
+  { name: 'Mars', M: 6.417e23, R: 3.390e6, color: '#c1583a', kind: 'mars', base: '#b9543a', patch: '#7a3322', air: '230,150,110', sky: '#c9906c', seed: 37 },
+  { name: 'Venus', M: 4.867e24, R: 6.052e6, color: '#d9a55a', kind: 'venus', base: '#d9b26a', patch: '#9a7038', air: '255,217,160', sky: '#d9a55a', seed: 41 },
+  { name: 'Earth', M: 5.972e24, R: 6.371e6, color: '#4f9a5a', kind: 'earth', base: '#1f5fa8', patch: '#4f8a4a', air: '124,184,255', sky: '#6aa7e8', seed: 53 },
+  { name: 'Jupiter', M: 1.898e27, R: 6.991e7, color: '#c9a27a', kind: 'gas', base: '#d8b88f', patch: '#a8764e', air: '232,201,158', sky: '#b89470', seed: 67 },
+  { name: 'Pluto', M: 1.303e22, R: 1.188e6, color: '#d9c2a8', kind: 'pluto', base: '#c9ad8f', patch: '#7a5a44', seed: 79 }
+];
+const STAR_COLORS = ['#ffffff', '#ffffff', '#cfe0ff', '#ffe9c4', '#ffd2b0'];
+const R4 = { wi: 0, world: null, feats: [], ve: 1, unit: 'km', phase: 'ready', result: null, u: 0, k2: 1, umax: 0, v0: 0, ratio: 0, extra: 0, vpx: 0, t: 0, time: 0, clock: 0, parts: [], smoke: [], shake: 0, perfect: 0, escapes: 0, crashes: 0, hint: 0, uiT: 0, scroll: 0, starfield: makeStars(220).map((s, i) => Object.assign(s, { c: STAR_COLORS[i % STAR_COLORS.length] })) };
+const RC = $('#rocketCanvas');
+const RS = makeCanvas(RC);
+const rocketToast = $('#rocketToast');
+
+/* ---- planet surface features, in disc coordinates (-1..1), drawn crisp at any zoom ---- */
+function nearPts(rnd, n, fn) {
+  for (let i = 0; i < n; i++) { const th = (rnd() - 0.5) * 0.32, d = 0.002 + rnd() * 0.035; fn(Math.sin(th) * (1 - d), -Math.cos(th) * (1 - d), rnd); }
+}
+function makeFeatures(W) {
+  const rnd = seeded(W.seed), F = [];
+  const blob = (x, y, r, c, a, sx) => F.push({ t: 'blob', x, y, r, c, a, sx: sx || 1 });
+  const crater = (x, y, r) => F.push({ t: 'crater', x, y, r });
+  const band = (y0, y1, c, a) => F.push({ t: 'band', y0, y1, c, a });
+  if (W.kind === 'rock' || W.kind === 'mars' || W.kind === 'pluto') {
+    for (let i = 0; i < 8; i++) blob(rnd() * 1.6 - 0.8, rnd() * 1.6 - 0.8, 0.1 + rnd() * 0.22, W.patch, 0.4 + rnd() * 0.2, 1 + rnd() * 0.6);
+    if (W.kind === 'pluto') { blob(0.18, 0.2, 0.2, '#f1e3cf', 0.9); blob(0.42, 0.2, 0.19, '#f1e3cf', 0.9); blob(0.3, 0.38, 0.15, '#f1e3cf', 0.9); blob(-0.45, 0.35, 0.28, '#5e3f2c', 0.75, 1.6); }
+    if (W.kind === 'mars') { blob(0, 0.97, 0.24, '#f4efe8', 0.85, 2.2); blob(-0.1, 0.1, 0.5, '#7a3322', 0.25, 2.5); }
+    const nc = W.kind === 'rock' ? 70 : 25;
+    for (let i = 0; i < nc; i++) crater(rnd() * 1.8 - 0.9, rnd() * 1.8 - 0.9, 0.012 + rnd() * 0.06);
+    nearPts(rnd, 12, (x, y, r) => blob(x, y, 0.01 + r() * 0.02, W.patch, 0.35, 2));
+    nearPts(rnd, 80, (x, y, r) => crater(x, y, 0.0012 + r() * 0.007));
+  } else if (W.kind === 'earth') {
+    const land = ['#3f7d3c', '#5a8f45', '#8a7a4a'];
+    for (let i = 0; i < 6; i++) { const cx = rnd() * 1.6 - 0.8, cy = rnd() * 1.6 - 0.8; for (let k = 0; k < 7; k++) blob(cx + (rnd() - 0.5) * 0.4, cy + (rnd() - 0.5) * 0.35, 0.05 + rnd() * 0.12, land[k % 3], 0.95); }
+    blob(0, -1, 0.07, land[1], 1, 1.6);
+    nearPts(rnd, 30, (x, y, r) => blob(x, y, 0.008 + r() * 0.02, land[Math.floor(r() * 3)], 0.95, 1.5));
+    blob(0, 0.99, 0.3, '#f4f8ff', 0.9, 2.5);
+    for (let i = 0; i < 16; i++) blob(rnd() * 1.8 - 0.9, rnd() * 1.8 - 0.9, 0.04 + rnd() * 0.09, '#ffffff', 0.5, 1.8 + rnd() * 1.5);
+    nearPts(rnd, 8, (x, y, r) => blob(x, y - 0.003, 0.006 + r() * 0.01, '#ffffff', 0.45, 3));
+  } else if (W.kind === 'gas') {
+    const cols = ['#e8d3b0', '#c99a6e', '#f0e2c8', '#b07a50', '#dcc29a', '#a8764e'];
+    let y = -1, k = 0; while (y < 1) { const hh = 0.05 + rnd() * 0.12; band(y, y + hh, cols[k % cols.length], 0.9); y += hh; k++; }
+    blob(0.3, 0.35, 0.1, '#c2563a', 0.85, 1.7);
+    for (let i = 0; i < 30; i++) blob(rnd() * 1.8 - 0.9, rnd() * 1.8 - 0.9, 0.02 + rnd() * 0.05, cols[Math.floor(rnd() * cols.length)], 0.5, 2.5 + rnd() * 2);
+    nearPts(rnd, 24, (x, y, r) => blob(x, y, 0.004 + r() * 0.012, cols[Math.floor(r() * cols.length)], 0.6, 3));
+  } else if (W.kind === 'venus') {
+    const cols = ['#e8c98a', '#cfa45e', '#f0dba8'];
+    let y = -1, k = 0; while (y < 1) { const hh = 0.1 + rnd() * 0.2; band(y, y + hh, cols[k % 3], 0.55); y += hh; k++; }
+    for (let i = 0; i < 20; i++) blob(rnd() * 1.8 - 0.9, rnd() * 1.8 - 0.9, 0.06 + rnd() * 0.12, cols[Math.floor(rnd() * 3)], 0.4, 3);
+    nearPts(rnd, 40, (x, y, r) => blob(x, y, 0.004 + r() * 0.012, '#9a7038', 0.5, 2));
+  }
+  return F;
+}
+function drawPlanet(ctx, W, F, cx, cy, P, w, h) {
+  if (P < 0.6) return;
+  if (W.air) {
+    const glow = Math.max(6, P * 0.05);
+    const ag = ctx.createRadialGradient(cx, cy, P, cx, cy, P + glow);
+    ag.addColorStop(0, 'rgba(' + W.air + ',.55)'); ag.addColorStop(1, 'rgba(' + W.air + ',0)');
+    ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(cx, cy, P + glow, 0, TAU); ctx.fill();
+  }
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, P, 0, TAU); ctx.clip();
+  ctx.fillStyle = W.base; ctx.fillRect(Math.max(cx - P, -10), Math.max(cy - P, -10), Math.min(2 * P, w + 20), Math.min(2 * P, h + 20));
+  for (const f of F) {
+    if (f.t === 'band') {
+      const y0 = cy + f.y0 * P, y1 = cy + f.y1 * P; if (y1 < 0 || y0 > h) continue;
+      ctx.globalAlpha = f.a; ctx.fillStyle = f.c; ctx.fillRect(-10, y0, w + 20, y1 - y0 + 1); continue;
+    }
+    const x = cx + f.x * P, y = cy + f.y * P, r = f.r * P, rx = r * (f.sx || 1);
+    if (r < 0.4 || x + rx < 0 || x - rx > w || y + r < 0 || y - r > h) continue;
+    if (f.t === 'blob') { ctx.globalAlpha = f.a; ctx.fillStyle = f.c; ctx.beginPath(); ctx.ellipse(x, y, rx, r, 0, 0, TAU); ctx.fill(); }
+    else {
+      ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = Math.max(0.8, r * 0.18);
+      ctx.beginPath(); ctx.arc(x, y, r, Math.PI * 0.95, Math.PI * 1.85); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+  // sunlight from the upper left, night side to the lower right
+  const lg = ctx.createRadialGradient(cx - 0.45 * P, cy - 0.55 * P, 0, cx - 0.45 * P, cy - 0.55 * P, 1.7 * P);
+  lg.addColorStop(0, 'rgba(255,255,255,.12)'); lg.addColorStop(0.42, 'rgba(0,0,0,0)'); lg.addColorStop(0.75, 'rgba(0,0,10,.55)'); lg.addColorStop(1, 'rgba(0,0,10,.92)');
+  ctx.fillStyle = lg; ctx.fillRect(Math.max(cx - P, -10), Math.max(cy - P, -10), Math.min(2 * P, w + 20), Math.min(2 * P, h + 20));
+  ctx.restore();
+}
+
+/* ---- text helpers ---- */
+function sci(x, sig) {
+  let e = Math.floor(Math.log10(Math.abs(x)));
+  let m = (x / Math.pow(10, e)).toFixed(sig - 1);
+  if (Math.abs(parseFloat(m)) >= 10) { e += 1; m = (x / Math.pow(10, e)).toFixed(sig - 1); }
+  return m + ' × 10<sup>' + (e < 0 ? '−' + (-e) : e) + '</sup>';
+}
+const fmtInt = x => Math.round(x).toLocaleString('en-US');
+const fmtSpeed = v => v >= 1000 ? (v / 1000).toFixed(2) + ' km/s' : Math.round(v) + ' m/s';
+function human(sec) {
+  sec = Math.max(0, sec);
+  if (sec < 60) return Math.round(sec) + ' s';
+  if (sec < 3600) return Math.floor(sec / 60) + ' min ' + Math.round(sec % 60) + ' s';
+  if (sec < 172800) return Math.floor(sec / 3600) + ' h ' + Math.round((sec % 3600) / 60) + ' min';
+  if (sec < 3.156e7 * 2) return fmtInt(sec / 86400) + ' days';
+  return fmtInt(sec / 3.156e7) + ' years';
+}
+function clockText(sec) {
+  if (sec < 3600) { const m = Math.floor(sec / 60), s = Math.floor(sec % 60); return 'T+ ' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); }
+  return 'T+ ' + human(sec);
+}
+function rMsg(text, cls) { const m = $('#rMsg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = text; }
+
+/* ---- worlds, hints, controls ---- */
+const worldGrid = $('#worldGrid');
+WORLDS.concat([{ name: 'Mystery planet', color: '#a596ff' }]).forEach((w, i) => {
+  const b = document.createElement('button'); b.className = 'chip'; b.type = 'button';
+  b.innerHTML = '<span class="dot" style="background:' + w.color + '"></span>' + w.name;
+  b.addEventListener('click', () => setWorld(i));
+  worldGrid.appendChild(b);
+});
+function setWorld(i) {
+  R4.wi = i;
+  let w;
+  if (i === WORLDS.length) {
+    const e = 22 + Math.floor(Math.random() * 5);
+    const M = Number(((1 + Math.random() * 8.99) * Math.pow(10, e)).toPrecision(4));
+    const rho = 1500 + Math.random() * 4000;
+    const R = Number(Math.cbrt(3 * M / (4 * Math.PI * rho)).toPrecision(4));
+    const looks = [
+      { kind: 'rock', base: '#8f86b8', patch: '#5a5180', color: '#a596ff' },
+      { kind: 'gas', base: '#9fd8d0', patch: '#4f9a92', color: '#5fd3c7', air: '160,230,220', sky: '#6fb8ae' },
+      { kind: 'mars', base: '#c9784a', patch: '#7a3f22', color: '#ff9f6b' },
+      { kind: 'earth', base: '#2c5d8f', patch: '#6fa05a', color: '#9fe08a', air: '140,200,255', sky: '#7ab3e0' }
+    ];
+    const look = looks[Math.floor(Math.random() * looks.length)];
+    w = Object.assign({ name: 'Planet X-' + (10 + Math.floor(Math.random() * 90)), M, R, seed: Math.floor(Math.random() * 1e6) }, look);
+  } else w = WORLDS[i];
+  R4.world = w;
+  R4.feats = makeFeatures(w);
+  R4.ve = Math.sqrt(2 * GCONST * w.M / w.R);
+  R4.hint = 0;
+  [...worldGrid.children].forEach((b, k) => b.setAttribute('aria-pressed', k === i ? 'true' : 'false'));
+  $('#gG').innerHTML = sci(GCONST, 4) + ' N·m²/kg²';
+  $('#gM').innerHTML = sci(w.M, 4) + ' kg';
+  $('#gR').innerHTML = sci(w.R, 4) + ' m';
+  $('#rWorldName').textContent = w.name;
+  $('#vAns').value = '';
+  resetRocket(); renderHints();
+  rMsg('Calculate the escape velocity for ' + w.name + ', type it in, then launch.');
+}
+function resetRocket() {
+  R4.phase = 'ready'; R4.result = null; R4.u = 0; R4.extra = 0; R4.t = 0; R4.clock = 0; R4.parts = []; R4.smoke = []; R4.shake = 0; R4.scroll = 0; R4.ht = 0; R4.hr0 = 0; R4.fr = 0;
+  $('#launchBtn').textContent = 'Launch!';
+  updateRocketUI();
+}
+function renderHints() {
+  const w = R4.world, two = 2 * GCONST * w.M, q = two / w.R;
+  const steps = [
+    'Multiply: 2 × G × M = ' + sci(two, 4),
+    'Divide by R: ' + sci(two, 4) + ' ÷ ' + sci(w.R, 4) + ' = ' + sci(q, 4) + ' m²/s²',
+    'Square root: v<sub>esc</sub> = ' + fmtInt(R4.ve) + ' m/s = ' + (R4.ve / 1000).toFixed(2) + ' km/s'
+  ];
+  const ol = $('#hintSteps');
+  ol.innerHTML = steps.slice(0, R4.hint).map(s => '<li>' + s + '</li>').join('');
+  ol.hidden = R4.hint === 0;
+  $('#hintBtn').disabled = R4.hint >= 2;
+  $('#ansBtn').disabled = R4.hint >= 3;
+}
+$('#hintBtn').addEventListener('click', () => { R4.hint = Math.min(2, R4.hint + 1); renderHints(); });
+$('#ansBtn').addEventListener('click', () => { R4.hint = 3; renderHints(); });
+function setUnit(u) { R4.unit = u; setSeg($('#uKm'), $('#uM'), u === 'm'); }
+$('#uKm').addEventListener('click', () => setUnit('km'));
+$('#uM').addEventListener('click', () => setUnit('m'));
+$('#launchBtn').addEventListener('click', launch);
+$('#resetBtn').addEventListener('click', () => { resetRocket(); rMsg('Rocket is back on the pad. Check your answer and launch again.'); });
+$('#vAns').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); launch(); } });
+function launch() {
+  if (R4.phase === 'up' || R4.phase === 'down') return;
+  const val = parseFloat($('#vAns').value.replace(/[,\s]/g, ''));
+  if (!isFinite(val) || val <= 0) { rMsg('Type your escape velocity as a number first.', 'bad'); return; }
+  const v0 = R4.unit === 'km' ? val * 1000 : val;
+  const ratio = v0 / R4.ve;
+  if (R4.unit === 'km' && Math.abs(ratio / 1000 - 1) < 0.03) { rMsg('That is about 1000 times too fast. It looks like an answer in m/s. Switch the unit to m/s, or divide by 1000.', 'bad'); return; }
+  if (R4.unit === 'm' && Math.abs(ratio * 1000 - 1) < 0.03) { rMsg('That is about 1000 times too slow. It looks like an answer in km/s. Switch the unit to km/s, or multiply by 1000.', 'bad'); return; }
+  resetRocket();
+  R4.v0 = v0; R4.ratio = ratio;
+  if (ratio < 1 - TOL) { R4.result = 'crash'; R4.k2 = ratio * ratio; R4.umax = R4.k2; }
+  else if (ratio <= 1 + TOL) { R4.result = 'perfect'; R4.k2 = 1; }
+  else { R4.result = 'over'; R4.k2 = ratio * ratio; }
+  R4.phase = 'up';
+  rMsg('Liftoff at ' + fmtSpeed(v0) + '. Engine cut off. The rocket is coasting...');
+  updateRocketUI();
+}
+
+/* ---- camera: zooms out as the rocket climbs, so the planet shrinks to a dot ---- */
+function rgeom() { const { w, h } = RS; return { w, h, x: w / 2, s: Math.max(0.75, Math.min(1.3, h / 560)) }; }
+function camera(G, u) {
+  const Ps0 = Math.max(G.w, G.h) * 3;
+  const z = smooth(u / 0.3);
+  const D = Ps0 * (1 - z) + G.h * 0.58 * z;
+  const yR = (G.h - 92) + (G.h * 0.36 - (G.h - 92)) * smooth(u / 0.12);
+  const P = D * Math.max(0, 1 - u);
+  return { yR, P, cx: G.x, cy: yR + D, zoom: P / Ps0 };
+}
+function burst(x, y) {
+  const cols = ['#ffc94a', '#ff7a6b', '#ffffff', '#ff9f6b', '#8a8fa8', '#4a4f68'];
+  for (let k = 0; k < 120; k++) {
+    const a = Math.random() * Math.PI - Math.PI, sp = 60 + Math.random() * 380;
+    R4.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0, max: 0.8 + Math.random() * 1.6, size: 2 + Math.random() * 5, color: cols[k % cols.length], g: 380, ground: y + 4 });
+  }
+  for (let k = 0; k < 26; k++) R4.parts.push({ x: x + (Math.random() - 0.5) * 30, y: y - Math.random() * 20, vx: (Math.random() - 0.5) * 60, vy: -20 - Math.random() * 50, life: 0, max: 2.5 + Math.random() * 2, size: 10 + Math.random() * 14, color: '#3b3f52', g: 0, smoke: true });
+  R4.shake = 1;
+}
+function finish() {
+  const w = R4.world;
+  if (R4.result === 'crash') {
+    R4.crashes++;
+    const altKm = w.R * R4.umax / (1 - R4.umax) / 1000;
+    rMsg('Crash! At ' + fmtSpeed(R4.v0) + ' the rocket climbed ' + fmtInt(altKm) + ' km before gravity pulled it back. The flight lasted ' + human(R4.clock) + '. You were ' + ((1 - R4.ratio) * 100).toFixed(1) + '% too slow.', 'bad');
+    toast(rocketToast, 'Boom! Not fast enough.');
+  } else if (R4.result === 'perfect') {
+    R4.perfect++;
+    rMsg('Perfect escape! Escape velocity for ' + w.name + ' is ' + fmtSpeed(R4.ve) + '. ' + w.name + ' shrinks to a dot behind you. The rocket keeps slowing down, but it never falls back.', 'good');
+    toast(rocketToast, 'Perfect escape!', 2600);
+  } else {
+    R4.escapes++;
+    const vinf = Math.sqrt(R4.v0 * R4.v0 - R4.ve * R4.ve);
+    rMsg('Escaped with speed to spare. Even far from ' + w.name + ' it keeps cruising at ' + fmtSpeed(vinf) + '. You were ' + ((R4.ratio - 1) * 100).toFixed(1) + '% over, which burns extra fuel.', 'good');
+    toast(rocketToast, 'Escaped, and still speeding away');
+  }
+  $('#launchBtn').textContent = 'Launch again';
+  updateRocketUI();
+}
+function tickRocket(dt) {
+  R4.time += dt;
+  const G = rgeom(); if (!G.w) return;
+  const W = R4.world;
+  if (R4.phase !== 'ready') R4.t += dt;
+  const u0 = R4.u;
+  if (R4.phase === 'up') {
+    const s = Math.sqrt(Math.max(0, R4.k2 - R4.u));
+    R4.u += CR * Math.max(s, 0.04) * dt;
+    if (R4.result === 'crash' && R4.u >= R4.umax) { R4.u = R4.umax; R4.phase = 'down'; }
+    else if (R4.result === 'perfect' && R4.u >= 0.985) { R4.phase = 'hover'; R4.hr0 = W.R / (1 - 0.985); R4.ht = 0; finish(); }
+    else if (R4.result === 'over' && R4.u >= 0.99) {
+      R4.phase = 'flyoff'; R4.fr = W.R / (1 - 0.99);
+      R4.vpx = 140 + 520 * Math.min(1, Math.sqrt(R4.k2 - 1) / 1.2);
+      finish();
+    }
+  } else if (R4.phase === 'down') {
+    const s = Math.sqrt(Math.max(0, R4.umax - R4.u));
+    R4.u -= CR * Math.max(s, 0.04) * dt;
+    if (R4.u <= 0) {
+      R4.u = 0; R4.phase = 'crashed';
+      const cam = camera(G, 0); burst(G.x, cam.yR - 4); finish();
+    }
+  } else if (R4.phase === 'hover') {
+    // time runs 6 hours per second out here; the rocket follows the real escape path r^(3/2) grows steadily
+    R4.u += (1 - R4.u) * dt * 0.6;
+    R4.ht += dt * 21600; R4.clock += dt * 21600;
+  } else if (R4.phase === 'flyoff') {
+    R4.u += (1 - R4.u) * Math.min(1, dt * 3);
+    R4.fr += currentSpeed() * dt * 86400;
+    R4.extra += R4.vpx * 0.3 * dt;
+    R4.scroll += R4.vpx * dt;
+    R4.clock += dt * 86400;
+  }
+  // mission clock: the real time this stretch of the flight takes (dt = dr / v)
+  const du = Math.abs(R4.u - u0);
+  if (du > 0 && R4.phase !== 'flyoff' && R4.phase !== 'hover') {
+    const um = Math.min(0.9999, (R4.u + u0) / 2);
+    const v = Math.max(R4.ve * Math.sqrt(Math.max(0, R4.k2 - um)), R4.ve * 0.03);
+    R4.clock += W.R * du / ((1 - um) * (1 - um) * v);
+  }
+  const cam = camera(G, R4.u);
+  // launch smoke spreads across the pad
+  if (R4.phase === 'up' && R4.t < 1.2) {
+    for (let k = 0; k < 3; k++) {
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      R4.smoke.push({ rx: (Math.random() - 0.5) * 16, ry: -Math.random() * 8, vx: dir * (50 + Math.random() * 150), vy: -Math.random() * 25, size: 8 + Math.random() * 10, life: 0, max: 2.5 + Math.random() * 2 });
+    }
+  }
+  R4.smoke.forEach(p => { p.life += dt; p.rx += p.vx * dt; p.ry += p.vy * dt; p.vx *= 0.985; p.size += 14 * dt; });
+  R4.smoke = R4.smoke.filter(p => p.life < p.max);
+  // exhaust behind the rocket while the engine fires
+  if (R4.phase === 'up' && R4.t < 0.8) {
+    const y = cam.yR - R4.extra;
+    for (let k = 0; k < 4; k++) R4.parts.push({ x: G.x + (Math.random() - 0.5) * 10, y: y + 8 * G.s * cam.zoom, vx: (Math.random() - 0.5) * 70, vy: 120 + Math.random() * 160, life: 0, max: 0.4 + Math.random() * 0.5, size: 3 + Math.random() * 5, color: Math.random() < 0.5 ? '#ffd27a' : '#c9cfe8', g: 0 });
+  }
+  R4.parts.forEach(p => {
+    p.life += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.smoke) p.size += 10 * dt;
+    if (p.ground != null && p.y > p.ground) { p.y = p.ground; p.vy *= -0.25; p.vx *= 0.6; }
+  });
+  R4.parts = R4.parts.filter(p => p.life < p.max);
+  R4.shake = Math.max(0, R4.shake - dt * 1.8);
+  R4.iscroll = (R4.iscroll || 0) + dt * 320 * (currentSpeed() / R4.ve) * (R4.phase === 'down' ? -1 : 1);
+  R4.uiT += dt; if (R4.uiT > 0.08) { R4.uiT = 0; updateRocketUI(); }
+  drawRocketScene(G, cam);
+}
+// distance from the planet's center, in metres
+function rocketR() {
+  const W = R4.world, mu2 = 2 * GCONST * W.M;
+  if (R4.phase === 'hover') return Math.pow(Math.pow(R4.hr0, 1.5) + 1.5 * Math.sqrt(mu2) * R4.ht, 2 / 3);
+  if (R4.phase === 'flyoff') return R4.fr;
+  return W.R / (1 - Math.min(R4.u, 0.99));
+}
+function fmtDist(m) {
+  const km = Math.max(0, m) / 1000;
+  if (km < 1e6) return fmtInt(km) + ' km';
+  if (km < 1e9) return (km / 1e6).toFixed(2) + ' million km';
+  return (km / 1e9).toFixed(2) + ' billion km';
+}
+function currentSpeed() {
+  if (R4.phase === 'ready' || R4.phase === 'crashed') return 0;
+  const mu2 = 2 * GCONST * R4.world.M;
+  if (R4.phase === 'hover') return Math.sqrt(mu2 / rocketR());
+  if (R4.phase === 'flyoff') return Math.sqrt(Math.max(0, R4.v0 * R4.v0 - R4.ve * R4.ve) + mu2 / R4.fr);
+  return R4.ve * Math.sqrt(Math.max(0, R4.k2 - R4.u));
+}
+function updateRocketUI() {
+  const v = currentSpeed(), w = R4.world, far = R4.phase === 'hover' || R4.phase === 'flyoff';
+  $('#rv').textContent = (v / 1000).toFixed(2) + ' km/s' + (R4.phase === 'down' ? ' (falling)' : '');
+  const r = R4.phase === 'ready' || R4.phase === 'crashed' ? w.R : rocketR();
+  $('#ralt').textContent = fmtDist(r - w.R);
+  const gp = (w.R / r) * (w.R / r) * 100;
+  $('#rgrav').textContent = (gp < 0.01 ? 'under 0.01' : gp < 1 ? gp.toFixed(2) : gp.toFixed(1)) + '% of surface';
+  $('#rclock').textContent = clockText(R4.clock);
+  const eng = { ready: 'Ready', crashed: 'Destroyed', hover: 'Off (drifting)', flyoff: 'Off (coasting)', down: 'Off (falling)' };
+  $('#reng').textContent = R4.phase === 'up' ? (R4.t < 0.8 ? 'Launch boost' : 'Off (coasting)') : eng[R4.phase];
+  $('#rScore').textContent = 'Perfect ' + R4.perfect + ' · Escapes ' + R4.escapes + ' · Crashes ' + R4.crashes;
+  $('#launchBtn').disabled = R4.phase === 'up' || R4.phase === 'down';
+}
+
+/* ---- drawing ---- */
+function drawRocket(ctx, x, y, s, burn, t) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  if (burn) {
+    const L = 64 + Math.sin(t * 50) * 6 + Math.random() * 5;
+    const og = ctx.createLinearGradient(0, 0, 0, L);
+    og.addColorStop(0, 'rgba(255,244,210,.95)'); og.addColorStop(0.3, 'rgba(255,176,84,.75)'); og.addColorStop(1, 'rgba(255,110,70,0)');
+    ctx.fillStyle = og; ctx.beginPath(); ctx.moveTo(-6, 1); ctx.bezierCurveTo(-11, L * 0.4, -4, L * 0.8, 0, L); ctx.bezierCurveTo(4, L * 0.8, 11, L * 0.4, 6, 1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.moveTo(-3.5, 1); ctx.quadraticCurveTo(0, L * 0.5, 3.5, 1); ctx.closePath(); ctx.fill();
+    for (let k = 1; k <= 3; k++) { ctx.fillStyle = 'rgba(255,255,255,' + (0.8 - k * 0.18) + ')'; ctx.beginPath(); ctx.ellipse(0, 6 + k * 9, 2.4, 3.4, 0, 0, TAU); ctx.fill(); }
+  }
+  const body = (x0, w0) => { const g = ctx.createLinearGradient(x0, 0, x0 + w0, 0); g.addColorStop(0, '#ffffff'); g.addColorStop(0.55, '#e3e7f4'); g.addColorStop(1, '#9aa1bd'); return g; };
+  ctx.fillStyle = '#3a3f5c';
+  ctx.beginPath(); ctx.moveTo(-8, -22); ctx.lineTo(-15, -3); ctx.lineTo(-15, 2); ctx.lineTo(-8, -4); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(8, -22); ctx.lineTo(15, -3); ctx.lineTo(15, 2); ctx.lineTo(8, -4); ctx.closePath(); ctx.fill();
+  const bell = ctx.createLinearGradient(-6, 0, 6, 0); bell.addColorStop(0, '#9aa0b8'); bell.addColorStop(1, '#3e4360');
+  ctx.fillStyle = bell; ctx.beginPath(); ctx.moveTo(-4, -6); ctx.lineTo(4, -6); ctx.lineTo(6.5, 1); ctx.lineTo(-6.5, 1); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = body(-8, 16); ctx.fillRect(-8, -60, 16, 55);
+  ctx.fillStyle = '#a596ff'; ctx.fillRect(-8, -30, 16, 3);
+  ctx.fillStyle = '#22263d'; ctx.fillRect(-8, -66, 16, 6);
+  ctx.fillStyle = body(-7, 14); ctx.fillRect(-7, -88, 14, 22);
+  ctx.fillStyle = body(-7, 14);
+  ctx.beginPath(); ctx.moveTo(-7, -88); ctx.bezierCurveTo(-7, -100, -2, -108, 0, -110); ctx.bezierCurveTo(2, -108, 7, -100, 7, -88); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(26,35,80,.45)'; ctx.lineWidth = 1;
+  ctx.strokeRect(-8, -60, 16, 55); ctx.strokeRect(-7, -88, 14, 22);
+  ctx.restore();
+}
+function drawTracker(ctx, x, y) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, 10); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 10, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, 2, 0, TAU); ctx.fill();
+  ctx.strokeStyle = '#c4baff'; ctx.lineWidth = 1.5;
+  const k = 13, c = 5;
+  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+    ctx.beginPath(); ctx.moveTo(x + sx * k, y + sy * (k - c)); ctx.lineTo(x + sx * k, y + sy * k); ctx.lineTo(x + sx * (k - c), y + sy * k); ctx.stroke();
+  }
+  ctx.font = '700 12px ' + FONT_D; ctx.fillStyle = '#c4baff'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('Rocket', x + 18, y - 1);
+  ctx.font = '500 11px ' + FONT_D; ctx.fillStyle = 'rgba(196,186,255,.75)'; ctx.textBaseline = 'top';
+  ctx.fillText('too small to see from here', x + 18, y + 1);
+}
+function drawInset(ctx, G, skyA, burning) {
+  if (R4.phase === 'ready' || R4.phase === 'crashed') return;
+  const iw = Math.round(Math.min(150, G.w * 0.3)), ih = Math.round(iw * 1.3), ix = 12, iy = 12;
+  ctx.save();
+  rr(ctx, ix, iy, iw, ih, 12); ctx.clip();
+  ctx.fillStyle = '#03050d'; ctx.fillRect(ix, iy, iw, ih);
+  if (skyA > 0.01) { ctx.globalAlpha = skyA; ctx.fillStyle = R4.world.sky; ctx.fillRect(ix, iy, iw, ih); ctx.globalAlpha = 1; }
+  // stars sliding past show how fast the rocket is moving
+  const v = currentSpeed() / Math.max(1, R4.ve), streak = 1 + Math.min(30, v * 18);
+  ctx.globalAlpha = 1 - skyA * 0.9;
+  for (let k = 0; k < 45; k++) {
+    const st = R4.starfield[k];
+    const y = iy + (((st.y * ih + (R4.iscroll || 0) * (0.5 + st.r * 0.4)) % ih) + ih) % ih;
+    ctx.fillStyle = st.c; ctx.fillRect(ix + st.x * iw, y, Math.max(1, st.r), streak);
+  }
+  ctx.globalAlpha = 1;
+  drawRocket(ctx, ix + iw / 2, iy + ih * 0.8, iw / 170, burning, R4.time);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(196,186,255,.75)'; ctx.lineWidth = 1.5; rr(ctx, ix, iy, iw, ih, 12, null, 'rgba(196,186,255,.75)', 1.5);
+  ctx.font = '700 10px ' + FONT_D; ctx.fillStyle = '#c4baff'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('CLOSE-UP CAMERA', ix + 9, iy + 8);
+}
+function drawRocketScene(G, cam) {
+  const { ctx, w, h } = RS; const W = R4.world;
+  ctx.save();
+  if (R4.shake > 0 && !reduceMotion) ctx.translate((Math.random() - 0.5) * 14 * R4.shake, (Math.random() - 0.5) * 14 * R4.shake);
+  ctx.fillStyle = '#03050d'; ctx.fillRect(-20, -20, w + 40, h + 40);
+  // daytime sky on worlds with air, fading to black as the rocket leaves it
+  const skyA = W.sky ? 1 - smooth(R4.u / 0.04) : 0;
+  const starA = 1 - skyA * 0.95;
+  // Milky Way haze
+  ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(-0.45);
+  const mw = ctx.createLinearGradient(0, -h * 0.22, 0, h * 0.22);
+  mw.addColorStop(0, 'rgba(170,180,255,0)'); mw.addColorStop(0.5, 'rgba(170,180,255,' + (0.07 * starA) + ')'); mw.addColorStop(1, 'rgba(170,180,255,0)');
+  ctx.fillStyle = mw; ctx.fillRect(-w, -h * 0.22, 2 * w, h * 0.44); ctx.restore();
+  for (const st of R4.starfield) {
+    const y = ((st.y * h + R4.scroll * (0.3 + st.r * 0.5)) % h + h) % h;
+    ctx.globalAlpha = starA * (reduceMotion ? 0.8 : 0.6 + 0.4 * Math.sin(R4.time * 1.5 + st.p));
+    ctx.fillStyle = st.c;
+    if (R4.phase === 'flyoff' && R4.vpx > 220) ctx.fillRect(st.x * w, y, st.r, 4 + R4.vpx / 45);
+    else { ctx.beginPath(); ctx.arc(st.x * w, y, st.r, 0, TAU); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+  if (skyA > 0.01) {
+    const sg = ctx.createLinearGradient(0, 0, 0, h);
+    sg.addColorStop(0, 'rgba(10,20,60,' + (skyA * 0.6) + ')'); sg.addColorStop(1, W.sky);
+    ctx.globalAlpha = skyA; ctx.fillStyle = sg; ctx.fillRect(-20, -20, w + 40, h + 40); ctx.globalAlpha = 1;
+  }
+  // planet
+  drawPlanet(ctx, W, R4.feats, cam.cx, cam.cy, cam.P, w, h);
+  const padY = cam.cy - cam.P, z = cam.zoom;
+  // launch smoke + pad + tower (they belong to the ground, so they shrink with it)
+  for (const p of R4.smoke) {
+    ctx.globalAlpha = 0.55 * (1 - p.life / p.max) * Math.min(1, z * 3);
+    ctx.fillStyle = W.sky ? '#e9ecf4' : '#a8abb8';
+    ctx.beginPath(); ctx.arc(cam.cx + p.rx * z, padY + p.ry * z, p.size * z, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  if (z > 0.03 && padY < h + 20) {
+    ctx.fillStyle = '#4a4f6a'; ctx.fillRect(cam.cx - 32 * z, padY - 4 * z, 64 * z, 6 * z);
+    ctx.fillStyle = '#6a6f8c'; ctx.fillRect(cam.cx + 24 * z, padY - 118 * z, 5 * z, 116 * z);
+    ctx.strokeStyle = '#6a6f8c'; ctx.lineWidth = Math.max(0.5, 1.5 * z);
+    for (let k = 1; k < 7; k++) { const yy = padY - k * 16 * z; ctx.beginPath(); ctx.moveTo(cam.cx + 24 * z, yy); ctx.lineTo(cam.cx + 29 * z, yy - 8 * z); ctx.stroke(); }
+    if (R4.phase === 'ready' || R4.phase === 'crashed') { ctx.fillRect(cam.cx + 12 * z, padY - 80 * z, 12 * z, 3 * z); }
+    if (W.kind === 'gas' && R4.phase === 'ready') {
+      ctx.font = '600 12px ' + FONT_D; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('Floating launch platform (Jupiter has no solid surface)', cam.cx, padY + 12);
+    }
+  }
+  // debris and exhaust
+  for (const p of R4.parts) {
+    ctx.globalAlpha = (p.smoke ? 0.6 : 1) * (1 - p.life / p.max);
+    ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (p.g || p.smoke ? 1 : 1 + p.life * 2), 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // rocket: drawn at the same zoom as the planet, so it shrinks too. Once it is too small to see,
+  // a tracking marker shows where it is and the close-up camera shows the rocket itself.
+  const ry = cam.yR - R4.extra - 3;
+  const rs = G.s * Math.max(0, z);
+  const burning = R4.phase === 'up' && R4.t < 0.8;
+  if (R4.phase === 'crashed') {
+    ctx.fillStyle = 'rgba(15,15,25,.7)'; ctx.beginPath(); ctx.ellipse(G.x, padY + 1, 38, 6, 0, 0, TAU); ctx.fill();
+  } else if (ry > -10) {
+    const bob = R4.phase === 'hover' && !reduceMotion ? Math.sin(R4.time * 1.4) * 3 : 0;
+    if (rs * 110 >= 16) drawRocket(ctx, G.x, ry + bob, rs, burning, R4.time);
+    else drawTracker(ctx, G.x, ry + bob - 3);
+  }
+  if (R4.phase === 'flyoff' && ry <= -10) {
+    arrow(ctx, G.x, 70, G.x, 36, '#c4baff', 3, 10);
+    ctx.font = '700 14px ' + FONT_D; ctx.fillStyle = '#c4baff'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('Still going at ' + fmtSpeed(currentSpeed()), G.x, 76);
+  }
+  // gravity well gauge (right edge)
+  const gx = w - 26, gt = h * 0.36, gb = h * 0.86;
+  rr(ctx, gx, gt, 10, gb - gt, 5, 'rgba(255,255,255,.1)');
+  const fillTop = gb - Math.min(1, R4.u) * (gb - gt);
+  const gg = ctx.createLinearGradient(0, gb, 0, gt); gg.addColorStop(0, '#a596ff'); gg.addColorStop(1, '#5fd3c7');
+  if (gb - fillTop > 1) rr(ctx, gx, fillTop, 10, gb - fillTop, 5, gg);
+  ctx.font = '600 11px ' + FONT_D; ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom'; ctx.fillText('Escaped', gx + 12, gt - 6);
+  ctx.textBaseline = 'top'; ctx.fillText('Surface', gx + 12, gb + 6);
+  ctx.save(); ctx.translate(gx - 10, (gt + gb) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillText('CLIMBING OUT OF THE GRAVITY WELL', 0, 0); ctx.restore();
+  if (R4.result === 'crash' && R4.phase !== 'up') {
+    const py = gb - R4.umax * (gb - gt);
+    ctx.strokeStyle = '#ff7a6b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx - 4, py); ctx.lineTo(gx + 14, py); ctx.stroke();
+  }
+  // distance to the planet: a measuring line from the rocket down to the surface
+  if (R4.phase !== 'ready' && R4.phase !== 'crashed') {
+    const y0 = cam.yR - R4.extra, top = Math.min(padY, h - 6);
+    if (cam.P > 0.6 && top - y0 > 40 && y0 > 0) {
+      const mx = G.x - 40, my = (y0 + top) / 2, label = fmtDist(rocketR() - W.R);
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,201,74,.8)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(mx, y0); ctx.lineTo(mx, top); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(mx - 6, y0); ctx.lineTo(mx + 6, y0); ctx.moveTo(mx - 6, top); ctx.lineTo(mx + 6, top); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.font = '700 14px ' + FONT_M;
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(3,5,13,.85)'; ctx.strokeText(label, mx - 10, my);
+      ctx.fillStyle = '#ffc94a'; ctx.fillText(label, mx - 10, my);
+      ctx.font = '500 11px ' + FONT_D; ctx.fillStyle = 'rgba(255,201,74,.85)'; ctx.fillText('to ' + W.name + "'s surface", mx - 10, my + 16);
+    }
+  }
+  drawInset(ctx, G, skyA, burning);
+  // HUD
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.font = '700 22px ' + FONT_D; ctx.fillStyle = '#ffffff'; ctx.fillText(W.name, w - 14, 12);
+  ctx.font = '500 13px ' + FONT_M; ctx.fillStyle = 'rgba(255,255,255,.75)';
+  ctx.fillText('mass ' + W.M.toExponential(2) + ' kg', w - 14, 40);
+  if (R4.phase !== 'ready') {
+    ctx.font = '700 17px ' + FONT_M; ctx.fillStyle = '#ffffff';
+    ctx.fillText($('#rv').textContent, w - 14, 64);
+    ctx.font = '500 13px ' + FONT_M; ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ctx.fillText('gravity ' + $('#rgrav').textContent, w - 14, 88);
+    ctx.fillText(clockText(R4.clock), w - 14, 106);
+    ctx.fillStyle = '#ffc94a'; ctx.fillText('distance ' + fmtDist(rocketR() - W.R), w - 14, 124);
+  }
+  ctx.restore();
+}
+
+/* ---------- routing, fullscreen, loop ---------- */
+const ROUTES = ['jump', 'sandbox', 'lab', 'rocket'];
+let route = 'jump';
+function show(r) {
+  if (!ROUTES.includes(r)) r = 'jump';
+  route = r;
+  ROUTES.forEach(k => {
+    $('#view-' + k).hidden = k !== r;
+    $('#tab-' + k).setAttribute('aria-selected', k === r ? 'true' : 'false');
+  });
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  const r = t.dataset.route;
+  if (location.hash.slice(1) === r) show(r); else location.hash = r;
+}));
+window.addEventListener('hashchange', () => show(location.hash.slice(1)));
+ROUTES.forEach(k => {
+  const btn = $('#fs-' + k);
+  btn.addEventListener('click', () => {
+    const view = $('#view-' + k);
+    if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return; }
+    const tEl = view.querySelector('.toast');
+    if (!view.requestFullscreen) { toast(tEl, 'Full screen is not available here.'); return; }
+    view.requestFullscreen().catch(() => toast(tEl, 'Full screen is not available here.'));
+  });
+});
+document.addEventListener('fullscreenchange', () => {
+  document.querySelectorAll('.fs-btn').forEach(b => b.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen');
+});
+
+show(location.hash.slice(1));
+updateJumpUI(); renderLog(); updateSandUI(); syncSel(); setWorld(0);
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  if (route === 'jump') tickJump(dt);
+  else if (route === 'sandbox') tickSand(dt);
+  else if (route === 'lab') tickLab(dt);
+  else tickRocket(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

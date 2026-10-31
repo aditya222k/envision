@@ -12,10 +12,12 @@ export function BuildProgress({
   label,
   percent,
   startedAt,
+  showElapsed = true,
 }: {
   label: string;
   percent: number;
   startedAt: number;
+  showElapsed?: boolean;
 }) {
   const [now, setNow] = useState(startedAt);
 
@@ -31,9 +33,11 @@ export function BuildProgress({
       <div className="flex items-baseline gap-4 text-ink">
         <span className="flex-1 font-bold">{label}</span>
         <span className="tabular-nums">{rounded}%</span>
-        <span className="tabular-nums text-ink-soft">
-          {formatElapsed(now - startedAt)}
-        </span>
+        {showElapsed && (
+          <span className="tabular-nums text-ink-soft">
+            {formatElapsed(now - startedAt)}
+          </span>
+        )}
       </div>
       <div
         role="progressbar"
