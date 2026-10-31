@@ -146,7 +146,7 @@ export function StudentPath() {
             title={current.topic.title}
             src={`/play/${current.topic.gameId}`}
             sandbox="allow-scripts"
-            className="game-frame h-[85vh] w-full lg:h-[640px]"
+            className="game-frame h-[calc(100vh-96px)] min-h-[520px] w-full"
           />
           {hasFinishedGame && (
             <button

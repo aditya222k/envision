@@ -31,10 +31,10 @@ To build games you also need an AI provider. The quickest is a local [Ollama](ht
 
 ```bash
 ollama serve
-ollama pull gemma4:e2b
+ollama pull gemma4:12b
 ```
 
-Then open **AI settings** in the navigation bar and set the Ollama model to `gemma4:e2b`.
+Then open **AI settings** in the navigation bar and set the Ollama model to `gemma4:12b`.
 
 ## AI providers
 
@@ -42,7 +42,7 @@ Envision can use Claude, OpenAI, Gemini or a local Ollama host. Choose one from 
 
 | Provider | Status |
 | --- | --- |
-| Ollama | Works. Defaults to `gemma4:e2b`. |
+| Ollama | Works. Uses `gemma4:12b`, and `gemma4:e2b` works on smaller machines. |
 | Claude, OpenAI, Gemini | Not built yet. They return "not implemented". |
 
 To configure a provider, do one of the following:
@@ -53,6 +53,8 @@ To configure a provider, do one of the following:
 `LLM_PROVIDER` only applies to API requests that don't name a provider.
 
 ## How a game is built
+
+Before designing, the model picks search terms and Envision reads the matching Wikipedia introductions, so games start from real facts. The sources are listed with the game. Web text is passed to the model as reference only, and a failed search never stops a build.
 
 1. The model fills in a structured game design instead of writing code: a title, a story, a player and challenger, a world, a game type and 6 to 8 rounds of questions (`src/lib/games/spec.ts`).
 2. Envision checks the design and asks the model to fix any problems, up to three tries (`src/lib/games/pipeline.ts`).

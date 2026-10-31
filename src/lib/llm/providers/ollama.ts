@@ -6,6 +6,8 @@ import {
 } from "../types";
 
 const CONTEXT_TOKENS = 16384;
+const MAX_REPLY_TOKENS = 3000;
+const TEMPERATURE = 0.4;
 const UNLOAD_CHECKS = 10;
 const UNLOAD_CHECK_MS = 500;
 
@@ -17,7 +19,15 @@ async function isModelLoaded(endpoint: string, model: string) {
 
 export const ollama: LlmProvider = {
   id: "ollama",
-  async generate({ system, prompt, schema, signal, onCharacters }) {
+  async generate({
+    system,
+    prompt,
+    schema,
+    think = false,
+    maxTokens = MAX_REPLY_TOKENS,
+    signal,
+    onCharacters,
+  }) {
     const { endpoint, model } = await getProviderConfig("ollama");
 
     const response = await fetch(`${endpoint}/api/chat`, {
@@ -27,8 +37,14 @@ export const ollama: LlmProvider = {
       body: JSON.stringify({
         model,
         stream: true,
+        // Thinking is slow on small models, so only planning and review ask for it.
+        think,
         format: schema,
-        options: { num_ctx: CONTEXT_TOKENS },
+        options: {
+          num_ctx: CONTEXT_TOKENS,
+          num_predict: maxTokens,
+          temperature: TEMPERATURE,
+        },
         messages: [
           { role: "system", content: system },
           { role: "user", content: prompt },

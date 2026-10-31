@@ -19,19 +19,46 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 
 ## Timeline
 
+### 2026-10-31: NASA planet models and Who's That Planet quiz
+
+- The Solar System explorer now shows detailed NASA 3D models of the Sun and all eight planets, with a switch back to the drawn planets.
+- The models are optimised and served from `public/solar-system/models/`, so the explorer doesn't contact NASA. Credits and the script that rebuilds them are in that folder.
+- Added a Who's That Planet quiz beside the explorer. Students read clues to name a mystery planet, then answer questions about it.
+
 ### 2026-10-31: Solar System explorer
 
 - Replaced the "Cell city" idea under Science with "Solar System". It opens a 3D explorer at `/explore/solar-system` instead of filling in the prompt, so it needs no AI generation or camera.
 - The explorer shows the Sun and all eight planets with orbit paths. Drag rotates, scroll or pinch zooms, **Play orbits** and **Pause orbits** control the animation, and **Reset view** restores the starting camera.
 - Selecting a planet, on the scene or with the planet buttons, highlights it and shows its description, position from the Sun, average distance and orbital period.
 - Facts and scene settings live in `src/lib/explorer/solarSystem.ts`. The facts are reviewed values from NASA fact sheets. A note on the page says sizes, distances and speeds are simplified.
-- Built with three.js and React Three Fiber. Planet surfaces are drawn by code, so there are no image files.
+- Built with three.js and React Three Fiber. The first version drew planet surfaces in code; the entry above adds NASA models.
 - The page has loading and error states. Without WebGL it explains the problem, and the planet facts still work. When the browser asks for reduced motion, the orbits start paused.
 - `npm run eval:games` skips ideas that open an explorer, since they have no prompt to build.
 
 ### 2026-10-31: Brought back the redesign on top of storylines
 
 - Commit `ec5729a` restyled the shared components so the redesign from `e4617be` works with storylines, labs and the companion, and added the navigation bar back with a Storylines link.
+
+### 2026-10-31: Custom games that the model designs itself
+
+- Changed direction: general guardrails on how the model works, rather than rules for each subject.
+- Added a Custom game path. The model thinks through the lesson and writes down the truths the game must obey, writes the whole game, then Envision playtests it in a real browser. The model reviews its code against its own truths and fixes what failed.
+- The playtest works for any subject. It proves a game runs and responds, not that its content is right.
+
+### 2026-10-31: Stronger guardrails for smaller models
+
+- Moved to `gemma4:12b`. Output now has lower randomness and a length limit.
+- Rewrote the lab prompts with strict rules, a worked example for each game type, and a self-check.
+- Retries now tell the model exactly what was wrong, instead of repeating the same request.
+- Simulation labs are now run before anyone sees them, and rejected if amounts hit their limits too fast, barely change, or a slider does nothing.
+- Arrange games are now solved independently, and rejected if the answers disagree.
+- Decide games are now rejected if they loop back or leave a meter unused.
+- Rebuilt the physics lab on real laws. It now uses velocity Verlet with a fixed time step, correct orbit speeds, and collisions that keep mass, momentum and centre of mass. Measured energy drift is effectively zero, and Kepler's third law holds to within 0.2%.
+- Added pull arrows and a live speed readout to the physics lab.
+- Gravity and orbit lessons now always use the physics lab, so model-written formulas can't stand in for physics.
+- Turned off hidden model thinking, which was using up time and cutting replies short.
+- Added web research. Builds now look up the lesson on Wikipedia and give the facts to the model as reference material, and each game lists its sources.
+- Tested 3D output: `gemma4:12b` returned methane coordinates with wrong bond lengths and angles, so model-written 3D data needs checking before students see it.
 
 ### 2026-10-31: Merged over the main redesign
 

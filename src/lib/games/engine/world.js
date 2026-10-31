@@ -375,6 +375,11 @@
 
   function makeWorld(parent, spec) {
     var theme = THEMES[spec.theme];
+    // The scene is as wide as its frame, so it fills the space with no bands.
+    var frame = document.getElementById(parent).getBoundingClientRect();
+    var viewW = Math.round(
+      Math.min(Math.max((frame.width / Math.max(frame.height, 1)) * H, 520), 1700),
+    );
     var random = seededRandom(spec.title + spec.player.name);
     var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var scene = null;
@@ -383,8 +388,9 @@
     var ground, player, challenger, playerShadow, challengerShadow, sparks;
     var scrollSpeed = 0;
     var idleSpeed = spec.mechanic === "beat-the-clock" ? 3.2 : 0.3;
-    var playerHome = spec.mechanic === "boss-battle" ? 270 : spec.mechanic === "beat-the-clock" ? 820 : 270;
-    var challengerHome = spec.mechanic === "beat-the-clock" ? 120 : 1040;
+    var isChase = spec.mechanic === "beat-the-clock";
+    var playerHome = viewW * (isChase ? 0.64 : 0.21);
+    var challengerHome = viewW * (isChase ? 0.1 : 0.8);
     var challengerSize = spec.mechanic === "boss-battle" ? 210 : 130;
 
     function canvasTexture(key, width, height, paint) {
@@ -395,7 +401,7 @@
 
     function shout(text, color) {
       var label = scene.add
-        .text(W / 2, 180, text, {
+        .text(viewW / 2, 180, text, {
           fontFamily: "system-ui, sans-serif",
           fontSize: "76px",
           fontStyle: "900",
@@ -526,7 +532,7 @@
           if (spec.mechanic === "journey") {
             scene.tweens.add({
               targets: challenger,
-              x: challengerHome + (1 - detail.progress) * 280 - 90,
+              x: challengerHome + (1 - detail.progress) * viewW * 0.16 - viewW * 0.06,
               duration: 900,
               ease: "Sine.easeOut",
             });
@@ -541,7 +547,7 @@
           }
         },
         time: function (detail) {
-          var distance = (1 - detail.remaining) * (playerHome - 170 - 120);
+          var distance = (1 - detail.remaining) * (playerHome - 170 - challengerHome);
           challenger.x = challengerHome + distance;
         },
         finish: function (detail) {
@@ -552,7 +558,7 @@
             shout("You did it!", "#ffe58a");
             [0xffd54f, 0x7ad7ff, 0xff7ab8, 0x9affa0].forEach(function (tint, index) {
               scene.time.delayedCall(index * 170, function () {
-                burst(range(random, 200, 1080), range(random, 120, 340), tint, 60);
+                burst(range(random, viewW * 0.15, viewW * 0.85), range(random, 120, 340), tint, 60);
               });
             });
             if (spec.mechanic === "boss-battle") {
@@ -601,7 +607,7 @@
         ctx.fillRect(0, 0, W, H);
         theme.paintSky(ctx, random);
       });
-      scene.add.image(0, 0, "sky").setOrigin(0);
+      scene.add.image(0, 0, "sky").setOrigin(0).setDisplaySize(viewW, H);
 
       [0, 1, 2].forEach(function (depth) {
         var key = "layer" + depth;
@@ -609,7 +615,7 @@
           theme.paintLayer(ctx, random, depth);
         });
         layers.push({
-          sprite: scene.add.tileSprite(0, 0, W, H, key).setOrigin(0),
+          sprite: scene.add.tileSprite(0, 0, viewW, H, key).setOrigin(0),
           speed: [0.18, 0.42, 0.72][depth],
         });
       });
@@ -617,7 +623,7 @@
       canvasTexture("ground", TILE_W, H - GROUND_Y, function (ctx) {
         paintGround(ctx, theme, random);
       });
-      ground = scene.add.tileSprite(0, GROUND_Y, W, H - GROUND_Y, "ground").setOrigin(0);
+      ground = scene.add.tileSprite(0, GROUND_Y, viewW, H - GROUND_Y, "ground").setOrigin(0);
 
       canvasTexture("spark", 64, 64, function (ctx) {
         glow(ctx, 32, 32, 32, "rgba(255,255,255,1)");
@@ -635,7 +641,7 @@
       if (!reducedMotion) {
         scene.add
           .particles(0, 0, "spark", {
-            x: { min: 0, max: W },
+            x: { min: 0, max: viewW },
             y: { min: 0, max: GROUND_Y },
             lifespan: 7000,
             frequency: 7000 / ambient.count,
@@ -711,7 +717,7 @@
     var game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: parent,
-      width: W,
+      width: viewW,
       height: H,
       backgroundColor: theme.sky[0],
       banner: false,

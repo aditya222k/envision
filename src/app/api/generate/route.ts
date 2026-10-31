@@ -1,7 +1,13 @@
 import { buildLab, reviseLab } from "@/lib/games/buildLab";
+import {
+  buildCustomGame,
+  customSpec,
+  reviseCustomGame,
+} from "@/lib/games/customGame";
 import { runDemoBuild, runDemoChange, runPrebuiltBuild } from "@/lib/games/demo";
 import { LAB_KITS, type LabKit } from "@/lib/games/lab";
 import { buildGame } from "@/lib/games/pipeline";
+import { researchLesson, withResearch } from "@/lib/games/research";
 import { reviseGame } from "@/lib/games/revise";
 import { finishRun, startRun } from "@/lib/games/runs";
 import { parseGameSpec } from "@/lib/games/spec";
@@ -113,6 +119,44 @@ export async function POST(request: Request) {
             await linkTopicGame(storyline.id, topicRun.topic.id, game.id);
           }
           send({ type: "result", game, spec: game?.spec });
+        } else if (gameId && currentSpec?.custom) {
+          const revision = await reviseCustomGame(
+            provider,
+            currentSpec,
+            body.prompt,
+            signal,
+            onProgress,
+          );
+          const game = await addVersion(
+            gameId,
+            customSpec(currentSpec.custom.plan, revision.html, revision.notes),
+            "Updated the game.",
+          );
+          send(
+            game
+              ? { type: "result", game }
+              : { type: "error", status: 404, error: "That game no longer exists." },
+          );
+        } else if (body.experience === "custom" && !gameId) {
+          onProgress({ label: "Looking up the facts", percent: 2 });
+          const lesson = topicRun?.prompt ?? body.prompt;
+          const research = await researchLesson(provider, lesson, signal);
+          send({ type: "sources", sources: research.sources });
+          const build = await buildCustomGame(
+            provider,
+            withResearch(lesson, research),
+            signal,
+            onProgress,
+            send,
+          );
+          const game = await createGame({
+            ...customSpec(build.plan, build.html, build.notes),
+            sources: research.sources,
+          });
+          if (storyline && topicRun) {
+            await linkTopicGame(storyline.id, topicRun.topic.id, game.id);
+          }
+          send({ type: "result", game, spec: game.spec });
         } else if (gameId && currentSpec?.lab) {
           const revision = await reviseLab(
             provider,
@@ -129,15 +173,22 @@ export async function POST(request: Request) {
               : { type: "error", status: 404, error: "That game no longer exists." },
           );
         } else if (LAB_KITS.includes(body.experience as LabKit) && !gameId) {
+          onProgress({ label: "Looking up the facts", percent: 2 });
+          const lesson = topicRun?.prompt ?? body.prompt;
+          const research = await researchLesson(provider, lesson, signal);
+          send({ type: "sources", sources: research.sources });
           const build = await buildLab(
             provider,
             body.experience as LabKit,
-            topicRun?.prompt ?? body.prompt,
+            withResearch(lesson, research),
             signal,
             onProgress,
             send,
           );
-          const game = await createGame(build.spec);
+          const game = await createGame({
+            ...build.spec,
+            sources: research.sources,
+          });
           if (storyline && topicRun) {
             await linkTopicGame(storyline.id, topicRun.topic.id, game.id);
           }
@@ -162,9 +213,13 @@ export async function POST(request: Request) {
               : { type: "error", status: 404, error: "That game no longer exists." },
           );
         } else {
+          onProgress({ label: "Looking up the facts", percent: 2 });
+          const lesson = topicRun?.prompt ?? body.prompt;
+          const research = await researchLesson(provider, lesson, signal);
+          send({ type: "sources", sources: research.sources });
           const build = await buildGame(
             provider,
-            topicRun?.prompt ?? body.prompt,
+            withResearch(lesson, research),
             signal,
             onProgress,
             send,
@@ -178,7 +233,10 @@ export async function POST(request: Request) {
                   theme: topicRun.chapter.theme,
                 }
               : build.spec;
-          const game = await createGame(spec, build.doubtfulRounds);
+          const game = await createGame(
+            { ...spec, sources: research.sources },
+            build.doubtfulRounds,
+          );
           if (storyline && topicRun) {
             await linkTopicGame(storyline.id, topicRun.topic.id, game.id);
           }

@@ -3,7 +3,11 @@ import { getProvider, isProviderId } from "@/lib/llm";
 import { isProviderConfigured } from "@/lib/llm/config";
 import { COMPANION_SYSTEM_PROMPT } from "@/lib/llm/prompt";
 
-const EXPERIENCES = ["bodies", "systems", "decide", "arrange", "quest"];
+const EXPERIENCES = ["bodies", "systems", "decide", "arrange", "custom", "quest"];
+
+// Forces need the real physics engine, not formulas written by a model.
+const FORCE_TOPICS =
+  /\b(gravity|gravitational|orbits?|orbital|planets?|moons?|solar system|satellites?|asteroids?|electric charges?|electrostatic|coulomb)\b/i;
 
 const COMPANION_SCHEMA = {
   type: "object",
@@ -78,7 +82,10 @@ export async function POST(request: Request) {
     const answer = parseJson(text) as typeof DEMO_ANSWER | null;
     if (answer && EXPERIENCES.includes(answer.experience)) {
       return Response.json({
-        experience: answer.experience,
+        experience:
+          answer.experience === "systems" && FORCE_TOPICS.test(body.prompt)
+            ? "bodies"
+            : answer.experience,
         reason: answer.reason ?? "",
         questions: Array.isArray(answer.questions)
           ? answer.questions.filter(

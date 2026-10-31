@@ -522,6 +522,60 @@ function parseConfig(kit: LabKit, draft: Record<string, never>) {
   } satisfies SystemsLab;
 }
 
+// Tells the model exactly what to fix, so a retry isn't a blind repeat.
+export function describeLabProblems(kit: LabKit, value: unknown) {
+  const draft = value as Partial<
+    Omit<DecideLab, "kit"> & Omit<SystemsLab, "kit">
+  > | null;
+  if (!draft) {
+    return ["The reply was not valid JSON."];
+  }
+  const problems: string[] = [];
+
+  if (kit === "decide" && Array.isArray(draft.scenes)) {
+    const sceneIds = new Set(draft.scenes.map((scene) => scene.id));
+    const meterIds = new Set((draft.meters ?? []).map((meter) => meter.id));
+    draft.scenes.forEach((scene) =>
+      scene.choices?.forEach((choice) => {
+        if (choice.next !== "end" && !sceneIds.has(choice.next)) {
+          problems.push(`next "${choice.next}" is not a scene id. Use a scene id or "end".`);
+        }
+        if (!meterIds.has(choice.meterId)) {
+          problems.push(`meterId "${choice.meterId}" is not a meter id.`);
+        }
+      }),
+    );
+    problems.push("Every path must reach \"end\".");
+  }
+
+  if (kit === "systems" && Array.isArray(draft.variables)) {
+    const variableIds = new Set(draft.variables.map((item) => item.id));
+    const ids = new Set([
+      ...variableIds,
+      ...(draft.controls ?? []).map((item) => item.id),
+    ]);
+    draft.rules?.forEach((rule) => {
+      if (!variableIds.has(rule.variable)) {
+        problems.push(`rule variable "${rule.variable}" is not a variable id.`);
+      }
+      if (!isExpression(rule.change, ids)) {
+        problems.push(
+          `The rule "${rule.change}" may only use these ids, numbers, and + - * / ( ): ${[...ids].join(", ")}.`,
+        );
+      }
+    });
+    draft.missions?.forEach((mission) => {
+      if (!variableIds.has(mission.variable)) {
+        problems.push(`mission variable "${mission.variable}" is not a variable id.`);
+      }
+    });
+  }
+
+  return problems.length > 0
+    ? problems
+    : ["Some required fields were missing or empty. Fill in every field."];
+}
+
 // Turns model output into a game. Labs share the game record, so the catalog,
 // versions and publishing all work the same way.
 export function parseLabSpec(kit: LabKit, value: unknown): GameSpec | null {

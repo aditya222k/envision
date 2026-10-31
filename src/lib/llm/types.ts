@@ -21,7 +21,9 @@ export type ProviderSummary = {
 export type GenerateRequest = {
   system: string;
   prompt: string;
-  schema: object;
+  schema?: object;
+  think?: boolean;
+  maxTokens?: number;
   signal?: AbortSignal;
   onCharacters?: (count: number, text: string) => void;
 };
