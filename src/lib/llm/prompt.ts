@@ -160,7 +160,7 @@ Requirements:
 - Students must change the world themselves, by clicking objects or using controls, and the world must respond in 3D.
 - The code must actually compute every truth in the plan, every frame where needed. Never fake a result.
 - Add 2 to 4 missions that the code detects from what happens in the world.
-- Use only what is listed above. Never load files, textures or models, because the game is offline.
+- Use only what is listed above, and real Three.js method names in camelCase, such as setLength. Never load files, textures or models, because the game is offline.
 - Keep the code compact and finish it.
 
 Example of the form, for a different topic:
@@ -181,7 +181,23 @@ Envision3D.start(function (env) {
   let height = 1;
   env.slider("Block height", 0.5, 2, 1, (value) => { height = value; blocks.forEach((block) => block.scale.setY(height)); });
   env.onFrame((delta) => { floor.rotation.y += delta * 0.05; });
+  const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 2, "#ffffff");
+  env.add(arrow);
+  arrow.setDirection(new THREE.Vector3(1, 0, 0));
+  arrow.setLength(3);
 });`;
+
+export const CUSTOM_FIX_SYSTEM_PROMPT = `You are fixing bugs in a browser game. You receive the code and a list of problems found by testing it.
+
+Find the cause of each problem, and reply with small edits following the JSON schema:
+- find: an exact piece of the existing code, copied character for character, long enough to be unique.
+- replace: the corrected code.
+
+Rules:
+- Change as little as possible. Never rewrite the game.
+- An error such as "x.y is not a function" means that method doesn't exist, so use the correct name. Three.js names use camelCase, such as setLength, setDirection and position.set.
+- If nothing changes on screen, a crash has usually stopped the animation loop, so fix the crash first.
+- Never add anything that loads files from elsewhere.`;
 
 export const CUSTOM_REVIEW_SYSTEM_PROMPT = `You are a strict teacher reviewing a classroom game before students see it. You receive the plan and the code.
 

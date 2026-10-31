@@ -130,7 +130,7 @@ export async function playtest(
       );
     }
 
-    errors
+    [...new Set(errors)]
       .slice(0, 5)
       .forEach((error) => problems.push(`The browser reported: ${error}`));
   } catch (error) {

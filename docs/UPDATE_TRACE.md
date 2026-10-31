@@ -19,6 +19,12 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 
 ## Timeline
 
+### 2026-10-31: Targeted game repairs
+
+- The first model-built 3D game failed on one wrong method name, because each retry rewrote the whole game and repeated the mistake.
+- Failed Custom and 3D games now get small find-and-replace fixes, retested after each one, for up to 4 rounds.
+- 3D games now get real code context: the model sees method names read from the installed Three.js. Near-miss names are corrected automatically, and repairs get the real alternatives.
+
 ### 2026-10-31: 3D worlds and a Game style choice
 
 - Added a Game style option on the home page. What the teacher chooses always beats the model's suggestion, and mentioning 3D selects a 3D world.
