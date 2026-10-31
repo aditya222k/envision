@@ -18,8 +18,9 @@ const nextConfig: NextConfig = {
       "./src/lib/games/engine/activities.js",
       "./src/lib/games/engine/world3d.js",
       "./src/lib/games/engine/three.global.js",
-      "./src/lib/games/prebuilt/*.html",
     ],
+    // Route keys are globs, so the brackets in [id] are escaped.
+    "/ready-games/\\[id\\]": ["./src/lib/games/prebuilt/*.html"],
   },
   turbopack: {
     rules: {

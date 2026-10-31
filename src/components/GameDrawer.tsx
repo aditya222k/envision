@@ -6,12 +6,10 @@ import type { GameSummary } from "@/lib/games/store";
 
 export function GameDrawer({
   currentGameId,
-  isIncognito,
   disabled,
   onOpenGame,
 }: {
   currentGameId: string | null;
-  isIncognito: boolean;
   disabled: boolean;
   onOpenGame: (id: string) => void;
 }) {
@@ -24,10 +22,7 @@ export function GameDrawer({
     setError(null);
 
     try {
-      const response = await fetch(
-        isIncognito ? "/api/games?demo=1" : "/api/games",
-        { cache: "no-store" },
-      );
+      const response = await fetch("/api/games", { cache: "no-store" });
       if (!response.ok) {
         throw new Error();
       }
@@ -57,6 +52,9 @@ export function GameDrawer({
         aria-haspopup="dialog"
         className="drawer-button"
       >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        </svg>
         Open a saved game
       </button>
 

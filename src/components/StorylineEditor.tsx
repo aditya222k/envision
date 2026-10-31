@@ -9,7 +9,6 @@ import { StoryString } from "@/components/StoryString";
 import { useNoteDrag } from "@/components/useNoteDrag";
 import type { GameSummary } from "@/lib/games/store";
 import type { Storyline, Topic } from "@/lib/games/storyline";
-import { useIncognito } from "@/lib/incognito";
 import { readEvents } from "@/lib/readEvents";
 
 type BuildEvent =
@@ -29,7 +28,6 @@ async function fetchStoryline(id: string): Promise<Storyline> {
 export function StorylineEditor() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const isIncognito = useIncognito();
   const [storyline, setStoryline] = useState<Storyline | null>(null);
   const [games, setGames] = useState<GameSummary[]>([]);
   const [buildingTopic, setBuildingTopic] = useState<string | null>(null);
@@ -266,7 +264,6 @@ export function StorylineEditor() {
           prompt: topic.title,
           provider: "ollama",
           runId: run.id,
-          demo: isIncognito,
           storylineId: id,
           topicId: topic.id,
         }),
@@ -323,13 +320,11 @@ export function StorylineEditor() {
     }
     run.controller.abort();
     setMessage("Stopped. No new game was built.");
-    if (!isIncognito) {
-      fetch("/api/generate/stop", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runId: run.id, provider: "ollama" }),
-      }).catch(() => {});
-    }
+    fetch("/api/generate/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ runId: run.id, provider: "ollama" }),
+    }).catch(() => {});
   }
 
   async function handleCopy() {

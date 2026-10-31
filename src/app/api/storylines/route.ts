@@ -23,40 +23,6 @@ export async function GET() {
   return Response.json({ storylines: await listStorylines() });
 }
 
-function demoOutline(subject: string) {
-  const topic = (title: string, storyBeat: string) => ({
-    title,
-    goal: `Practice ${title.toLowerCase()} in ${subject}.`,
-    storyBeat,
-  });
-  return {
-    title: `The ${subject} Quest`,
-    premise: `A lost map holds the secrets of ${subject}, and only you can follow it.`,
-    ending: `You followed the map to its end and mastered ${subject}.`,
-    hero: { name: "Young explorer", emoji: "🧭" },
-    chapters: [
-      {
-        title: "The first clues",
-        story: "The map leads you into the unknown.",
-        theme: "jungle",
-        topics: [
-          topic("The basics", "You find the first clue."),
-          topic("Key ideas", "The clue points to a hidden path."),
-        ],
-      },
-      {
-        title: "The final trial",
-        story: "Everything you've learned is put to the test.",
-        theme: "castle",
-        topics: [
-          topic("Putting it together", "You reach the gates."),
-          topic("The big challenge", "You face the final trial."),
-        ],
-      },
-    ],
-  };
-}
-
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
@@ -67,9 +33,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "unknown provider" }, { status: 400 });
   }
 
-  const isDemo = body.demo === true;
   const provider = getProvider(body.provider);
-  if (!isDemo && !(await isProviderConfigured(provider.id))) {
+  if (!(await isProviderConfigured(provider.id))) {
     return Response.json(
       { error: `${provider.id} is not configured` },
       { status: 503 },
@@ -92,16 +57,6 @@ export async function POST(request: Request) {
       };
 
       try {
-        if (isDemo) {
-          send({ type: "progress", label: "Planning your storyline", percent: 60 });
-          await new Promise((resolve) => setTimeout(resolve, 2500));
-          send({
-            type: "result",
-            storyline: await createStoryline(subject, demoOutline(subject)),
-          });
-          return;
-        }
-
         for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
           send({ type: "progress", label: "Starting the AI model", percent: 5 });
           const { text } = await provider.generate({

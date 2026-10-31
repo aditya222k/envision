@@ -1,20 +1,23 @@
 export type Subject = "Science" | "Math" | "History" | "English";
 
-// Most ideas fill in the prompt. An idea with an href opens a ready-made
-// explorer instead, with no AI generation.
+// Most ideas fill in the prompt. An idea with an href opens something
+// ready-made instead, with no AI generation, and says what it opens.
 export type ExampleIdea = {
   title: string;
   subject: Subject;
   grade: string;
-} & ({ prompt: string; href?: never } | { href: string; prompt?: never });
+} & (
+  | { prompt: string; href?: never; opens?: never }
+  | { href: string; opens: string; prompt?: never }
+);
 
 export const EXAMPLE_GAMES: ExampleIdea[] = [
   {
     title: "Gravity",
     subject: "Science",
     grade: "Grade 8",
-    prompt:
-      "A grade 8 science game where students jump on different planets, build orbits, drop objects and launch a rocket to see how gravity depends on mass and distance.",
+    href: "/explore/gravity",
+    opens: "opens a ready-made game",
   },
   {
     title: "Balance the equation",
@@ -41,8 +44,8 @@ export const EXAMPLE_GAMES: ExampleIdea[] = [
     title: "Great Depression",
     subject: "History",
     grade: "Grade 8",
-    prompt:
-      "A grade 8 history game set in Detroit in 1932, where students keep a family together through the Great Depression week by week and see how New Deal programs changed their lives.",
+    href: "/explore/great-depression",
+    opens: "opens a ready-made game",
   },
   {
     title: "Spot the fallacy",
@@ -56,6 +59,7 @@ export const EXAMPLE_GAMES: ExampleIdea[] = [
     subject: "Science",
     grade: "Grade 8",
     href: "/explore/solar-system",
+    opens: "opens a 3D explorer",
   },
   {
     title: "Poetry heist",

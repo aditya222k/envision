@@ -12,12 +12,19 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 | Game graphics | Six code-drawn worlds and three mechanics, built with Phaser 4 |
 | Changing a game | Works, with versions and undo |
 | Catalog and publishing | Work, stored as local files |
-| Incognito | Works, and never calls a model |
+| Ready-made example games | Gravity Playground and Hard Times: 1932 open from their ideas, labelled as examples |
 | Solar System explorer | Works, with reviewed static facts and no AI |
 | Logins | Not built |
 | Deployment | Not ready, because games are stored as local files |
 
 ## Timeline
+
+### 2026-10-31: Removed the simulated demo mode
+
+- Removed Teach mode (Incognito) and everything it simulated. It showed fake build progress, marked questions "Answer confirmed" without checking them, faked changes, returned a canned companion reply and a fixed storyline outline, and showed ready-made or saved games as if they had just been built.
+- Without an AI model, building now shows the honest message to set up a provider.
+- The two ready-made games, Gravity Playground and Hard Times: 1932, now open directly from the Gravity and Great Depression ideas at `/explore/gravity` and `/explore/great-depression`. Their pages say they are ready-made examples that Envision's AI didn't generate.
+- Removed the sample games that the demo added to an empty catalog.
 
 ### 2026-10-31: 3D worlds and a Game style choice
 

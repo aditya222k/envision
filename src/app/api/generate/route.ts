@@ -4,13 +4,11 @@ import {
   customSpec,
   reviseCustomGame,
 } from "@/lib/games/customGame";
-import { runDemoBuild, runDemoChange, runPrebuiltBuild } from "@/lib/games/demo";
 import { LAB_KITS, type LabKit } from "@/lib/games/lab";
 import { buildGame } from "@/lib/games/pipeline";
 import { researchLesson, withResearch } from "@/lib/games/research";
 import { reviseGame } from "@/lib/games/revise";
 import { finishRun, startRun } from "@/lib/games/runs";
-import { parseGameSpec } from "@/lib/games/spec";
 import { topicPrompt } from "@/lib/games/storyline";
 import { getStoryline, linkTopicGame } from "@/lib/games/storylineStore";
 import {
@@ -49,9 +47,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "unknown provider" }, { status: 400 });
   }
 
-  const isDemo = body.demo === true;
   const provider = getProvider(body.provider);
-  if (!isDemo && !(await isProviderConfigured(provider.id))) {
+  if (!(await isProviderConfigured(provider.id))) {
     return Response.json(
       { error: `${provider.id} is not configured` },
       { status: 503 },
@@ -82,8 +79,6 @@ export async function POST(request: Request) {
   const signal = AbortSignal.any([request.signal, run.signal]);
   const encoder = new TextEncoder();
 
-  const demoSpec = isDemo && body.spec ? parseGameSpec(body.spec) : null;
-
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: object) => {
@@ -97,29 +92,7 @@ export async function POST(request: Request) {
         send({ type: "progress", ...progress });
 
       try {
-        if (isDemo && !gameId && !storyline) {
-          send({
-            type: "result",
-            game: await runPrebuiltBuild(body.prompt, signal, onProgress),
-          });
-        } else if (isDemo) {
-          // Incognito never calls a provider or changes a saved game.
-          const game =
-            gameId && currentSpec
-              ? await runDemoChange(
-                  { id: gameId },
-                  demoSpec && "spec" in demoSpec ? demoSpec.spec : currentSpec,
-                  Number(body.versionCount) || 1,
-                  body.prompt,
-                  signal,
-                  onProgress,
-                )
-              : await runDemoBuild(body.prompt, signal, onProgress, send);
-          if (storyline && topicRun && game) {
-            await linkTopicGame(storyline.id, topicRun.topic.id, game.id);
-          }
-          send({ type: "result", game, spec: game?.spec });
-        } else if (gameId && currentSpec?.custom) {
+        if (gameId && currentSpec?.custom) {
           const revision = await reviseCustomGame(
             provider,
             currentSpec,

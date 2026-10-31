@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BuildProgress } from "@/components/BuildProgress";
 import type { Storyline } from "@/lib/games/storyline";
-import { useIncognito } from "@/lib/incognito";
 import { readEvents } from "@/lib/readEvents";
 
 type OutlineEvent =
@@ -16,7 +15,6 @@ type OutlineEvent =
 
 export function StorylineList() {
   const router = useRouter();
-  const isIncognito = useIncognito();
   const [storylines, setStorylines] = useState<Storyline[] | null>(null);
   const [subject, setSubject] = useState("");
   const [notes, setNotes] = useState("");
@@ -58,7 +56,6 @@ export function StorylineList() {
           notes,
           provider: "ollama",
           runId: run.id,
-          demo: isIncognito,
         }),
         signal: run.controller.signal,
       });
@@ -100,13 +97,11 @@ export function StorylineList() {
       return;
     }
     run.controller.abort();
-    if (!isIncognito) {
-      fetch("/api/generate/stop", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runId: run.id, provider: "ollama" }),
-      }).catch(() => {});
-    }
+    fetch("/api/generate/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ runId: run.id, provider: "ollama" }),
+    }).catch(() => {});
   }
 
   return (

@@ -1,25 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --board: #1c4a3d;
-  --chalk: #edf3ec;
-  --chalk-dim: #b9cbbf;
-  --chalk-line: rgba(237, 243, 236, 0.28);
-  --paper: #f6f8f3;
-  --ink: #15231f;
-  --ink-soft: #4a5a54;
-  --line: #dbe2dd;
-  --control-line: #c3cdc7;
-  --pencil: #f6c41c;
-  --pencil-deep: #e2ad00;
-  --pencil-light: #fdf1c4;
+  /* page and text; the old chalkboard names now carry the light design */
+  --board: #f8f6fd;
+  --chalk: #1e1b3a;
+  --chalk-dim: #4b4868;
+  --chalk-line: #d9d8e6;
+  --paper: #ffffff;
+  --ink: #1e1b3a;
+  --ink-soft: #4b4868;
+  --muted: #6b6888;
+  --line: #e7e6f0;
+  --card-line: #e3e2ee;
+  --control-line: #d9d8e6;
+  --field: #fafafd;
+  /* brand: purple for actions, a tint for highlights, yellow for accents */
+  --pencil: #5b3fd9;
+  --pencil-deep: #4a30c2;
+  --pencil-light: #e2dcf8;
+  --hero: #ded9f7;
+  --sun: #ffb800;
+  --brand-shadow: rgba(91, 63, 217, 0.32);
   --science: #177a52;
   --math: #2456c9;
   --history: #c92a22;
-  --chalk-science: #8fe0b5;
-  --chalk-math: #a9c4ff;
-  --chalk-history: #ffa597;
-  --chalk-english: #f6d55c;
+  --space-text: #edf3ec;
   color-scheme: light;
 }
 
@@ -31,17 +36,19 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-pencil: var(--pencil);
+  --color-sun: var(--sun);
   --color-science: var(--science);
   --color-math: var(--math);
   --color-history: var(--history);
-  --font-sans: var(--font-atkinson);
+  --font-sans: var(--font-nunito);
   --font-display: var(--font-shantell);
 }
 
 body {
   background: var(--board);
-  color: var(--chalk);
-  font-family: var(--font-atkinson), Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  font-family: var(--font-nunito), "Avenir Next", system-ui, sans-serif;
+  line-height: 1.45;
 }
 
 :focus-visible {
@@ -50,89 +57,113 @@ body {
 }
 
 @layer components {
-  /* Handwriting on the board. */
-  .font-display,
-  .chalk-title {
-    font-family: var(--font-shantell), "Comic Sans MS", sans-serif;
-    font-variation-settings: "INFM" 60;
-    font-weight: 700;
-    line-height: 1.05;
+  /* Handwritten accents, like "play today?" in the hero. */
+  .font-display {
+    font-family: var(--font-shantell), "Chalkboard SE", "Comic Sans MS", sans-serif;
+    font-weight: 800;
+    line-height: 1.08;
   }
 
   .chalk-title {
-    color: var(--chalk);
+    font-family: var(--font-nunito), system-ui, sans-serif;
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    color: var(--ink);
   }
 
   .wordmark {
-    font-family: var(--font-shantell), sans-serif;
-    font-variation-settings: "INFM" 60;
-    font-size: 1.75rem;
+    display: inline-flex;
+    align-items: baseline;
+    font-family: var(--font-bricolage), "Avenir Next", system-ui, sans-serif;
+    font-size: 34px;
     font-weight: 800;
     line-height: 1;
-    color: var(--chalk);
+    letter-spacing: -0.045em;
+    color: var(--ink);
+  }
+
+  .wordmark-i {
+    position: relative;
+    display: inline-block;
+  }
+
+  .wordmark-dot {
+    position: absolute;
+    left: 50%;
+    top: 0.06em;
+    width: 0.22em;
+    height: 0.22em;
+    margin-left: -0.11em;
+    border-radius: 50%;
   }
 
   .navbar {
     position: sticky;
     top: 0;
     z-index: 30;
-    border-bottom: 1px solid var(--chalk-line);
-    background: rgba(28, 74, 61, 0.92);
-    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
   }
 
   .nav-link {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    padding: 0 0.875rem;
-    border-radius: 10px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font-size: 15px;
     font-weight: 700;
     white-space: nowrap;
-    color: var(--chalk-dim);
+    color: var(--ink-soft);
   }
 
   .nav-link:hover {
-    background: rgba(237, 243, 236, 0.1);
-    color: var(--chalk);
+    background: var(--board);
+    color: var(--ink);
   }
 
   .nav-link[aria-current="page"] {
-    background: var(--chalk);
+    background: var(--pencil-light);
+    font-weight: 800;
     color: var(--ink);
   }
 
-  .nav-button {
+  /* White outlined buttons, like "Open a saved game". */
+  .nav-button,
+  .drawer-button {
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
-    padding: 0 1rem;
-    border: 1.5px solid var(--chalk-line);
-    border-radius: 12px;
-    font-weight: 700;
-    color: var(--chalk);
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 20px;
+    border: 1.5px solid var(--control-line);
+    border-radius: 14px;
+    background: var(--paper);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
     cursor: pointer;
   }
 
-  .nav-button:hover:enabled {
-    background: rgba(237, 243, 236, 0.1);
+  .nav-button:hover,
+  .drawer-button:hover:enabled {
+    border-color: var(--muted);
   }
 
-  .nav-button:disabled {
-    color: var(--chalk-dim);
+  .drawer-button:disabled {
+    color: var(--muted);
     cursor: not-allowed;
   }
 
-  /* A sheet of paper on the board. Its paper children become rows split by
-     hairlines. */
+  /* White cards. A board's white children become rows split by hairlines. */
   .board,
   .sheet {
-    border-radius: 20px;
+    border: 1px solid var(--card-line);
+    border-radius: 24px;
     background: var(--paper);
     color: var(--ink);
-    box-shadow:
-      0 1px 0 rgba(0, 0, 0, 0.25),
-      0 24px 48px -28px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 16px 40px rgba(30, 27, 58, 0.08);
   }
 
   .board {
@@ -142,38 +173,49 @@ body {
     background: var(--line);
   }
 
+  .board > .bg-paper {
+    background: var(--paper);
+  }
+
   .field-label {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    font-weight: 700;
+    gap: 6px;
+    font-weight: 800;
     color: var(--ink);
   }
 
   .field {
     width: 100%;
     border: 1.5px solid var(--control-line);
-    border-radius: 12px;
-    background: #ffffff;
-    font-size: 1.0625rem;
-    font-weight: 400;
+    border-radius: 14px;
+    background: var(--field);
+    font-size: 16px;
+    font-weight: 600;
     color: var(--ink);
+    outline: none;
+  }
+
+  select.field {
+    background: var(--paper);
+    font-weight: 700;
   }
 
   .field:hover:enabled {
-    border-color: var(--ink-soft);
+    border-color: var(--muted);
   }
 
   .field:focus-visible {
-    border-color: var(--ink);
+    border-color: var(--pencil);
+    box-shadow: 0 0 0 3px var(--pencil-light);
   }
 
   .field::placeholder {
-    color: #66756f;
+    color: var(--muted);
   }
 
   .field:disabled {
-    background: var(--paper);
+    background: var(--board);
     cursor: not-allowed;
   }
 
@@ -181,34 +223,41 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 10px;
     border: 0;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--pencil);
-    font-size: 1.0625rem;
-    font-weight: 700;
-    color: var(--ink);
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffffff;
     cursor: pointer;
-    box-shadow: inset 0 -3px 0 rgba(21, 35, 31, 0.18);
+    box-shadow: 0 10px 22px var(--brand-shadow);
   }
 
   .action:hover:enabled,
   a.action:hover {
     background: var(--pencil-deep);
+    color: #ffffff;
   }
 
   .action-quiet {
-    background: transparent;
-    box-shadow: inset 0 0 0 1.5px var(--control-line);
+    border: 1.5px solid var(--control-line);
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: none;
   }
 
   .action-quiet:hover:enabled,
   a.action-quiet:hover {
-    background: rgba(21, 35, 31, 0.06);
+    border-color: var(--muted);
+    background: var(--paper);
+    color: var(--ink);
   }
 
   .action-stop {
     background: var(--history);
     color: #ffffff;
+    box-shadow: 0 10px 22px rgba(201, 42, 34, 0.25);
   }
 
   .action-stop:hover:enabled {
@@ -216,8 +265,8 @@ body {
   }
 
   .action:disabled {
-    background: #e4e9e5;
-    color: var(--ink-soft);
+    background: var(--line);
+    color: var(--muted);
     box-shadow: none;
     cursor: not-allowed;
   }
@@ -228,45 +277,269 @@ body {
     justify-content: center;
   }
 
-  /* Example ideas, written on the board in subject lists. */
-  .idea-subject {
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid currentColor;
-    font-family: var(--font-shantell), sans-serif;
-    font-variation-settings: "INFM" 60;
-    font-size: 1.375rem;
-    font-weight: 700;
+  /* Home page hero: a tinted panel with soft shapes behind it. */
+  .hero {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 56px;
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 64px;
+    border-radius: 36px;
+    background: var(--hero);
   }
 
-  .idea {
+  .hero-shapes {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 36px;
+    pointer-events: none;
+  }
+
+  .hero-shapes span {
+    position: absolute;
+  }
+
+  .hero-sun {
+    right: -70px;
+    top: -90px;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: #ffd84a;
+    opacity: 0.55;
+  }
+
+  .hero-ring {
+    left: 38%;
+    bottom: -60px;
+    width: 150px;
+    height: 150px;
+    border: 22px solid #ff8f78;
+    border-radius: 50%;
+    opacity: 0.35;
+  }
+
+  .hero-tile {
+    left: -40px;
+    top: 40px;
+    width: 110px;
+    height: 110px;
+    border-radius: 32px;
+    background: var(--pencil);
+    opacity: 0.14;
+    transform: rotate(18deg);
+  }
+
+  .hero-title {
+    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.125rem;
-    width: calc(100% + 1.5rem);
-    margin-inline: -0.75rem;
-    padding: 0.625rem 0.75rem;
-    border-radius: 12px;
-    text-align: left;
-    color: var(--chalk);
+    align-items: flex-start;
+    font-size: clamp(38px, 4.4vw, 60px);
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+  }
+
+  .hero-accent {
+    font-family: var(--font-shantell), "Chalkboard SE", "Comic Sans MS", sans-serif;
+    font-size: 1.12em;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--pencil);
+  }
+
+  .build-card {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 28px;
+    border: 1px solid var(--card-line);
+    border-radius: 24px;
+    background: var(--paper);
+    box-shadow: 0 16px 40px rgba(30, 27, 58, 0.08);
+  }
+
+  .select-wrap {
+    position: relative;
+  }
+
+  .select-wrap select {
+    min-height: 52px;
+    padding: 0 40px 0 14px;
+    appearance: none;
+    -webkit-appearance: none;
     cursor: pointer;
   }
 
-  .idea:hover {
-    background: rgba(237, 243, 236, 0.1);
+  .select-wrap svg {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    margin-top: -8px;
+    pointer-events: none;
   }
 
-  .idea[aria-pressed="true"] {
-    background: var(--chalk);
+  /* Idea cards that flip over to show a subject's games. */
+  .flip-card {
+    height: 480px;
+    perspective: 1400px;
+  }
+
+  .flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.25, 1.15);
+  }
+
+  .flip-card.is-flipped .flip-inner {
+    transform: rotateY(180deg);
+  }
+
+  .flip-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 32px;
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .flip-back {
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    transform: rotateY(180deg);
+  }
+
+  .flip-front-button {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 22px 20px 20px;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .subject-name {
+    font-family: var(--font-anton), Impact, "Arial Narrow", sans-serif;
+    line-height: 0.95;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+
+  .persona-pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.75);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .dark-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .round-button {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 4px 10px rgba(30, 27, 58, 0.12);
+    cursor: pointer;
+  }
+
+  .idea-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 64px;
+    padding: 10px 10px 10px 12px;
+    border: 0;
+    border-radius: 18px;
+    background: #f7f7fb;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .idea-row:hover {
+    background: var(--pencil-light);
     color: var(--ink);
   }
 
-  .idea-grade {
-    font-size: 0.9375rem;
-    color: var(--chalk-dim);
+  .idea-number {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-family: var(--font-anton), Impact, "Arial Narrow", sans-serif;
+    font-size: 20px;
   }
 
-  .idea[aria-pressed="true"] .idea-grade {
-    color: var(--ink-soft);
+  .play-pill {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: var(--pencil);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .make-own {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    margin: 0 12px 14px;
+    border: 1.5px dashed #cfcde0;
+    border-radius: 16px;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .make-own:hover {
+    border-color: var(--pencil);
   }
 
   .game-frame {
@@ -274,27 +547,6 @@ body {
     border-radius: 14px;
     background: #ffffff;
     box-shadow: 0 0 0 1px var(--line);
-  }
-
-  .drawer-button {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 1rem;
-    border: 1.5px solid var(--chalk-line);
-    border-radius: 12px;
-    font-weight: 700;
-    color: var(--chalk);
-    cursor: pointer;
-  }
-
-  .drawer-button:hover:enabled {
-    background: rgba(237, 243, 236, 0.1);
-  }
-
-  .drawer-button:disabled {
-    color: var(--chalk-dim);
-    cursor: not-allowed;
   }
 
   .drawer {
@@ -331,46 +583,6 @@ body {
 
   .drawer-game[aria-current="true"] {
     background: var(--pencil-light);
-  }
-
-  .incognito {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 44px;
-    padding: 0 0.25rem;
-    font-weight: 700;
-    color: var(--chalk);
-    cursor: pointer;
-  }
-
-  .incognito:disabled {
-    cursor: not-allowed;
-  }
-
-  .incognito-track {
-    display: inline-flex;
-    width: 44px;
-    height: 26px;
-    padding: 3px;
-    border-radius: 13px;
-    background: rgba(237, 243, 236, 0.22);
-  }
-
-  .incognito-track span {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--chalk);
-  }
-
-  .incognito[aria-checked="true"] .incognito-track {
-    justify-content: flex-end;
-    background: var(--pencil);
-  }
-
-  .incognito[aria-checked="true"] .incognito-track span {
-    background: var(--ink);
   }
 
   /* Storylines: a pinboard of sticky notes joined by a red string. */
@@ -440,7 +652,7 @@ body {
     min-height: 190px;
     padding: 0.875rem 0.75rem 0.75rem;
     border-radius: 3px;
-    background: var(--pencil-light);
+    background: #fff1b8;
     box-shadow:
       0 1px 2px rgba(21, 35, 31, 0.18),
       0 8px 16px -10px rgba(21, 35, 31, 0.4);
@@ -601,6 +813,7 @@ body {
   .path-step[aria-current="step"] {
     background: var(--pencil);
     box-shadow: none;
+    color: #ffffff;
   }
 
   .path-step-done {
@@ -613,14 +826,14 @@ body {
     height: 10px;
     overflow: hidden;
     border-radius: 5px;
-    background: #e1e7e3;
+    background: var(--line);
   }
 
   .progress span {
     display: block;
     height: 100%;
     border-radius: 5px;
-    background: var(--pencil-deep);
+    background: var(--pencil);
   }
 
   /* Solar System explorer: the scene sits in a dark window on the board. */
@@ -636,10 +849,8 @@ body {
     overflow: hidden;
     border-radius: 20px;
     background: #070d1f;
-    color: var(--chalk);
-    box-shadow:
-      0 1px 0 rgba(0, 0, 0, 0.25),
-      0 24px 48px -28px rgba(0, 0, 0, 0.7);
+    color: var(--space-text);
+    box-shadow: 0 16px 40px rgba(30, 27, 58, 0.18);
   }
 
   .explorer-status {
@@ -647,7 +858,7 @@ body {
     inset: 0;
     display: grid;
     place-items: center;
-    color: var(--chalk);
+    color: var(--space-text);
   }
 
   .explorer-controls {
@@ -664,8 +875,8 @@ body {
     padding: 0 1rem;
     border-radius: 12px;
     background: rgba(237, 243, 236, 0.16);
-    font-weight: 700;
-    color: var(--chalk);
+    font-weight: 800;
+    color: var(--space-text);
     cursor: pointer;
     backdrop-filter: blur(6px);
   }
@@ -676,7 +887,7 @@ body {
 
   .stage-button-primary {
     background: var(--pencil);
-    color: var(--ink);
+    color: #ffffff;
   }
 
   .stage-button-primary:hover {
@@ -685,10 +896,11 @@ body {
 
   .explorer-hint {
     padding: 0.75rem 1rem;
-    border-radius: 12px;
-    background: rgba(237, 243, 236, 0.12);
-    font-weight: 700;
-    color: var(--chalk);
+    border: 1px solid var(--card-line);
+    border-radius: 14px;
+    background: var(--paper);
+    font-weight: 800;
+    color: var(--ink);
   }
 
   .planet-facts {
@@ -711,8 +923,8 @@ body {
   .explorer-note {
     max-width: 72ch;
     padding-left: 0.875rem;
-    border-left: 3px solid var(--pencil);
-    color: var(--chalk-dim);
+    border-left: 3px solid var(--sun);
+    color: var(--ink-soft);
   }
 
   .planet-chip {
@@ -721,20 +933,21 @@ body {
     gap: 0.5rem;
     min-height: 44px;
     padding: 0 0.875rem;
-    border: 1.5px solid var(--chalk-line);
+    border: 1.5px solid var(--control-line);
     border-radius: 12px;
-    font-weight: 700;
-    color: var(--chalk);
+    background: var(--paper);
+    font-weight: 800;
+    color: var(--ink);
     cursor: pointer;
   }
 
   .planet-chip:hover {
-    background: rgba(237, 243, 236, 0.1);
+    border-color: var(--muted);
   }
 
   .planet-chip[aria-pressed="true"] {
-    border-color: var(--chalk);
-    background: var(--chalk);
+    border-color: var(--pencil);
+    background: var(--pencil-light);
     color: var(--ink);
   }
 
@@ -774,11 +987,11 @@ body {
 }
 
 .solar-activity-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.solar-activity-tabs button { min-height: 48px; padding: 0.65rem 1.25rem; border: 1.5px solid var(--chalk-line); border-radius: 14px; color: var(--chalk); font-weight: 700; cursor: pointer; }
-.solar-activity-tabs button[aria-selected="true"] { background: var(--pencil); color: var(--ink); border-color: var(--pencil); }
+.solar-activity-tabs button { min-height: 48px; padding: 0.65rem 1.25rem; border: 1.5px solid var(--control-line); border-radius: 14px; background: var(--paper); color: var(--ink); font-weight: 800; cursor: pointer; }
+.solar-activity-tabs button[aria-selected="true"] { background: var(--pencil); color: #ffffff; border-color: var(--pencil); box-shadow: 0 10px 22px var(--brand-shadow); }
 .solar-activity-tabs button:focus-visible, .quiz-answer:focus-visible, .quiz-text-button:focus-visible { outline: 3px solid var(--pencil); outline-offset: 4px; }
 .planet-quiz-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
-.quiz-planet-window { position: relative; height: clamp(400px, 58vh, 620px); overflow: hidden; border: 1px solid var(--chalk-line); border-radius: 20px; background: radial-gradient(ellipse at 50% 45%, #223354 0%, #10182e 45%, #070d1f 80%); color: var(--chalk); }
+.quiz-planet-window { position: relative; height: clamp(400px, 58vh, 620px); overflow: hidden; border: 0; border-radius: 20px; background: radial-gradient(ellipse at 50% 45%, #223354 0%, #10182e 45%, #070d1f 80%); color: var(--space-text); }
 .quiz-planet-window::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.45; background-image: radial-gradient(circle, #fff 1px, transparent 1.5px), radial-gradient(circle, #fff 1px, transparent 1.5px); background-size: 83px 97px, 137px 113px; background-position: 13px 9px, 37px 47px; }
 .quiz-mystery { position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; text-align: center; }
 .quiz-eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: #b9c9e7; }
@@ -807,6 +1020,34 @@ body {
 .quiz-progress { width: 100%; height: 0.5rem; accent-color: var(--pencil); }
 .quiz-results { display: flex; flex-direction: column; gap: 1.25rem; color: var(--ink); line-height: 1.7; }
 @media (max-width: 767px) { .planet-quiz-layout { grid-template-columns: 1fr; } .quiz-planet-window { height: 320px; } }
+
+@keyframes deal {
+  0% { opacity: 0; transform: translateY(70px) rotate(-7deg) scale(0.92); }
+  70% { opacity: 1; transform: translateY(-6px) rotate(1deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pop {
+  0% { opacity: 0; transform: translateY(10px) scale(0.96); }
+  100% { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .deal { animation: deal 0.9s cubic-bezier(0.2, 0.8, 0.25, 1) both; }
+  .hov { transition: transform 0.3s ease; }
+  .hov:hover { transform: translateY(-8px) rotate(-1deg); }
+  .float { animation: float 3.4s ease-in-out infinite; }
+  .pop { animation: pop 0.4s ease-out both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner { transition: none; }
+}
 
 @keyframes drawer-in {
   from {

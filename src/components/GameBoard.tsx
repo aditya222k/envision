@@ -12,9 +12,9 @@ import { GameDrawer } from "@/components/GameDrawer";
 import { LiveReveal, type CheckedQuestion } from "@/components/LiveReveal";
 import { ReviewPanel } from "@/components/ReviewPanel";
 import type { GameDraft } from "@/lib/games/draft";
-import { EXAMPLE_GAMES, type Subject } from "@/lib/games/examples";
+import { IdeaCards } from "@/components/IdeaCards";
+import type { Subject } from "@/lib/games/examples";
 import type { ChoiceRound } from "@/lib/games/spec";
-import { useIncognito } from "@/lib/incognito";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   PROVIDER_IDS,
@@ -34,15 +34,6 @@ type GenerateEvent =
   | { type: "error"; status: number; error: string }
   | { type: "stopped" };
 
-const SUBJECTS: Subject[] = ["Science", "Math", "History", "English"];
-
-const SUBJECT_CHALK: Record<Subject, string> = {
-  Science: "text-[var(--chalk-science)]",
-  Math: "text-[var(--chalk-math)]",
-  History: "text-[var(--chalk-history)]",
-  English: "text-[var(--chalk-english)]",
-};
-
 type CurrentGame = {
   id: string;
   name: string;
@@ -51,7 +42,6 @@ type CurrentGame = {
   html: string;
   spec?: { sources?: Source[] };
   reviewRounds?: ChoiceRound[];
-  prebuilt?: boolean;
 };
 
 type RunAction = "build" | "change";
@@ -66,7 +56,6 @@ export function GameBoard() {
   const [provider, setProvider] = useState<ProviderId>("ollama");
   const [prompt, setPrompt] = useState("");
   const [changeRequest, setChangeRequest] = useState("");
-  const [selectedTitle, setSelectedTitle] = useState<string | null>(null);
   const [game, setGame] = useState<CurrentGame | null>(null);
   const [activeAction, setActiveAction] = useState<RunAction>("build");
   const [isLoading, setIsLoading] = useState(false);
@@ -75,14 +64,12 @@ export function GameBoard() {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [demoHistory, setDemoHistory] = useState<CurrentGame[]>([]);
   const [draft, setDraft] = useState<GameDraft | null>(null);
   const [checks, setChecks] = useState<CheckedQuestion[] | null>(null);
   const [sources, setSources] = useState<Source[]>([]);
   const [companion, setCompanion] = useState<CompanionAnswer | null>(null);
   const [gameStyle, setGameStyle] = useState<Experience | "auto">("auto");
   const [isAsking, setIsAsking] = useState(false);
-  const isIncognito = useIncognito();
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLElement>(null);
   const gameFrameRef = useRef<HTMLIFrameElement>(null);
@@ -117,11 +104,7 @@ export function GameBoard() {
 
   function showGame(next: CurrentGame) {
     setGame(next);
-    window.history.replaceState(
-      null,
-      "",
-      next.prebuilt ? "/" : `/?game=${next.id}`,
-    );
+    window.history.replaceState(null, "", `/?game=${next.id}`);
   }
 
   function handleEvent(action: RunAction, event: GenerateEvent, label: string) {
@@ -143,11 +126,6 @@ export function GameBoard() {
     } else if (event.type === "check") {
       setChecks(event.questions);
     } else if (event.type === "result") {
-      if (isIncognito && action === "change" && game) {
-        setDemoHistory((current) => [...current, game]);
-      } else {
-        setDemoHistory([]);
-      }
       showGame({ ...event.game, spec: event.spec ?? event.game.spec });
       if (action === "change") {
         setChangeRequest("");
@@ -188,7 +166,6 @@ export function GameBoard() {
           ...body,
           provider,
           runId: run.id,
-          demo: isIncognito,
         }),
         signal: run.controller.signal,
       });
@@ -241,7 +218,6 @@ export function GameBoard() {
       if (!response.ok) {
         throw new Error();
       }
-      setDemoHistory([]);
       showGame((await response.json()).game);
     } catch {
       setError("Envision couldn't open that game. It may have been deleted.");
@@ -251,8 +227,8 @@ export function GameBoard() {
   // The companion suggests a type of game and asks anything it needs first.
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isIncognito) {
-      startRun("build", { prompt });
+    if (!prompt.trim()) {
+      promptRef.current?.focus();
       return;
     }
     setActiveAction("build");
@@ -266,7 +242,6 @@ export function GameBoard() {
         body: JSON.stringify({
           prompt,
           provider,
-          demo: isIncognito,
           style: gameStyle === "auto" ? undefined : gameStyle,
         }),
       });
@@ -334,13 +309,6 @@ export function GameBoard() {
     setError(null);
     setNotice(null);
 
-    const previous = demoHistory.at(-1);
-    if (isIncognito && previous) {
-      setDemoHistory((current) => current.slice(0, -1));
-      showGame(previous);
-      return;
-    }
-
     try {
       const response = await fetch(`/api/games/${game.id}`, {
         method: "PATCH",
@@ -372,12 +340,6 @@ export function GameBoard() {
     setIsStopping(true);
     run.controller.abort();
 
-    if (isIncognito) {
-      setNotice(`${outcome}.`);
-      setIsStopping(false);
-      return;
-    }
-
     try {
       const response = await fetch("/api/generate/stop", {
         method: "POST",
@@ -406,6 +368,7 @@ export function GameBoard() {
           label={progress.label}
           percent={progress.percent}
           startedAt={progress.startedAt}
+          showElapsed={false}
         />
       )}
       {(isLoading || isStopping) && (
@@ -441,106 +404,144 @@ export function GameBoard() {
     </>
   );
 
+  // An idea or "make your own" fills in the prompt and moves the teacher there.
+  function startFrom(text: string) {
+    setPrompt(text);
+    promptRef.current?.focus();
+  }
+
+  const chevron = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4B4868" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+
   return (
-    <div className="flex flex-col gap-12 sm:gap-16">
-      <section className="grid items-start gap-8 lg:grid-cols-[5fr_7fr] lg:gap-12">
-        <div className="flex flex-col gap-4 lg:pt-4">
-          <h1 className="chalk-title text-5xl sm:text-6xl">
-            What should your class play today?
-          </h1>
-          <p className="max-w-[42ch] text-lg leading-7 text-chalk-dim">
-            Describe what students should learn and how they should play.
-            Envision builds the game, ready for class.
-          </p>
-          <div>
-            <GameDrawer
-              currentGameId={game?.id ?? null}
-              isIncognito={isIncognito}
-              disabled={isLoading}
-              onOpenGame={handleOpenGame}
-            />
+    <div className="flex flex-col">
+      <section className="px-4 pt-6 sm:px-10 sm:pt-10">
+        <div className="hero max-sm:gap-8 max-sm:p-6">
+          <div aria-hidden="true" className="hero-shapes">
+            <span className="hero-sun" />
+            <span className="hero-ring" />
+            <span className="hero-tile" />
+          </div>
+
+          <div className="relative z-[1] flex min-w-0 flex-[1_1_520px] flex-col gap-[22px]">
+            <h1 className="hero-title">
+              <span>What should your class</span>
+              <span className="hero-accent">play today?</span>
+            </h1>
+            <svg width="220" height="16" viewBox="0 0 220 16" aria-hidden="true" className="-mt-3.5 block max-w-full">
+              <path d="M4 10C24 2 38 16 58 8S96 2 116 9S154 16 174 8S206 3 216 9" fill="none" stroke="#FFB800" strokeWidth="6" strokeLinecap="round" />
+            </svg>
+            <p className="m-0 max-w-[480px] text-[19px] leading-normal font-semibold text-ink-soft">
+              Describe what students should learn and how they should play.
+              Envision builds the game, ready for class.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <GameDrawer
+                currentGameId={game?.id ?? null}
+                disabled={isLoading}
+                onOpenGame={handleOpenGame}
+              />
+            </div>
+          </div>
+
+          <div className="relative z-[1] min-w-0 max-w-[520px] flex-[1_1_440px]">
+            <form onSubmit={handleSubmit} className="build-card max-sm:p-5">
+              <label htmlFor="game-prompt" className="text-lg font-extrabold">
+                Your game
+              </label>
+              <textarea
+                id="game-prompt"
+                ref={promptRef}
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                rows={4}
+                required
+                placeholder="A grade 8 game where students race to match each organelle to its job"
+                className="field min-h-[150px] resize-y rounded-2xl p-4 text-[17px] leading-normal"
+              />
+
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="flex flex-[1_1_170px] flex-col gap-1.5">
+                  <label htmlFor="game-style" className="text-[13px] font-extrabold text-ink-soft">
+                    Game style
+                  </label>
+                  <div className="select-wrap">
+                    <select
+                      id="game-style"
+                      value={gameStyle}
+                      onChange={(event) =>
+                        setGameStyle(event.target.value as Experience | "auto")
+                      }
+                      className="field text-[15px]"
+                    >
+                      <option value="auto">Let Envision suggest</option>
+                      {(Object.keys(EXPERIENCE_LABELS) as Experience[]).map((item) => (
+                        <option key={item} value={item}>
+                          {EXPERIENCE_LABELS[item]}
+                        </option>
+                      ))}
+                    </select>
+                    {chevron}
+                  </div>
+                </div>
+                <div className="flex flex-[1_1_170px] flex-col gap-1.5">
+                  <label htmlFor="ai-provider" className="text-[13px] font-extrabold text-ink-soft">
+                    AI provider
+                  </label>
+                  <div className="select-wrap">
+                    <select
+                      id="ai-provider"
+                      value={provider}
+                      onChange={(event) =>
+                        setProvider(event.target.value as ProviderId)
+                      }
+                      className="field text-[15px]"
+                    >
+                      {PROVIDER_IDS.map((id) => (
+                        <option key={id} value={id}>
+                          {PROVIDER_LABELS[id]}
+                        </option>
+                      ))}
+                    </select>
+                    {chevron}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || isAsking || Boolean(companion)}
+                  className="action min-h-[52px] flex-[1_1_200px] px-5 text-[17px]"
+                >
+                  {isAsking
+                    ? "Thinking about your idea..."
+                    : isLoading && activeAction === "build"
+                      ? "Building your game..."
+                      : "Build my game"}
+                  {!isAsking && !isLoading && (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {companion && (
+                <Companion
+                  answer={companion}
+                  onBuild={handleCompanionBuild}
+                  onCancel={() => setCompanion(null)}
+                />
+              )}
+              {activeAction === "build" && runStatus}
+            </form>
           </div>
         </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="sheet flex flex-col gap-5 p-5 sm:p-7"
-        >
-          <label className="field-label">
-            Your game
-            <textarea
-              ref={promptRef}
-              value={prompt}
-              onChange={(event) => {
-                setPrompt(event.target.value);
-                setSelectedTitle(null);
-              }}
-              rows={5}
-              required
-              placeholder="A grade 8 game where students race to match each organelle to its job"
-              className="field resize-y p-4 leading-7"
-            />
-          </label>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <label className="field-label sm:w-56">
-              Game style
-              <select
-                value={gameStyle}
-                onChange={(event) =>
-                  setGameStyle(event.target.value as Experience | "auto")
-                }
-                className="field h-12 px-3"
-              >
-                <option value="auto">Let Envision suggest</option>
-                {(Object.keys(EXPERIENCE_LABELS) as Experience[]).map((item) => (
-                  <option key={item} value={item}>
-                    {EXPERIENCE_LABELS[item]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field-label sm:w-56">
-              AI provider
-              <select
-                value={provider}
-                onChange={(event) =>
-                  setProvider(event.target.value as ProviderId)
-                }
-                className="field h-12 px-3"
-              >
-                {PROVIDER_IDS.map((id) => (
-                  <option key={id} value={id}>
-                    {PROVIDER_LABELS[id]}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <button
-              type="submit"
-              disabled={isLoading || isAsking || Boolean(companion) || !prompt.trim()}
-              className="action h-12 px-6 sm:flex-1"
-            >
-              {isAsking
-                ? "Thinking about your idea..."
-                : isLoading && activeAction === "build"
-                  ? "Building your game..."
-                  : "Build my game"}
-            </button>
-          </div>
-
-          {companion && (
-            <Companion
-              answer={companion}
-              onBuild={handleCompanionBuild}
-              onCancel={() => setCompanion(null)}
-            />
-          )}
-          {activeAction === "build" && runStatus}
-        </form>
       </section>
 
+      <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-10 px-4 sm:px-10 [&:not(:empty)]:pt-10">
       {draft && (
         <div className="sheet overflow-hidden">
           <LiveReveal draft={draft} checks={checks} sources={sources} />
@@ -595,15 +596,12 @@ export function GameBoard() {
             className="game-frame h-[calc(100vh-96px)] min-h-[520px] w-full"
           />
 
-          {!isIncognito && !game.prebuilt && (
-            <ReviewPanel
-              rounds={game.reviewRounds ?? []}
-              disabled={isLoading}
-              onResolve={handleReview}
-            />
-          )}
+          <ReviewPanel
+            rounds={game.reviewRounds ?? []}
+            disabled={isLoading}
+            onResolve={handleReview}
+          />
 
-          {!game.prebuilt && (
           <form onSubmit={handleChange} className="flex flex-col gap-4">
             <label className="field-label">
               Change something
@@ -626,7 +624,7 @@ export function GameBoard() {
                   ? "Changing your game..."
                   : "Change my game"}
               </button>
-              {(isIncognito ? demoHistory.length > 0 : game.versionCount > 1) && (
+              {game.versionCount > 1 && (
                 <button
                   type="button"
                   onClick={handleUndo}
@@ -642,58 +640,15 @@ export function GameBoard() {
             </div>
             {activeAction === "change" && runStatus}
           </form>
-          )}
         </section>
       )}
 
-      <section aria-labelledby="ideas-title" className="flex flex-col gap-6 pb-8">
-        <h2 id="ideas-title" className="chalk-title text-3xl sm:text-4xl">
-          Or start from an idea
-        </h2>
-        <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
-          {SUBJECTS.map((subject) => (
-            <div key={subject} className="flex flex-col gap-3">
-              <h3 className={`idea-subject ${SUBJECT_CHALK[subject]}`}>
-                {subject}
-              </h3>
-              <ul className="flex flex-col gap-1">
-                {EXAMPLE_GAMES.filter((idea) => idea.subject === subject).map(
-                  (idea) => (
-                    <li key={idea.title}>
-                      {idea.prompt === undefined ? (
-                        <Link href={idea.href} className="idea">
-                          <span className="text-lg leading-6 font-bold">
-                            {idea.title}
-                          </span>
-                          <span className="idea-grade">
-                            {idea.grade}, opens a 3D explorer
-                          </span>
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          aria-pressed={selectedTitle === idea.title}
-                          onClick={() => {
-                            setPrompt(idea.prompt);
-                            setSelectedTitle(idea.title);
-                            promptRef.current?.focus();
-                          }}
-                          className="idea"
-                        >
-                          <span className="text-lg leading-6 font-bold">
-                            {idea.title}
-                          </span>
-                          <span className="idea-grade">{idea.grade}</span>
-                        </button>
-                      )}
-                    </li>
-                  ),
-                )}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </section>
+      </div>
+
+      <IdeaCards
+        onUseIdea={startFrom}
+        onMakeOwn={(subject: Subject) => startFrom(`A ${subject.toLowerCase()} game where students `)}
+      />
     </div>
   );
 }

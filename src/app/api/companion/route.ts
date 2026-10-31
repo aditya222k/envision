@@ -45,19 +45,10 @@ const COMPANION_SCHEMA = {
   required: ["experience", "reason", "questions"],
 };
 
-const DEMO_ANSWER = {
-  experience: "quest",
-  reason: "A story challenge suits this idea well.",
-  questions: [
-    {
-      question: "How long should the game take?",
-      options: ["5 minutes", "15 minutes", "A full lesson"],
-    },
-    {
-      question: "Who is it for?",
-      options: ["The whole class", "Small groups", "Students on their own"],
-    },
-  ],
+type CompanionReply = {
+  experience: string;
+  reason: string;
+  questions: { question: string; options: string[] }[];
 };
 
 export async function POST(request: Request) {
@@ -66,10 +57,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "prompt is required" }, { status: 400 });
   }
   const chosenStyle = EXPERIENCES.includes(body.style) ? body.style : null;
-  if (body.demo === true) {
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    return Response.json(DEMO_ANSWER);
-  }
   if (body.provider !== undefined && !isProviderId(body.provider)) {
     return Response.json({ error: "unknown provider" }, { status: 400 });
   }
@@ -90,7 +77,7 @@ export async function POST(request: Request) {
       schema: COMPANION_SCHEMA,
       signal: request.signal,
     });
-    const answer = parseJson(text) as typeof DEMO_ANSWER | null;
+    const answer = parseJson(text) as CompanionReply | null;
     if (answer && EXPERIENCES.includes(answer.experience)) {
       return Response.json({
         // What the teacher asks for always beats the model's suggestion.
@@ -112,10 +99,12 @@ export async function POST(request: Request) {
   } catch (error) {
     console.warn("Companion unavailable:", error);
   }
+  // Says plainly that no suggestion came back, rather than presenting a default as one.
   return Response.json({
     experience:
       chosenStyle ?? (WANTS_3D.test(body.prompt) ? "world3d" : "custom"),
-    reason: "",
+    reason:
+      "The AI model didn't answer, so there's no suggestion. Choose a type of game.",
     questions: [],
   });
 }

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import type { GameSummary } from "@/lib/games/store";
-import { useIncognito } from "@/lib/incognito";
 
 function studentLink(id: string) {
   return `${window.location.origin}/play/${id}`;
@@ -231,12 +230,8 @@ export function GameCatalog() {
   const [games, setGames] = useState<GameSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLocalAddress, setIsLocalAddress] = useState(false);
-  const isIncognito = useIncognito();
-
   useEffect(() => {
-    fetch(isIncognito ? "/api/games?demo=1" : "/api/games", {
-      cache: "no-store",
-    })
+    fetch("/api/games", { cache: "no-store" })
       .then((response) => {
         if (!response.ok) {
           throw new Error();
@@ -250,7 +245,7 @@ export function GameCatalog() {
         );
       })
       .catch(() => setError("Envision couldn't load your games. Reload the page."));
-  }, [isIncognito]);
+  }, []);
 
   if (error) {
     return (
@@ -286,7 +281,7 @@ export function GameCatalog() {
         <GameRow
           key={game.id}
           game={game}
-          canManage={!isIncognito}
+          canManage
           onChanged={(next) =>
             setGames((current) =>
               (current ?? []).map((item) => (item.id === next.id ? next : item)),

@@ -6,13 +6,14 @@ Envision lets teachers build learning games for grade 8 and high school students
 
 - **Build a game from a prompt.** Describe what students should learn and how they should play, or start from one of the example ideas grouped by subject. A companion suggests a type of game and asks a few quick questions with options before it builds.
 - **Choose from five types of game.** Quiz adventure, Physics lab (gravity and electric forces), Simulation lab (sliders and a live graph), Decision story (a branching story with consequences) and Arrange and sort.
-- **Watch it build.** The title, characters, world and questions appear as the model writes them, with a progress bar and elapsed time. **Stop building** cancels the run at any point.
+- **Watch it build.** The title, characters, world and questions appear as the model writes them, with a progress bar. **Stop building** cancels the run at any point.
 - **Review doubtful questions.** When Envision can't confirm an answer, the question goes to a review list, where you pick the right answer and add it, or leave it out.
 - **Change a game by describing it.** For example, "Set it in space" or "Make question 3 harder". Only what you ask for changes, each change is a new version, and **Undo last change** goes back.
 - **Keep your games.** Every game is saved with its version history. **Your games** lists them for opening, renaming and deleting.
 - **Publish to students.** Publishing saves a separate copy at `/play/<id>`, so later edits don't reach students until you publish again.
 - **Plan a storyline.** At **Storylines**, turn a subject into chapters and levels, where each level is one game with the same hero running through it. Drag the story notes on each chapter's board, and **Build all games** builds the missing levels one at a time. Publishing a storyline gives students one link at `/path/<id>`, where winning a game unlocks the next.
 - **Explore the solar system in 3D.** The **Solar System** idea under Science opens a ready-made explorer at `/explore/solar-system`, with no AI and no camera. Drag to rotate, scroll or pinch to zoom, play or pause the orbits, and select a planet to read its facts. The facts and scene settings are reviewed static values in `src/lib/explorer/solarSystem.ts`.
+- **Play two ready-made example games.** **Gravity** under Science and **Great Depression** under History open finished games at `/explore/gravity` and `/explore/great-depression`. They are complete HTML games in `src/lib/games/prebuilt/`, not built by Envision's AI, and their pages say so.
 
 ## Getting started
 
@@ -65,10 +66,6 @@ Before designing, the model picks search terms and Envision reads the matching W
 Labs, decision stories and arrange games use the same steps. The model fills in a design for a hand-built engine (`src/lib/games/lab.ts`, `src/lib/games/engine/lab.js` and `src/lib/games/engine/activities.js`), and the simulation checks its own missions.
 
 Changes work the same way. The model proposes specific edits, and Envision applies them to a copy and checks any new questions (`src/lib/games/revise.ts`).
-
-## Teach mode
-
-The **Teach mode** switch in the navigation bar is a demo mode. It plays a simulated build of about ten seconds and shows a ready-made game from `src/lib/games/prebuilt/`, without calling any AI provider or changing saved games. In a storyline, it plans a sample outline and links each level to a saved game. If there are no saved games, it adds three samples from `src/lib/games/samples.ts`.
 
 ## Where things are saved
 
@@ -138,4 +135,4 @@ The repo includes the `frontend-design` skill in `.claude/skills/` and a Playwri
 
 ## Tech stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, Phaser 4, and three.js with React Three Fiber for the Solar System explorer. The interface uses Atkinson Hyperlegible for text and Shantell Sans for headings.
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, Phaser 4, and three.js with React Three Fiber for the Solar System explorer. The interface uses Nunito for text, Bricolage Grotesque for the wordmark, Shantell Sans for handwritten accents and Anton for subject names.
