@@ -1,26 +1,117 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --chalkboard: #174a3c;
+  --paper: #f7faf5;
+  --ink: #15231f;
+  --pencil: #f6c41c;
+  --pencil-light: #fdeeb5;
+  --science: #177a52;
+  --math: #2456c9;
+  --history: #c92a22;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-chalkboard: var(--chalkboard);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-pencil: var(--pencil);
+  --color-science: var(--science);
+  --color-math: var(--math);
+  --color-history: var(--history);
+  --font-sans: var(--font-atkinson);
+  --font-display: var(--font-bowlby);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--chalkboard);
+  color: var(--ink);
+  font-family: var(--font-atkinson), Arial, Helvetica, sans-serif;
+}
+
+:focus-visible {
+  outline: 3px solid var(--pencil);
+  box-shadow: 0 0 0 6px var(--ink);
+}
+
+@layer components {
+  .board {
+    display: grid;
+    gap: 3px;
+    border: 3px solid var(--ink);
+    background: var(--ink);
+  }
+
+  .square {
+    display: flex;
+    flex-direction: column;
+    min-height: 9rem;
+    background: var(--paper);
+    cursor: pointer;
+  }
+
+  button.square:hover {
+    background: var(--pencil-light);
+  }
+
+  .square[aria-pressed="true"] {
+    background: var(--pencil-light);
+    box-shadow: inset 0 0 0 4px var(--ink);
+  }
+
+  .field-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .field {
+    width: 100%;
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    background: #ffffff;
+    font-size: 1.0625rem;
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  .field::placeholder {
+    color: #4e5e59;
+  }
+
+  .field:disabled {
+    background: var(--paper);
+    cursor: not-allowed;
+  }
+
+  .action {
+    border: 3px solid var(--ink);
+    border-radius: 4px;
+    background: var(--pencil);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .action:hover:enabled {
+    background: var(--ink);
+    color: var(--pencil);
+  }
+
+  .action:disabled {
+    background: var(--paper);
+    color: #4e5e59;
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .action:active:enabled,
+  .square:active {
+    transform: translateY(2px);
+  }
 }

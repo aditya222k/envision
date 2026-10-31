@@ -1,4 +1,10 @@
-import { getProvider, isProviderId, NotImplementedError } from "@/lib/llm";
+import {
+  getProvider,
+  isProviderId,
+  NotImplementedError,
+  ProviderRequestError,
+} from "@/lib/llm";
+import { isProviderConfigured } from "@/lib/llm/config";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -11,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   const provider = getProvider(body.provider);
-  if (!provider.isConfigured()) {
+  if (!(await isProviderConfigured(provider.id))) {
     return Response.json(
       { error: `${provider.id} is not configured` },
       { status: 503 },
@@ -24,6 +30,9 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof NotImplementedError) {
       return Response.json({ error: error.message }, { status: 501 });
+    }
+    if (error instanceof ProviderRequestError) {
+      return Response.json({ error: error.message }, { status: 502 });
     }
     throw error;
   }

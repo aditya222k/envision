@@ -34,6 +34,12 @@ yarn-error.log*
 .env*
 !.env.example
 
+# provider settings saved from the configuration page, including API keys
+/.envision/
+
+# playwright mcp screenshots and traces
+/.playwright-mcp/
+
 # vercel
 .vercel
 

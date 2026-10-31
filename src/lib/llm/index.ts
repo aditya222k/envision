@@ -4,7 +4,7 @@ import { ollama } from "./providers/ollama";
 import { openai } from "./providers/openai";
 import { PROVIDER_IDS, type LlmProvider, type ProviderId } from "./types";
 
-export { NotImplementedError } from "./types";
+export { NotImplementedError, ProviderRequestError } from "./types";
 
 const providers: Record<ProviderId, LlmProvider> = {
   claude,
