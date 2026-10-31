@@ -13,10 +13,25 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 | Changing a game | Works, with versions and undo |
 | Catalog and publishing | Work, stored as local files |
 | Incognito | Works, and never calls a model |
+| Solar System explorer | Works, with reviewed static facts and no AI |
 | Logins | Not built |
 | Deployment | Not ready, because games are stored as local files |
 
 ## Timeline
+
+### 2026-10-31: Solar System explorer
+
+- Replaced the "Cell city" idea under Science with "Solar System". It opens a 3D explorer at `/explore/solar-system` instead of filling in the prompt, so it needs no AI generation or camera.
+- The explorer shows the Sun and all eight planets with orbit paths. Drag rotates, scroll or pinch zooms, **Play orbits** and **Pause orbits** control the animation, and **Reset view** restores the starting camera.
+- Selecting a planet, on the scene or with the planet buttons, highlights it and shows its description, position from the Sun, average distance and orbital period.
+- Facts and scene settings live in `src/lib/explorer/solarSystem.ts`. The facts are reviewed values from NASA fact sheets. A note on the page says sizes, distances and speeds are simplified.
+- Built with three.js and React Three Fiber. Planet surfaces are drawn by code, so there are no image files.
+- The page has loading and error states. Without WebGL it explains the problem, and the planet facts still work. When the browser asks for reduced motion, the orbits start paused.
+- `npm run eval:games` skips ideas that open an explorer, since they have no prompt to build.
+
+### 2026-10-31: Brought back the redesign on top of storylines
+
+- Commit `ec5729a` restyled the shared components so the redesign from `e4617be` works with storylines, labs and the companion, and added the navigation bar back with a Storylines link.
 
 ### 2026-10-31: Merged over the main redesign
 

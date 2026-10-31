@@ -602,21 +602,32 @@ export function GameBoard() {
                 {EXAMPLE_GAMES.filter((idea) => idea.subject === subject).map(
                   (idea) => (
                     <li key={idea.title}>
-                      <button
-                        type="button"
-                        aria-pressed={selectedTitle === idea.title}
-                        onClick={() => {
-                          setPrompt(idea.prompt);
-                          setSelectedTitle(idea.title);
-                          promptRef.current?.focus();
-                        }}
-                        className="idea"
-                      >
-                        <span className="text-lg leading-6 font-bold">
-                          {idea.title}
-                        </span>
-                        <span className="idea-grade">{idea.grade}</span>
-                      </button>
+                      {idea.prompt === undefined ? (
+                        <Link href={idea.href} className="idea">
+                          <span className="text-lg leading-6 font-bold">
+                            {idea.title}
+                          </span>
+                          <span className="idea-grade">
+                            {idea.grade}, opens a 3D explorer
+                          </span>
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          aria-pressed={selectedTitle === idea.title}
+                          onClick={() => {
+                            setPrompt(idea.prompt);
+                            setSelectedTitle(idea.title);
+                            promptRef.current?.focus();
+                          }}
+                          className="idea"
+                        >
+                          <span className="text-lg leading-6 font-bold">
+                            {idea.title}
+                          </span>
+                          <span className="idea-grade">{idea.grade}</span>
+                        </button>
+                      )}
                     </li>
                   ),
                 )}

@@ -12,6 +12,7 @@ Envision lets teachers build learning games for grade 8 and high school students
 - **Keep your games.** Every game is saved with its version history. **Your games** lists them for opening, renaming and deleting.
 - **Publish to students.** Publishing saves a separate copy at `/play/<id>`, so later edits don't reach students until you publish again.
 - **Plan a storyline.** At **Storylines**, turn a subject into chapters and levels, where each level is one game with the same hero running through it. Drag the story notes on each chapter's board, and **Build all games** builds the missing levels one at a time. Publishing a storyline gives students one link at `/path/<id>`, where winning a game unlocks the next.
+- **Explore the solar system in 3D.** The **Solar System** idea under Science opens a ready-made explorer at `/explore/solar-system`, with no AI and no camera. Drag to rotate, scroll or pinch to zoom, play or pause the orbits, and select a planet to read its facts. The facts and scene settings are reviewed static values in `src/lib/explorer/solarSystem.ts`.
 
 ## Getting started
 
@@ -88,10 +89,12 @@ src/
 │   ├── settings/             AI settings
 │   ├── play/[id]/            Published games for students
 │   ├── path/[id]/            Published storylines for students
+│   ├── explore/solar-system/ 3D Solar System explorer
 │   └── api/                  generate, companion, games, storylines, path and config routes
 ├── components/               Page components, including the navigation bar
 └── lib/
     ├── games/                Game design, checks, drawing and storage
+    ├── explorer/             Solar System facts and scene settings
     └── llm/                  AI providers, prompts and settings
 scripts/
 ├── preview-worlds.mjs        Screenshots of each world, no model needed
@@ -117,6 +120,7 @@ scripts/
 - **CSS reloading.** After changing `src/app/globals.css`, restart `npm run dev` to see it.
 - **Shared Ollama servers.** Stopping a build closes the model for everyone using that server.
 - **Build all games runs in the open page.** Closing the page stops it. Running it again builds whatever is still missing.
+- **The Solar System explorer needs WebGL.** Without it, the page explains the problem and the planet facts still work. Sizes, distances and orbital speeds in the scene are simplified, and the page says so.
 
 See `docs/UPDATE_TRACE.md` for the full change log, decisions and next steps.
 
@@ -132,4 +136,4 @@ The repo includes the `frontend-design` skill in `.claude/skills/` and a Playwri
 
 ## Tech stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4 and Phaser 4. The interface uses Atkinson Hyperlegible for text and Shantell Sans for headings.
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, Phaser 4, and three.js with React Three Fiber for the Solar System explorer. The interface uses Atkinson Hyperlegible for text and Shantell Sans for headings.

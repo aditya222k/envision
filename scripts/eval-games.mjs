@@ -5,7 +5,9 @@ import { chromium } from "playwright";
 import { EXAMPLE_GAMES } from "../src/lib/games/examples.ts";
 
 const BASE_URL = process.env.EVAL_BASE_URL ?? "http://localhost:3000";
-const limit = Number(process.argv[2]) || EXAMPLE_GAMES.length;
+// Ideas that open a ready-made explorer have no prompt to build.
+const PROMPT_IDEAS = EXAMPLE_GAMES.filter((example) => example.prompt);
+const limit = Number(process.argv[2]) || PROMPT_IDEAS.length;
 
 // Uses node:http because fetch gives up after five minutes without a response.
 function requestGame(prompt) {
@@ -134,7 +136,7 @@ async function evaluate(browser, example) {
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const results = [];
-for (const example of EXAMPLE_GAMES.slice(0, limit)) {
+for (const example of PROMPT_IDEAS.slice(0, limit)) {
   const result = await evaluate(browser, example);
   results.push(result);
   console.log(

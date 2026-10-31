@@ -622,6 +622,155 @@ body {
     border-radius: 5px;
     background: var(--pencil-deep);
   }
+
+  /* Solar System explorer: the scene sits in a dark window on the board. */
+  .explorer-layout {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .explorer-stage {
+    position: relative;
+    height: min(62vh, 560px);
+    min-height: 380px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #070d1f;
+    color: var(--chalk);
+    box-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.25),
+      0 24px 48px -28px rgba(0, 0, 0, 0.7);
+  }
+
+  .explorer-status {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--chalk);
+  }
+
+  .explorer-controls {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stage-button {
+    min-height: 44px;
+    padding: 0 1rem;
+    border-radius: 12px;
+    background: rgba(237, 243, 236, 0.16);
+    font-weight: 700;
+    color: var(--chalk);
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+
+  .stage-button:hover {
+    background: rgba(237, 243, 236, 0.26);
+  }
+
+  .stage-button-primary {
+    background: var(--pencil);
+    color: var(--ink);
+  }
+
+  .stage-button-primary:hover {
+    background: var(--pencil-deep);
+  }
+
+  .explorer-hint {
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: rgba(237, 243, 236, 0.12);
+    font-weight: 700;
+    color: var(--chalk);
+  }
+
+  .planet-facts {
+    display: grid;
+    gap: 0.75rem;
+    color: var(--ink);
+  }
+
+  .planet-facts dt {
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+  }
+
+  .planet-facts dd {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+  }
+
+  .explorer-note {
+    max-width: 72ch;
+    padding-left: 0.875rem;
+    border-left: 3px solid var(--pencil);
+    color: var(--chalk-dim);
+  }
+
+  .planet-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 0.875rem;
+    border: 1.5px solid var(--chalk-line);
+    border-radius: 12px;
+    font-weight: 700;
+    color: var(--chalk);
+    cursor: pointer;
+  }
+
+  .planet-chip:hover {
+    background: rgba(237, 243, 236, 0.1);
+  }
+
+  .planet-chip[aria-pressed="true"] {
+    border-color: var(--chalk);
+    background: var(--chalk);
+    color: var(--ink);
+  }
+
+  .planet-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  }
+
+  /* On wide screens the planet card floats over the top right of the scene. */
+  @media (min-width: 1024px) {
+    /* Fits the window under the page title, so the controls stay in view. */
+    .explorer-stage {
+      height: clamp(420px, calc(100svh - 340px), 680px);
+    }
+
+    .explorer-layout > * {
+      grid-area: 1 / 1;
+    }
+
+    /* Keeps the message clear of the planet card on the right. */
+    .explorer-error {
+      padding-right: 372px;
+    }
+
+    .explorer-card-slot {
+      z-index: 1;
+      align-self: start;
+      justify-self: end;
+      width: 340px;
+      max-height: calc(100% - 2rem);
+      margin: 1rem;
+      overflow-y: auto;
+    }
+  }
 }
 
 @keyframes drawer-in {

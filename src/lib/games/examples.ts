@@ -1,11 +1,14 @@
 export type Subject = "Science" | "Math" | "History" | "English";
 
-export const EXAMPLE_GAMES: {
+// Most ideas fill in the prompt. An idea with an href opens a ready-made
+// explorer instead, with no AI generation.
+export type ExampleIdea = {
   title: string;
   subject: Subject;
   grade: string;
-  prompt: string;
-}[] = [
+} & ({ prompt: string; href?: never } | { href: string; prompt?: never });
+
+export const EXAMPLE_GAMES: ExampleIdea[] = [
   {
     title: "Gravity",
     subject: "Science",
@@ -49,11 +52,10 @@ export const EXAMPLE_GAMES: {
       "A high school debate game where students read short arguments and call out the logical fallacy in each one before time runs out.",
   },
   {
-    title: "Cell city",
+    title: "Solar System",
     subject: "Science",
     grade: "Grade 8",
-    prompt:
-      "A grade 8 city-building game where each part of a cell is a building, and students keep the city running by matching organelles to their jobs.",
+    href: "/explore/solar-system",
   },
   {
     title: "Poetry heist",
