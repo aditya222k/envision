@@ -22,10 +22,13 @@ import {
 } from "@/lib/llm/types";
 
 
+type Source = { title: string; url: string };
+
 type GenerateEvent =
   | { type: "progress"; label: string; percent: number }
   | { type: "draft"; draft: GameDraft }
   | { type: "check"; questions: CheckedQuestion[] }
+  | { type: "sources"; sources: Source[] }
   | { type: "result"; game: CurrentGame; spec?: unknown }
   | { type: "error"; status: number; error: string }
   | { type: "stopped" };
@@ -45,7 +48,7 @@ type CurrentGame = {
   versionCount: number;
   summary: string;
   html: string;
-  spec?: unknown;
+  spec?: { sources?: Source[] };
   reviewRounds?: ChoiceRound[];
   prebuilt?: boolean;
 };
@@ -74,11 +77,13 @@ export function GameBoard() {
   const [demoHistory, setDemoHistory] = useState<CurrentGame[]>([]);
   const [draft, setDraft] = useState<GameDraft | null>(null);
   const [checks, setChecks] = useState<CheckedQuestion[] | null>(null);
+  const [sources, setSources] = useState<Source[]>([]);
   const [companion, setCompanion] = useState<CompanionAnswer | null>(null);
   const [isAsking, setIsAsking] = useState(false);
   const isIncognito = useIncognito();
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLElement>(null);
+  const gameFrameRef = useRef<HTMLIFrameElement>(null);
   const runRef = useRef<{ id: string; controller: AbortController } | null>(
     null,
   );
@@ -131,6 +136,8 @@ export function GameBoard() {
     } else if (event.type === "draft") {
       setDraft(event.draft);
       setChecks(null);
+    } else if (event.type === "sources") {
+      setSources(event.sources);
     } else if (event.type === "check") {
       setChecks(event.questions);
     } else if (event.type === "result") {
@@ -512,7 +519,7 @@ export function GameBoard() {
 
       {draft && (
         <div className="sheet overflow-hidden">
-          <LiveReveal draft={draft} checks={checks} />
+          <LiveReveal draft={draft} checks={checks} sources={sources} />
         </div>
       )}
       {game && !draft && (
@@ -528,13 +535,40 @@ export function GameBoard() {
             <p className="text-ink-soft">
               Version {game.versionCount}. {game.summary}
             </p>
+            <button
+              type="button"
+              onClick={() => gameFrameRef.current?.requestFullscreen()}
+              className="action action-quiet h-10 px-4 sm:self-start"
+            >
+              Full screen
+            </button>
+            {(game.spec?.sources?.length ?? 0) > 0 && (
+              <p className="text-sm text-ink-soft">
+                Built using facts from{" "}
+                {game.spec?.sources?.map((source, index) => (
+                  <span key={source.url}>
+                    {index > 0 && ", "}
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline"
+                    >
+                      {source.title}
+                    </a>
+                  </span>
+                ))}
+                .
+              </p>
+            )}
           </div>
           <iframe
+            ref={gameFrameRef}
             title="Your game"
             srcDoc={game.html}
             sandbox="allow-scripts"
             allowFullScreen
-            className="game-frame h-[85vh] w-full lg:h-[640px]"
+            className="game-frame h-[calc(100vh-96px)] min-h-[520px] w-full"
           />
 
           {!isIncognito && !game.prebuilt && (

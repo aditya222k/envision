@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-export type Experience = "bodies" | "systems" | "decide" | "arrange" | "quest";
+export type Experience =
+  | "custom"
+  | "bodies"
+  | "systems"
+  | "decide"
+  | "arrange"
+  | "quest";
 
 export type CompanionAnswer = {
   experience: Experience;
@@ -11,6 +17,7 @@ export type CompanionAnswer = {
 };
 
 const EXPERIENCE_LABELS: Record<Experience, string> = {
+  custom: "Custom game",
   bodies: "Physics lab",
   systems: "Simulation lab",
   decide: "Decision story",

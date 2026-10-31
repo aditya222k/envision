@@ -18,6 +18,27 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 
 ## Timeline
 
+### 2026-10-31: Custom games that the model designs itself
+
+- Changed direction: general guardrails on how the model works, rather than rules for each subject.
+- Added a Custom game path. The model thinks through the lesson and writes down the truths the game must obey, writes the whole game, then Envision playtests it in a real browser. The model reviews its code against its own truths and fixes what failed.
+- The playtest works for any subject. It proves a game runs and responds, not that its content is right.
+
+### 2026-10-31: Stronger guardrails for smaller models
+
+- Moved to `gemma4:12b`. Output now has lower randomness and a length limit.
+- Rewrote the lab prompts with strict rules, a worked example for each game type, and a self-check.
+- Retries now tell the model exactly what was wrong, instead of repeating the same request.
+- Simulation labs are now run before anyone sees them, and rejected if amounts hit their limits too fast, barely change, or a slider does nothing.
+- Arrange games are now solved independently, and rejected if the answers disagree.
+- Decide games are now rejected if they loop back or leave a meter unused.
+- Rebuilt the physics lab on real laws. It now uses velocity Verlet with a fixed time step, correct orbit speeds, and collisions that keep mass, momentum and centre of mass. Measured energy drift is effectively zero, and Kepler's third law holds to within 0.2%.
+- Added pull arrows and a live speed readout to the physics lab.
+- Gravity and orbit lessons now always use the physics lab, so model-written formulas can't stand in for physics.
+- Turned off hidden model thinking, which was using up time and cutting replies short.
+- Added web research. Builds now look up the lesson on Wikipedia and give the facts to the model as reference material, and each game lists its sources.
+- Tested 3D output: `gemma4:12b` returned methane coordinates with wrong bond lengths and angles, so model-written 3D data needs checking before students see it.
+
 ### 2026-10-31: Merged over the main redesign
 
 - `main` had a UI redesign in commit `e4617be`, with a navigation bar, Teach mode and two pre-built games (Gravity Playground and Hard Times 1932).

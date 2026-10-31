@@ -1,3 +1,4 @@
+import type { CustomPlan } from "./customGame";
 import type { LabConfig } from "./lab";
 
 export const MECHANICS = ["journey", "beat-the-clock", "boss-battle"] as const;
@@ -55,6 +56,8 @@ export type GameSpec = {
   };
   rounds: Round[];
   lab?: LabConfig;
+  custom?: { html: string; plan: CustomPlan; notes: string[] };
+  sources?: { title: string; url: string }[];
 };
 
 const shortText = { type: "string", minLength: 1, maxLength: 80 };

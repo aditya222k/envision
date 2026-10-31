@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  serverExternalPackages: ["playwright"],
   experimental: {
     // The disk cache kept serving old CSS after globals.css changed.
     turbopackFileSystemCacheForDev: false,

@@ -14,6 +14,17 @@
   });
   var finished = false;
 
+  // Draws to the space available, so the lab always fills its window.
+  function fitCanvas() {
+    var box = canvas.getBoundingClientRect();
+    canvas.width = Math.max(Math.round(box.width), 300);
+    canvas.height = Math.max(Math.round(box.height), 200);
+    W = canvas.width;
+    H = canvas.height;
+  }
+  fitCanvas();
+  new ResizeObserver(fitCanvas).observe(canvas);
+
   function make(tag, className, text) {
     var node = document.createElement(tag);
     if (className) node.className = className;
@@ -92,6 +103,12 @@
 
   // ---- Bodies kit ----
   function runBodies() {
+    // Real laws, in screen units: inverse-square forces, with a small softening
+    // so that close passes stay stable.
+    var GRAVITY = 3200;
+    var COULOMB = 900000;
+    var SOFTENING = 16;
+    var STEP = 1 / 240;
     var isGravity = lab.force === "gravity";
     var strength = 1;
     var bodies = [];
@@ -105,7 +122,7 @@
     var nextId = 1;
     var stars = [];
     for (var i = 0; i < 160; i++) {
-      stars.push([Math.random() * W, Math.random() * H, Math.random() * 1.6 + 0.3]);
+      stars.push([Math.random(), Math.random(), Math.random() * 1.6 + 0.3]);
     }
 
     function radius(mass) {
@@ -136,14 +153,36 @@
       return body;
     }
 
-    function orbitVelocity(x, y) {
+    // Circular orbit speed: v^2 = G(M + m) r^2 / (r^2 + softening)^(3/2).
+    function orbitVelocity(x, y, mass) {
       var center = heaviest();
       if (!center) return [0, 0];
       var dx = x - center.x;
       var dy = y - center.y;
       var distance = Math.max(Math.hypot(dx, dy), 1);
-      var speed = Math.sqrt((strength * 40 * center.mass) / distance);
+      var softened = Math.pow(distance * distance + SOFTENING, 1.5);
+      var speed = Math.sqrt(
+        (strength * GRAVITY * (center.mass + mass) * distance * distance) / softened,
+      );
       return [center.vx + (-dy / distance) * speed, center.vy + (dx / distance) * speed];
+    }
+
+    // Moves the view with the system, so the system as a whole never drifts.
+    // The physics inside it is unchanged, because only one frame of reference moves.
+    function removeDrift() {
+      var total = 0;
+      var px = 0;
+      var py = 0;
+      bodies.forEach(function (body) {
+        total += body.mass;
+        px += body.mass * body.vx;
+        py += body.mass * body.vy;
+      });
+      if (!total) return;
+      bodies.forEach(function (body) {
+        body.vx -= px / total;
+        body.vy -= py / total;
+      });
     }
 
     function reset() {
@@ -154,37 +193,47 @@
       });
       if (isGravity) {
         addBody(sorted[0], W / 2, H / 2, 0, 0);
-        var velocity = orbitVelocity(W / 2 + 190, H / 2);
+        var velocity = orbitVelocity(W / 2 + 190, H / 2, sorted[1].mass);
         addBody(sorted[1], W / 2 + 190, H / 2, velocity[0], velocity[1]);
       } else {
-        addBody(sorted[0], W / 2 - 130, H / 2, 0, 18);
-        addBody(sorted[1], W / 2 + 130, H / 2, 0, -18);
+        addBody(sorted[0], W / 2 - 130, H / 2, 0, 60);
+        addBody(sorted[1], W / 2 + 130, H / 2, 0, -60);
       }
+      removeDrift();
+      updateForces();
     }
 
-    function step(dt) {
+    function updateForces() {
       bodies.forEach(function (body) {
-        var ax = 0;
-        var ay = 0;
+        body.ax = 0;
+        body.ay = 0;
         bodies.forEach(function (other) {
           if (other === body) return;
           var dx = other.x - body.x;
           var dy = other.y - body.y;
-          var squared = dx * dx + dy * dy + 36;
+          var squared = dx * dx + dy * dy + SOFTENING;
           var distance = Math.sqrt(squared);
           var pull = isGravity
-            ? (strength * 40 * other.mass) / squared
-            : (-strength * 90000 * body.charge * other.charge) / (body.mass * squared);
-          ax += (pull * dx) / distance;
-          ay += (pull * dy) / distance;
+            ? (strength * GRAVITY * other.mass) / squared
+            : (-strength * COULOMB * body.charge * other.charge) / (body.mass * squared);
+          body.ax += (pull * dx) / distance;
+          body.ay += (pull * dy) / distance;
         });
-        body.vx += ax * dt;
-        body.vy += ay * dt;
       });
+    }
 
+    // Velocity Verlet keeps energy from building up or leaking away over time.
+    function step(dt) {
       bodies.forEach(function (body) {
+        body.vx += (body.ax * dt) / 2;
+        body.vy += (body.ay * dt) / 2;
         body.x += body.vx * dt;
         body.y += body.vy * dt;
+      });
+      updateForces();
+      bodies.forEach(function (body) {
+        body.vx += (body.ax * dt) / 2;
+        body.vy += (body.ay * dt) / 2;
       });
 
       for (var a = 0; a < bodies.length; a++) {
@@ -195,11 +244,14 @@
           if (
             !repels &&
             Math.hypot(first.x - second.x, first.y - second.y) <
-              (radius(first.mass) + radius(second.mass)) * 0.8
+              radius(first.mass) + radius(second.mass)
           ) {
             var total = first.mass + second.mass;
             var big = first.mass >= second.mass ? first : second;
             var small = big === first ? second : first;
+            // A merger keeps total mass, momentum and centre of mass.
+            big.x = (first.x * first.mass + second.x * second.mass) / total;
+            big.y = (first.y * first.mass + second.y * second.mass) / total;
             big.vx = (first.vx * first.mass + second.vx * second.mass) / total;
             big.vy = (first.vy * first.mass + second.vy * second.mass) / total;
             big.mass = total;
@@ -207,6 +259,7 @@
             bodies.splice(bodies.indexOf(small), 1);
             if (selected === small) selected = big;
             collided = true;
+            updateForces();
             b = bodies.length;
             a = bodies.length;
           }
@@ -218,7 +271,8 @@
       var distance = Math.hypot(body.x - center.x, body.y - center.y);
       var speed = Math.hypot(body.vx - center.vx, body.vy - center.vy);
       return (
-        speed * speed < (2 * strength * 40 * center.mass) / Math.max(distance, 1) &&
+        speed * speed <
+          (2 * strength * GRAVITY * (center.mass + body.mass)) / Math.max(distance, 1) &&
         distance < Math.max(W, H)
       );
     }
@@ -264,7 +318,7 @@
       ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = "rgba(255,255,255,0.7)";
       stars.forEach(function (star) {
-        ctx.fillRect(star[0], star[1], star[2], star[2]);
+        ctx.fillRect(star[0] * W, star[1] * H, star[2], star[2]);
       });
 
       bodies.forEach(function (body) {
@@ -307,6 +361,16 @@
         ctx.font = "14px system-ui";
         ctx.textAlign = "center";
         ctx.fillText(body.name, body.x, body.y - size - 8);
+        var pull = Math.hypot(body.ax, body.ay);
+        if (pull > 0.01) {
+          var arrow = Math.min(12 + Math.sqrt(pull) * 5, 70);
+          ctx.strokeStyle = "#ffd54f";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(body.x, body.y);
+          ctx.lineTo(body.x + (body.ax / pull) * arrow, body.y + (body.ay / pull) * arrow);
+          ctx.stroke();
+        }
         if (body === selected) {
           ctx.strokeStyle = "#ffd54f";
           ctx.lineWidth = 2;
@@ -362,15 +426,18 @@
       var velocity =
         Math.hypot(dx, dy) < 8
           ? isGravity
-            ? orbitVelocity(press.x, press.y)
+            ? orbitVelocity(press.x, press.y, selectedType.mass)
             : [0, 0]
-          : [dx * 0.8, dy * 0.8];
+          : [dx * 2.5, dy * 2.5];
       selected = addBody(selectedType, press.x, press.y, velocity[0], velocity[1]);
       press = null;
+      removeDrift();
+      updateForces();
       renderSelection();
     });
 
     var selectionBox = make("div", "selection");
+    var readout = make("p", "hint");
 
     function renderSelection() {
       if (!selected) {
@@ -382,10 +449,14 @@
         slider("Size of " + body.name, Math.round(body.mass), 1, 1000, 1, function (next) {
           body.mass = next;
           resizedAt = performance.now();
+          removeDrift();
+          updateForces();
         }),
         button("Remove " + body.name, function () {
           bodies.splice(bodies.indexOf(body), 1);
           selected = null;
+          removeDrift();
+          updateForces();
           renderSelection();
         }),
       );
@@ -410,7 +481,10 @@
       selectionBox,
       slider(isGravity ? "Gravity strength" : "Force strength", 1, 0.2, 3, 0.1, function (next) {
         strength = next;
+        updateForces();
       }),
+      readout,
+      make("p", "hint", "Yellow arrows show the pull on each object."),
     );
     var controls = make("div", "palette");
     controls.append(
@@ -429,12 +503,53 @@
     renderSelection();
     reset();
 
+    function advance(seconds) {
+      var count = Math.round(seconds / STEP);
+      for (var index = 0; index < count; index++) step(STEP);
+    }
+
+    // Uses the same softened forces as the simulation.
+    function totals() {
+      var energy = 0;
+      var px = 0;
+      var py = 0;
+      bodies.forEach(function (body, index) {
+        energy += 0.5 * body.mass * (body.vx * body.vx + body.vy * body.vy);
+        px += body.mass * body.vx;
+        py += body.mass * body.vy;
+        bodies.slice(index + 1).forEach(function (other) {
+          var distance = Math.sqrt(
+            Math.pow(body.x - other.x, 2) + Math.pow(body.y - other.y, 2) + SOFTENING,
+          );
+          energy += isGravity
+            ? (-strength * GRAVITY * body.mass * other.mass) / distance
+            : (strength * COULOMB * body.charge * other.charge) / distance;
+        });
+      });
+      return { energy: energy, momentum: Math.hypot(px, py) };
+    }
+
     var last = performance.now();
+    var waiting = 0;
     function frame(now) {
       var elapsed = Math.min((now - last) / 1000, 0.05);
       last = now;
       if (!paused) {
-        for (var substep = 0; substep < 6; substep++) step(elapsed / 6);
+        // A fixed step means physics runs the same on every computer.
+        waiting += elapsed;
+        var steps = Math.floor(waiting / STEP);
+        waiting -= steps * STEP;
+        for (var substep = 0; substep < steps; substep++) step(STEP);
+        if (selected && bodies.indexOf(selected) >= 0) {
+          readout.textContent =
+            selected.name +
+            ": speed " +
+            Math.round(Math.hypot(selected.vx, selected.vy)) +
+            ", pull " +
+            Math.hypot(selected.ax, selected.ay).toFixed(1);
+        } else {
+          readout.textContent = "";
+        }
         bodies.forEach(function (body) {
           body.trail.push([body.x, body.y]);
           if (body.trail.length > (reducedMotion ? 60 : 220)) body.trail.shift();
@@ -449,6 +564,23 @@
     window.envisionLab = {
       bodies: function () {
         return bodies;
+      },
+      advance: advance,
+      totals: totals,
+      pause: function () {
+        paused = true;
+      },
+      place: function (list) {
+        bodies = [];
+        list.forEach(function (item) {
+          var body = addBody(item, item.x, item.y, item.vx || 0, item.vy || 0);
+          body.charge = item.charge || 0;
+        });
+        removeDrift();
+        updateForces();
+      },
+      circular: function (x, y, mass) {
+        return orbitVelocity(x, y, mass);
       },
     };
   }

@@ -70,8 +70,9 @@ body {
 #world canvas { display: block; }
 main { min-width: 0; padding: 20px; border-radius: 12px; background: var(--panel); }
 @media (min-width: 820px) {
-  body { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
-  main { max-height: calc(100vh - 24px); overflow-y: auto; }
+  body { grid-template-columns: minmax(0, 1fr) 360px; height: 100vh; }
+  #world { aspect-ratio: auto; height: calc(100vh - 24px); }
+  main { height: calc(100vh - 24px); overflow-y: auto; }
 }
 h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.15; }
 h2 { margin: 0 0 14px; font-size: 20px; line-height: 1.3; }
@@ -379,7 +380,7 @@ body {
   display: grid; gap: 12px; padding: 12px; background: var(--ink); color: var(--ink);
   font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
-canvas { display: block; width: 100%; height: auto; border-radius: 12px; background: #070a1f; touch-action: none; cursor: crosshair; }
+canvas { display: block; width: 100%; height: 56vh; border-radius: 12px; background: #070a1f; touch-action: none; cursor: crosshair; }
 #panel { min-width: 0; padding: 18px; border-radius: 12px; background: var(--panel); }
 h1 { margin: 0 0 6px; font-size: 24px; line-height: 1.15; }
 h2 { margin: 16px 0 6px; font-size: 17px; }
@@ -400,8 +401,9 @@ button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent)
 .missions .done { font-weight: 700; color: #177a52; }
 .win { margin-top: 12px; padding: 10px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
 @media (min-width: 820px) {
-  body { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
-  #panel { max-height: calc(100vh - 24px); overflow-y: auto; }
+  body { grid-template-columns: minmax(0, 1fr) 360px; height: 100vh; }
+  canvas { height: calc(100vh - 24px); }
+  #panel { height: calc(100vh - 24px); overflow-y: auto; }
 }
 `;
 
@@ -431,7 +433,20 @@ async function renderLab(spec: GameSpec) {
 </html>`;
 }
 
+// The game runs sandboxed, and this also stops it reaching the network.
+export function lockDown(html: string) {
+  const policy = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:">
+<style>html, body { width: 100%; min-height: 100%; margin: 0 !important; padding: 0 !important; box-sizing: border-box; } body > :not(script):not(style) { box-sizing: border-box; width: 100%; max-width: none !important; border-radius: 0; }</style>`;
+  return /<head[^>]*>/i.test(html)
+    ? html.replace(/<head[^>]*>/i, (head) => `${head}\n${policy}`)
+    : `${policy}\n${html}`;
+}
+
 export async function renderGame(spec: GameSpec) {
+  if (spec.custom) {
+    return lockDown(spec.custom.html);
+  }
+
   if (spec.lab?.kit === "bodies" || spec.lab?.kit === "systems") {
     return renderLab(spec);
   }

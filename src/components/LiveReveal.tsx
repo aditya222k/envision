@@ -17,9 +17,11 @@ const STATUS_TEXT: Record<CheckedQuestion["status"], string> = {
 export function LiveReveal({
   draft,
   checks,
+  sources = [],
 }: {
   draft: GameDraft;
   checks: CheckedQuestion[] | null;
+  sources?: { title: string; url: string }[];
 }) {
   const questions: CheckedQuestion[] =
     checks ??
@@ -33,6 +35,12 @@ export function LiveReveal({
       <h2 className="text-2xl font-bold text-ink">
         {draft.title ?? "Your game is taking shape"}
       </h2>
+
+      {sources.length > 0 && (
+        <p className="text-sm text-ink">
+          Found: {sources.map((source) => source.title).join(", ")}
+        </p>
+      )}
 
       <dl className="reveal-facts">
         {draft.player?.name && (
