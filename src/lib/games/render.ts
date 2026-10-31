@@ -442,7 +442,74 @@ export function lockDown(html: string) {
     : `${policy}\n${html}`;
 }
 
+const STAGE_STYLES = `
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #0b1020; color: #f2f5ff; font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
+#stage { min-width: 0; height: 100vh; }
+#stage canvas { display: block; cursor: grab; }
+#panel { height: 100vh; padding: 18px; overflow-y: auto; background: #151b33; }
+h1 { margin: 0 0 8px; font-size: 22px; line-height: 1.2; }
+h2 { margin: 16px 0 6px; font-size: 15px; }
+p { margin: 0 0 8px; }
+#controls { display: grid; gap: 10px; margin-top: 12px; }
+label { display: grid; gap: 2px; font-weight: 700; }
+input { width: 100%; }
+button { min-height: 40px; padding: 6px 12px; cursor: pointer; border: 0; border-radius: 8px; background: #ffc14d; color: #15192c; font: inherit; font-weight: 700; }
+button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+ol { margin: 0; padding-left: 20px; }
+.done { color: #7dffb0; font-weight: 700; }
+.hint { font-size: 14px; opacity: 0.8; }
+@media (max-width: 760px) { body { grid-template-columns: 1fr; grid-template-rows: 58vh 1fr; overflow: auto; } #stage { height: 58vh; } #panel { height: auto; } }
+`;
+
+export async function render3dGame(spec: {
+  title: string;
+  intro: string;
+  script: string;
+}) {
+  const root = process.cwd();
+  const [three, stage] = await Promise.all([
+    readFile(path.join(root, "src/lib/games/engine/three.global.js"), "utf8"),
+    readFile(path.join(root, "src/lib/games/engine/world3d.js"), "utf8"),
+  ]);
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:">
+<title>${escapeHtml(spec.title)}</title>
+<style>${STAGE_STYLES}</style>
+</head>
+<body>
+<div id="stage"></div>
+<aside id="panel">
+<h1 id="title">${escapeHtml(spec.title)}</h1>
+<p>${escapeHtml(spec.intro)}</p>
+<p class="hint">Drag to look around, scroll to zoom, and click things to interact.</p>
+<p id="info"></p>
+<div id="controls"></div>
+<h2>Missions</h2>
+<ol id="goals"></ol>
+</aside>
+<script>${inlineScript(three)}</script>
+<script>${inlineScript(stage)}</script>
+<script>${inlineScript(spec.script)}</script>
+</body>
+</html>`;
+}
+
 export async function renderGame(spec: GameSpec) {
+  if (spec.custom?.kind === "3d") {
+    return render3dGame({
+      title: spec.title,
+      intro: spec.story.intro,
+      script: spec.custom.html,
+    });
+  }
+
   if (spec.custom) {
     return lockDown(spec.custom.html);
   }

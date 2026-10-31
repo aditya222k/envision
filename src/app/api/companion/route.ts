@@ -3,7 +3,17 @@ import { getProvider, isProviderId } from "@/lib/llm";
 import { isProviderConfigured } from "@/lib/llm/config";
 import { COMPANION_SYSTEM_PROMPT } from "@/lib/llm/prompt";
 
-const EXPERIENCES = ["bodies", "systems", "decide", "arrange", "custom", "quest"];
+const EXPERIENCES = [
+  "world3d",
+  "bodies",
+  "systems",
+  "decide",
+  "arrange",
+  "custom",
+  "quest",
+];
+
+const WANTS_3D = /\b(3d|3-d|three[- ]dimensional)\b/i;
 
 // Forces need the real physics engine, not formulas written by a model.
 const FORCE_TOPICS =
@@ -55,6 +65,7 @@ export async function POST(request: Request) {
   if (typeof body?.prompt !== "string" || !body.prompt.trim()) {
     return Response.json({ error: "prompt is required" }, { status: 400 });
   }
+  const chosenStyle = EXPERIENCES.includes(body.style) ? body.style : null;
   if (body.demo === true) {
     await new Promise((resolve) => setTimeout(resolve, 900));
     return Response.json(DEMO_ANSWER);
@@ -82,10 +93,14 @@ export async function POST(request: Request) {
     const answer = parseJson(text) as typeof DEMO_ANSWER | null;
     if (answer && EXPERIENCES.includes(answer.experience)) {
       return Response.json({
+        // What the teacher asks for always beats the model's suggestion.
         experience:
-          answer.experience === "systems" && FORCE_TOPICS.test(body.prompt)
-            ? "bodies"
-            : answer.experience,
+          chosenStyle ??
+          (WANTS_3D.test(body.prompt)
+            ? "world3d"
+            : answer.experience === "systems" && FORCE_TOPICS.test(body.prompt)
+              ? "bodies"
+              : answer.experience),
         reason: answer.reason ?? "",
         questions: Array.isArray(answer.questions)
           ? answer.questions.filter(
@@ -97,5 +112,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.warn("Companion unavailable:", error);
   }
-  return Response.json({ experience: "quest", reason: "", questions: [] });
+  return Response.json({
+    experience:
+      chosenStyle ?? (WANTS_3D.test(body.prompt) ? "world3d" : "custom"),
+    reason: "",
+    questions: [],
+  });
 }

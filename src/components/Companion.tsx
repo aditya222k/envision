@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 export type Experience =
+  | "world3d"
   | "custom"
   | "bodies"
   | "systems"
@@ -16,7 +17,8 @@ export type CompanionAnswer = {
   questions: { question: string; options: string[] }[];
 };
 
-const EXPERIENCE_LABELS: Record<Experience, string> = {
+export const EXPERIENCE_LABELS: Record<Experience, string> = {
+  world3d: "3D world",
   custom: "Custom game",
   bodies: "Physics lab",
   systems: "Simulation lab",

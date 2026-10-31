@@ -11,7 +11,10 @@ export type PlaytestResult = {
 
 // Plays any game the way a student would, so it needs no knowledge of the
 // subject. It only proves the game works, not that its content is right.
-export async function playtest(html: string): Promise<PlaytestResult> {
+export async function playtest(
+  html: string,
+  options: { is3d?: boolean } = {},
+): Promise<PlaytestResult> {
   let chromium;
   try {
     ({ chromium } = await import("playwright"));
@@ -53,6 +56,25 @@ export async function playtest(html: string): Promise<PlaytestResult> {
     }
     if (content.controls === 0) {
       problems.push("There is nothing a student can interact with.");
+    }
+
+    if (options.is3d) {
+      const world = await page.evaluate(() => {
+        const stage = (window as unknown as {
+          envision3d?: { objects: () => number; controls: () => number };
+        }).envision3d;
+        return { objects: stage?.objects() ?? 0, controls: stage?.controls() ?? 0 };
+      });
+      if (world.objects < 3) {
+        problems.push(
+          `The 3D world only has ${world.objects} objects. Build a real scene with env.add, using at least 3 objects.`,
+        );
+      }
+      if (world.controls === 0) {
+        problems.push(
+          "Students can't do anything in the world. Add env.slider, env.button, or onPick on objects.",
+        );
+      }
     }
 
     const used = await page.evaluate(() => {

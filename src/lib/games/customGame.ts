@@ -1,4 +1,5 @@
 import {
+  CUSTOM_3D_SYSTEM_PROMPT,
   CUSTOM_BUILD_SYSTEM_PROMPT,
   CUSTOM_PLAN_SYSTEM_PROMPT,
   CUSTOM_REVIEW_SYSTEM_PROMPT,
@@ -6,8 +7,10 @@ import {
 import { ProviderRequestError, type LlmProvider } from "@/lib/llm/types";
 import { parseJson, type EventReporter, type ProgressReporter } from "./pipeline";
 import { playtest } from "./playtest";
-import { lockDown } from "./render";
+import { lockDown, render3dGame } from "./render";
 import type { GameSpec } from "./spec";
+
+type CustomKind = "3d" | undefined;
 
 const MAX_ATTEMPTS = 2;
 const MAX_CODE_TOKENS = 9000;
@@ -70,15 +73,25 @@ function extractHtml(text: string) {
   return start >= 0 && end > start ? text.slice(start, end + 7) : null;
 }
 
+function extractScript(text: string) {
+  const code = text
+    .trim()
+    .replace(/^```[a-z]*\s*/i, "")
+    .replace(/```\s*$/, "")
+    .trim();
+  return code.includes("Envision3D.start") ? code : null;
+}
+
 async function writeGame(
   provider: LlmProvider,
   request: string,
   label: string,
+  kind: CustomKind,
   signal: AbortSignal | undefined,
   onProgress: ProgressReporter,
 ) {
   const { model, text } = await provider.generate({
-    system: CUSTOM_BUILD_SYSTEM_PROMPT,
+    system: kind === "3d" ? CUSTOM_3D_SYSTEM_PROMPT : CUSTOM_BUILD_SYSTEM_PROMPT,
     prompt: request,
     maxTokens: MAX_CODE_TOKENS,
     signal,
@@ -88,7 +101,7 @@ async function writeGame(
         percent: 15 + Math.min(count / EXPECTED_CHARACTERS, 1) * 55,
       }),
   });
-  return { model, html: extractHtml(text) };
+  return { model, html: kind === "3d" ? extractScript(text) : extractHtml(text) };
 }
 
 async function reviewGame(
@@ -101,7 +114,6 @@ async function reviewGame(
     system: CUSTOM_REVIEW_SYSTEM_PROMPT,
     prompt: `Plan:\n${planText}\n\nGame code:\n${html}`,
     schema: REVIEW_SCHEMA,
-    think: true,
     signal,
   });
   const problems = (parseJson(text) as { problems?: unknown })?.problems;
@@ -114,6 +126,8 @@ async function improveUntilPlayable(
   provider: LlmProvider,
   firstRequest: string,
   planText: string,
+  title: string,
+  kind: CustomKind,
   signal: AbortSignal | undefined,
   onProgress: ProgressReporter,
 ) {
@@ -125,16 +139,26 @@ async function improveUntilPlayable(
       provider,
       request,
       attempt === 1 ? "Writing your game" : "Fixing what the tests found",
+      kind,
       signal,
       onProgress,
     );
     if (!html) {
-      request = `${firstRequest}\n\nYour last reply was not a complete HTML document. It must start with <!doctype html> and end with </html>. Keep the code shorter.`;
+      request = `${firstRequest}\n\nYour last reply was not complete. ${
+        kind === "3d"
+          ? "It must be JavaScript that calls Envision3D.start."
+          : "It must start with <!doctype html> and end with </html>."
+      } Keep the code shorter.`;
       continue;
     }
 
     onProgress({ label: "Playtesting your game", percent: 74 });
-    const test = await playtest(lockDown(html));
+    const test = await playtest(
+      kind === "3d"
+        ? await render3dGame({ title, intro: "", script: html })
+        : lockDown(html),
+      { is3d: kind === "3d" },
+    );
     if (test.problems.length === 0) {
       best = { model, html };
     }
@@ -167,6 +191,7 @@ export async function buildCustomGame(
   signal: AbortSignal | undefined,
   onProgress: ProgressReporter,
   onEvent: EventReporter,
+  kind?: CustomKind,
 ) {
   onProgress({ label: "Thinking through the lesson", percent: 8 });
   const { text } = await provider.generate({
@@ -193,12 +218,14 @@ export async function buildCustomGame(
     provider,
     `Teacher's idea:\n${prompt}\n\nYour plan:\n${planText}`,
     planText,
+    plan.title,
+    kind,
     signal,
     onProgress,
   );
 
   onProgress({ label: "Finishing your game", percent: 97 });
-  return { model, html, plan, notes };
+  return { model, html, plan, notes, kind };
 }
 
 export async function reviseCustomGame(
@@ -213,6 +240,8 @@ export async function reviseCustomGame(
     provider,
     `Plan:\n${planText}\n\nCurrent game:\n${spec.custom!.html}\n\nTeacher's change: ${instruction}\n\nReply with the complete game, keeping everything else the same.`,
     planText,
+    spec.title,
+    spec.custom!.kind,
     signal,
     onProgress,
   );
@@ -222,6 +251,7 @@ export function customSpec(
   plan: CustomPlan,
   html: string,
   notes: string[],
+  kind?: CustomKind,
 ): GameSpec {
   return {
     title: plan.title,
@@ -232,6 +262,6 @@ export function customSpec(
     challenger: { name: "The challenge", emoji: "🎯" },
     story: { intro: plan.concept, win: plan.winCondition, lose: "" },
     rounds: [],
-    custom: { html, plan, notes },
+    custom: { html, plan, notes, kind },
   };
 }

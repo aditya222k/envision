@@ -9,7 +9,8 @@
     "lint": "eslint",
     "eval:games": "node scripts/eval-games.mjs",
     "preview:worlds": "node scripts/preview-worlds.mjs",
-    "preview:labs": "node scripts/preview-labs.mjs"
+    "preview:labs": "node scripts/preview-labs.mjs",
+    "bundle:three": "npx esbuild@0.25.0 node_modules/three/build/three.module.js --bundle --format=iife --global-name=THREE --minify --outfile=src/lib/games/engine/three.global.js"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",

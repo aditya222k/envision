@@ -56,7 +56,12 @@ export type GameSpec = {
   };
   rounds: Round[];
   lab?: LabConfig;
-  custom?: { html: string; plan: CustomPlan; notes: string[] };
+  custom?: {
+    html: string;
+    plan: CustomPlan;
+    notes: string[];
+    kind?: "3d";
+  };
   sources?: { title: string; url: string }[];
 };
 

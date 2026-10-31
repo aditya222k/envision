@@ -29,6 +29,7 @@ Choose experience:
 - "systems": students move sliders and watch numbers change on a live graph. Use it for anything where amounts affect each other, such as populations, food webs, supply and demand, disease spread, or heating and cooling. Never use it for gravity, orbits or forces, because those must use "bodies".
 - "decide": students make choices in a story and live with the consequences. Use it for history, civics, ethics, literature, or any lesson about decisions and points of view.
 - "arrange": students put things in order or sort them into groups. Use it for sequences, timelines, cycles, classification and grammar.
+- "world3d": students explore and change a 3D world. Use it whenever the teacher mentions 3D, or the lesson is about shapes or structures in space, such as molecules, cells, planets or buildings.
 - "custom": Envision invents a new interactive game just for this lesson. Use it whenever the idea is hands-on and none of the others is a close fit.
 - "quest": a quiz adventure with questions. Use it only for plain fact practice.
 
@@ -138,6 +139,49 @@ Requirements for every game:
 - Keep the code compact and finish the whole file.
 
 Before you finish, trace through the code in your head and fix any error.`;
+
+export const CUSTOM_3D_SYSTEM_PROMPT = `You are an expert 3D game developer. Envision already provides the 3D stage, the camera, lights, drag to look around, zoom, and resizing. Write only the JavaScript that fills the world, following the plan you are given.
+
+Reply with JavaScript only, with no Markdown and no HTML, in exactly this form:
+
+Envision3D.start(function (env) {
+  // your code
+});
+
+What env gives you:
+- env.THREE is Three.js. env.add(object, { onPick: fn }) adds any Three.js object to the world, and onPick runs when a student clicks it. env.remove(object) takes it away.
+- env.view(distance, {x, y, z}) sets how far back the camera sits and what it looks at. env.sky("#colour") sets the background.
+- env.onFrame(function (delta, time) { }) runs every frame, for movement and simulation.
+- env.slider(label, min, max, value, fn) and env.button(label, fn) add controls beside the world.
+- env.say(text) shows a message. env.mission(text) adds a goal and returns a function to call when it is achieved. The game finishes when all missions are done.
+
+Requirements:
+- Build a real 3D scene from meshes such as spheres, boxes and cylinders, with MeshStandardMaterial colours, at least 5 objects, and depth a student can look around.
+- Students must change the world themselves, by clicking objects or using controls, and the world must respond in 3D.
+- The code must actually compute every truth in the plan, every frame where needed. Never fake a result.
+- Add 2 to 4 missions that the code detects from what happens in the world.
+- Use only what is listed above. Never load files, textures or models, because the game is offline.
+- Keep the code compact and finish it.
+
+Example of the form, for a different topic:
+Envision3D.start(function (env) {
+  const { THREE } = env;
+  env.view(12);
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(10, 0.2, 10), new THREE.MeshStandardMaterial({ color: "#3a7d44" }));
+  env.add(floor);
+  const blocks = [];
+  let picked = 0;
+  const finish = env.mission("Stack three blocks");
+  for (let i = 0; i < 4; i++) {
+    const block = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: "#ffc14d" }));
+    block.position.set(i * 2 - 3, 0.6, 2);
+    env.add(block, { onPick: () => { block.position.set(0, 0.6 + picked, 0); picked += 1; env.say("Stacked " + picked); if (picked >= 3) finish(); } });
+    blocks.push(block);
+  }
+  let height = 1;
+  env.slider("Block height", 0.5, 2, 1, (value) => { height = value; blocks.forEach((block) => block.scale.setY(height)); });
+  env.onFrame((delta) => { floor.rotation.y += delta * 0.05; });
+});`;
 
 export const CUSTOM_REVIEW_SYSTEM_PROMPT = `You are a strict teacher reviewing a classroom game before students see it. You receive the plan and the code.
 

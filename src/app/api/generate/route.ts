@@ -129,7 +129,12 @@ export async function POST(request: Request) {
           );
           const game = await addVersion(
             gameId,
-            customSpec(currentSpec.custom.plan, revision.html, revision.notes),
+            customSpec(
+              currentSpec.custom.plan,
+              revision.html,
+              revision.notes,
+              currentSpec.custom.kind,
+            ),
             "Updated the game.",
           );
           send(
@@ -137,7 +142,10 @@ export async function POST(request: Request) {
               ? { type: "result", game }
               : { type: "error", status: 404, error: "That game no longer exists." },
           );
-        } else if (body.experience === "custom" && !gameId) {
+        } else if (
+          (body.experience === "custom" || body.experience === "world3d") &&
+          !gameId
+        ) {
           onProgress({ label: "Looking up the facts", percent: 2 });
           const lesson = topicRun?.prompt ?? body.prompt;
           const research = await researchLesson(provider, lesson, signal);
@@ -148,9 +156,10 @@ export async function POST(request: Request) {
             signal,
             onProgress,
             send,
+            body.experience === "world3d" ? "3d" : undefined,
           );
           const game = await createGame({
-            ...customSpec(build.plan, build.html, build.notes),
+            ...customSpec(build.plan, build.html, build.notes, build.kind),
             sources: research.sources,
           });
           if (storyline && topicRun) {

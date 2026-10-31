@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BuildProgress } from "@/components/BuildProgress";
 import {
   Companion,
+  EXPERIENCE_LABELS,
   type CompanionAnswer,
   type Experience,
 } from "@/components/Companion";
@@ -79,6 +80,7 @@ export function GameBoard() {
   const [checks, setChecks] = useState<CheckedQuestion[] | null>(null);
   const [sources, setSources] = useState<Source[]>([]);
   const [companion, setCompanion] = useState<CompanionAnswer | null>(null);
+  const [gameStyle, setGameStyle] = useState<Experience | "auto">("auto");
   const [isAsking, setIsAsking] = useState(false);
   const isIncognito = useIncognito();
   const promptRef = useRef<HTMLTextAreaElement>(null);
@@ -261,7 +263,12 @@ export function GameBoard() {
       const response = await fetch("/api/companion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, provider, demo: isIncognito }),
+        body: JSON.stringify({
+          prompt,
+          provider,
+          demo: isIncognito,
+          style: gameStyle === "auto" ? undefined : gameStyle,
+        }),
       });
       const data = await response.json().catch(() => null);
       if (response.ok && data) {
@@ -476,6 +483,23 @@ export function GameBoard() {
           </label>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <label className="field-label sm:w-56">
+              Game style
+              <select
+                value={gameStyle}
+                onChange={(event) =>
+                  setGameStyle(event.target.value as Experience | "auto")
+                }
+                className="field h-12 px-3"
+              >
+                <option value="auto">Let Envision suggest</option>
+                {(Object.keys(EXPERIENCE_LABELS) as Experience[]).map((item) => (
+                  <option key={item} value={item}>
+                    {EXPERIENCE_LABELS[item]}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="field-label sm:w-56">
               AI provider
               <select

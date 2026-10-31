@@ -19,6 +19,12 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 
 ## Timeline
 
+### 2026-10-31: 3D worlds and a Game style choice
+
+- Added a Game style option on the home page. What the teacher chooses always beats the model's suggestion, and mentioning 3D selects a 3D world.
+- Added 3D worlds. Envision provides the stage (camera, light, controls and selection), and the model writes what is in the world using Three.js. The playtest rejects games that aren't real interactive 3D scenes.
+- Bundled Three.js into `src/lib/games/engine/three.global.js`, so 3D games stay offline. `npm run bundle:three` rebuilds it.
+
 ### 2026-10-31: Simulation numbers tuned by code
 
 - A simulation lab was being rejected over its numbers alone, wasting about 4 minutes.
