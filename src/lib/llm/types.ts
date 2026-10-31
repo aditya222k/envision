@@ -23,6 +23,7 @@ export type GenerateRequest = {
   prompt: string;
   schema: object;
   signal?: AbortSignal;
+  onCharacters?: (count: number) => void;
 };
 
 export type GenerateResult = {

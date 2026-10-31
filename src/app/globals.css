@@ -107,6 +107,69 @@ body {
     color: #ffffff;
   }
 
+  .action-quiet {
+    background: var(--paper);
+  }
+
+  .incognito {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    color: var(--paper);
+    cursor: pointer;
+  }
+
+  .incognito:disabled {
+    cursor: not-allowed;
+  }
+
+  .incognito-track {
+    display: inline-flex;
+    width: 44px;
+    height: 24px;
+    padding: 2px;
+    border: 2px solid var(--paper);
+    border-radius: 12px;
+  }
+
+  .incognito-track span {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--paper);
+  }
+
+  .incognito[aria-checked="true"] .incognito-track {
+    justify-content: flex-end;
+    border-color: var(--pencil);
+    background: var(--pencil);
+  }
+
+  .incognito[aria-checked="true"] .incognito-track span {
+    background: var(--ink);
+  }
+
+  .link-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .progress {
+    height: 22px;
+    overflow: hidden;
+    border: 3px solid var(--ink);
+    border-radius: 4px;
+    background: #ffffff;
+  }
+
+  .progress span {
+    display: block;
+    height: 100%;
+    background: var(--pencil);
+  }
+
   .action:disabled {
     background: var(--paper);
     color: #4e5e59;
@@ -115,6 +178,10 @@ body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .progress span {
+    transition: width 400ms ease-out;
+  }
+
   .action:active:enabled,
   .square:active {
     transform: translateY(2px);

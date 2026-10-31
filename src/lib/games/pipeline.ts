@@ -3,19 +3,26 @@ import {
   GAME_DESIGN_SYSTEM_PROMPT,
 } from "@/lib/llm/prompt";
 import { ProviderRequestError, type LlmProvider } from "@/lib/llm/types";
-import { renderGame } from "./render";
 import {
   GAME_SPEC_SCHEMA,
   MIN_ROUNDS,
   parseGameSpec,
   type ChoiceRound,
-  type GameSpec,
+  type Round,
 } from "./spec";
 
 const MAX_ATTEMPTS = 3;
 const RETRY_CUTOFF_MS = 3 * 60 * 1000;
+const EXPECTED_DESIGN_CHARACTERS = 3500;
 
-function parseJson(text: string): unknown {
+export type BuildProgress = {
+  label: string;
+  percent: number;
+};
+
+export type ProgressReporter = (progress: BuildProgress) => void;
+
+export function parseJson(text: string): unknown {
   try {
     return JSON.parse(text);
   } catch {
@@ -25,12 +32,12 @@ function parseJson(text: string): unknown {
 
 // Asks the model to answer without seeing the key. A round it disagrees with
 // counts as disputed, including when the check returns nothing usable.
-async function findDisputedRounds(
+export async function findDisputedRounds(
   provider: LlmProvider,
-  spec: GameSpec,
+  rounds: Round[],
   signal?: AbortSignal,
 ) {
-  const choiceRounds = spec.rounds.filter(
+  const choiceRounds = rounds.filter(
     (round): round is ChoiceRound => round.kind === "choice",
   );
 
@@ -66,10 +73,19 @@ async function findDisputedRounds(
   );
 }
 
+// The first attempt fills most of the bar. A retry moves it on more slowly, so
+// it never jumps backward.
+function attemptRange(attempt: number) {
+  return attempt === 1
+    ? { start: 5, end: 75 }
+    : { start: 75 + (attempt - 2) * 6, end: 81 + (attempt - 2) * 6 };
+}
+
 export async function buildGame(
   provider: LlmProvider,
   prompt: string,
   signal?: AbortSignal,
+  onProgress: ProgressReporter = () => {},
 ) {
   let request = prompt;
   let totalDisputed = 0;
@@ -80,11 +96,28 @@ export async function buildGame(
       break;
     }
 
+    const { start, end } = attemptRange(attempt);
+    const label =
+      attempt === 1
+        ? "Designing your game"
+        : `Fixing problems (try ${attempt} of ${MAX_ATTEMPTS})`;
+    onProgress({
+      label: attempt === 1 ? "Starting the AI model" : label,
+      percent: start,
+    });
+
     const { model, text } = await provider.generate({
       system: GAME_DESIGN_SYSTEM_PROMPT,
       prompt: request,
       schema: GAME_SPEC_SCHEMA,
       signal,
+      onCharacters: (count) =>
+        onProgress({
+          label,
+          percent:
+            start +
+            Math.min(count / EXPECTED_DESIGN_CHARACTERS, 1) * (end - start),
+        }),
     });
 
     const parsed = parseGameSpec(parseJson(text));
@@ -98,19 +131,22 @@ Write the complete design again and fix them.`;
       continue;
     }
 
-    const disputed = await findDisputedRounds(provider, parsed.spec, signal);
+    onProgress({ label: "Checking the answers", percent: 90 });
+    const disputed = await findDisputedRounds(
+      provider,
+      parsed.spec.rounds,
+      signal,
+    );
     totalDisputed += disputed.length;
     const rounds = parsed.spec.rounds.filter(
       (round) => !disputed.includes(round as ChoiceRound),
     );
 
     if (rounds.length >= MIN_ROUNDS) {
-      const spec = { ...parsed.spec, rounds };
+      onProgress({ label: "Finishing your game", percent: 97 });
       return {
-        provider: provider.id,
         model,
-        text: await renderGame(spec),
-        spec,
+        spec: { ...parsed.spec, rounds },
         attempts: attempt,
         disputedRounds: totalDisputed,
       };

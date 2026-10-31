@@ -64,6 +64,31 @@ const character = {
   required: ["name", "emoji"],
 };
 
+const ROUND_SCHEMA = {
+  type: "object",
+  properties: {
+    kind: { type: "string", enum: ROUND_KINDS },
+    prompt: longText,
+    explanation: longText,
+    choices: {
+      type: "array",
+      items: shortText,
+      maxItems: 4,
+    },
+    answerIndex: { type: "integer", minimum: 0, maximum: 3 },
+    pairs: {
+      type: "array",
+      maxItems: 5,
+      items: {
+        type: "object",
+        properties: { left: shortText, right: shortText },
+        required: ["left", "right"],
+      },
+    },
+  },
+  required: ["kind", "prompt", "explanation", "choices", "answerIndex", "pairs"],
+};
+
 export const GAME_SPEC_SCHEMA = {
   type: "object",
   properties: {
@@ -82,37 +107,7 @@ export const GAME_SPEC_SCHEMA = {
       type: "array",
       minItems: TARGET_ROUNDS,
       maxItems: MAX_ROUNDS,
-      items: {
-        type: "object",
-        properties: {
-          kind: { type: "string", enum: ROUND_KINDS },
-          prompt: longText,
-          explanation: longText,
-          choices: {
-            type: "array",
-            items: shortText,
-            maxItems: 4,
-          },
-          answerIndex: { type: "integer", minimum: 0, maximum: 3 },
-          pairs: {
-            type: "array",
-            maxItems: 5,
-            items: {
-              type: "object",
-              properties: { left: shortText, right: shortText },
-              required: ["left", "right"],
-            },
-          },
-        },
-        required: [
-          "kind",
-          "prompt",
-          "explanation",
-          "choices",
-          "answerIndex",
-          "pairs",
-        ],
-      },
+      items: ROUND_SCHEMA,
     },
   },
   required: [
@@ -125,6 +120,51 @@ export const GAME_SPEC_SCHEMA = {
     "story",
     "rounds",
   ],
+};
+
+export const EDITABLE_FIELDS = [
+  "title",
+  "mechanic",
+  "theme",
+  "player.name",
+  "player.emoji",
+  "challenger.name",
+  "challenger.emoji",
+  "story.intro",
+  "story.win",
+  "story.lose",
+] as const;
+
+export type EditableField = (typeof EDITABLE_FIELDS)[number];
+
+export const CHANGE_ACTIONS = [
+  "set_field",
+  "replace_round",
+  "add_round",
+  "remove_round",
+] as const;
+
+export const GAME_CHANGES_SCHEMA = {
+  type: "object",
+  properties: {
+    changes: {
+      type: "array",
+      minItems: 1,
+      maxItems: MAX_ROUNDS,
+      items: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: CHANGE_ACTIONS },
+          field: { type: "string", enum: EDITABLE_FIELDS },
+          value: { type: "string", maxLength: 240 },
+          roundNumber: { type: "integer", minimum: 1, maximum: MAX_ROUNDS },
+          round: ROUND_SCHEMA,
+        },
+        required: ["action"],
+      },
+    },
+  },
+  required: ["changes"],
 };
 
 function isFilled(value: unknown): value is string {
@@ -181,7 +221,7 @@ function cleanRoundText(value: unknown) {
   };
 }
 
-function parseRound(value: unknown): Round | null {
+export function parseRound(value: unknown): Round | null {
   const round = cleanRoundText(value);
   if (!round) {
     return null;
@@ -230,6 +270,13 @@ function parseRound(value: unknown): Round | null {
   };
 }
 
+// Models sometimes repeat the emoji in the name field.
+function withReadableName(character: Character, fallback: string) {
+  return /\p{L}/u.test(character.name)
+    ? character
+    : { ...character, name: fallback };
+}
+
 // Drops broken rounds so one bad question doesn't fail a usable game.
 export function parseGameSpec(
   value: unknown,
@@ -270,5 +317,13 @@ export function parseGameSpec(
   if (errors.length > 0) {
     return { errors };
   }
-  return { spec: { ...(draft as GameSpec), rounds } };
+  const spec = draft as GameSpec;
+  return {
+    spec: {
+      ...spec,
+      player: withReadableName(spec.player, "Player"),
+      challenger: withReadableName(spec.challenger, "Challenger"),
+      rounds,
+    },
+  };
 }

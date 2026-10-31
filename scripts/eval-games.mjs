@@ -19,7 +19,12 @@ function requestGame(prompt) {
         response.on("data", (chunk) => (body += chunk));
         response.on("end", () => {
           try {
-            resolve({ status: response.statusCode, data: JSON.parse(body) });
+            const events = body.trim().split("\n").map((line) => JSON.parse(line));
+            const last = events[events.length - 1];
+            resolve({
+              status: last.type === "result" ? 200 : (last.status ?? response.statusCode),
+              data: last.type === "result" ? { ...last, text: last.game.html } : last,
+            });
           } catch {
             resolve({
               status: response.statusCode,

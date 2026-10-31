@@ -17,7 +17,7 @@ async function isModelLoaded(endpoint: string, model: string) {
 
 export const ollama: LlmProvider = {
   id: "ollama",
-  async generate({ system, prompt, schema, signal }) {
+  async generate({ system, prompt, schema, signal, onCharacters }) {
     const { endpoint, model } = await getProviderConfig("ollama");
 
     const response = await fetch(`${endpoint}/api/chat`, {
@@ -26,7 +26,7 @@ export const ollama: LlmProvider = {
       signal,
       body: JSON.stringify({
         model,
-        stream: false,
+        stream: true,
         format: schema,
         options: { num_ctx: CONTEXT_TOKENS },
         messages: [
@@ -43,19 +43,46 @@ export const ollama: LlmProvider = {
       );
     });
 
-    const data = await response.json().catch(() => {
-      if (signal?.aborted) {
-        throw new GenerationStoppedError();
-      }
-      return null;
-    });
-    if (!response.ok) {
+    if (!response.ok || !response.body) {
+      const data = await response.json().catch(() => null);
       throw new ProviderRequestError(
         `Ollama couldn't run ${model}: ${data?.error ?? response.status}`,
       );
     }
 
-    return { model, text: data.message.content };
+    let text = "";
+    let buffer = "";
+    const decoder = new TextDecoder();
+    const reader = response.body.getReader();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines.filter(Boolean)) {
+          const chunk = JSON.parse(line);
+          if (chunk.error) {
+            throw new ProviderRequestError(
+              `Ollama couldn't run ${model}: ${chunk.error}`,
+            );
+          }
+          text += chunk.message?.content ?? "";
+        }
+        onCharacters?.(text.length);
+      }
+    } catch (error) {
+      if (signal?.aborted) {
+        throw new GenerationStoppedError();
+      }
+      throw error;
+    }
+
+    return { model, text };
   },
 
   // Repeats the request because Ollama can keep the model while a cancelled
