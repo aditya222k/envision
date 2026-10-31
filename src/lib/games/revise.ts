@@ -20,6 +20,8 @@ import {
 
 const MAX_ATTEMPTS = 2;
 const EXPECTED_CHANGE_CHARACTERS = 900;
+const UNCONFIRMED_MESSAGE =
+  "Envision couldn't confirm the answers to the new questions, so your game is unchanged. Long calculations are hardest for this AI model, so try asking for a different kind of question.";
 
 type Change = {
   action?: string;
@@ -116,6 +118,9 @@ export function applyChanges(spec: GameSpec, changes: Change[]) {
       `a game needs ${MIN_ROUNDS} to ${MAX_ROUNDS} rounds, and this change would leave ${finalSlots.length}`,
     );
   }
+  if (summary.length === 0) {
+    errors.push("nothing in the game changed");
+  }
   if (errors.length > 0) {
     return { errors };
   }
@@ -184,9 +189,11 @@ Teacher's change: ${instruction}`;
         }),
     });
 
-    const changes = (parseJson(text) as { changes?: Change[] })?.changes;
-    const applied = applyChanges(spec, Array.isArray(changes) ? changes : []);
+    const proposed = (parseJson(text) as { changes?: Change[] })?.changes;
+    const changes = Array.isArray(proposed) ? proposed : [];
+    const applied = applyChanges(spec, changes);
     if ("errors" in applied) {
+      console.warn("Game change rejected:", applied.errors, text.slice(0, 600));
       feedback = `\n\nYour last changes couldn't be applied:\n- ${applied.errors?.join("\n- ")}`;
       continue;
     }
@@ -196,10 +203,37 @@ Teacher's change: ${instruction}`;
       ? await findDisputedRounds(provider, applied.changedRounds, signal)
       : [];
     if (disputed.length > 0) {
-      feedback = `\n\nThese new questions had the wrong answer marked as correct:\n- ${disputed
-        .map((round) => round.prompt)
-        .join("\n- ")}`;
-      continue;
+      console.warn("Game change failed the answer check:", disputed);
+      if (attempt < MAX_ATTEMPTS) {
+        feedback = `\n\nThese new questions had the wrong answer marked as correct. Write simpler ones that need no long calculation:\n- ${disputed
+          .map((round) => round.prompt)
+          .join("\n- ")}`;
+        continue;
+      }
+
+      // Keeps the rest of the change, but a doubtful question never goes in.
+      const doubtful = new Set(disputed.map((round) => round.prompt));
+      const partial = applyChanges(
+        spec,
+        changes.filter((change) => {
+          const round = parseRound(change.round);
+          return !round || !doubtful.has(round.prompt);
+        }),
+      );
+      if ("errors" in partial) {
+        throw new ProviderRequestError(UNCONFIRMED_MESSAGE);
+      }
+
+      onProgress({ label: "Finishing your game", percent: 97 });
+      const skipped = disputed.length === 1 ? "1 new question" : `${disputed.length} new questions`;
+      return {
+        model,
+        spec: partial.spec,
+        changes: [
+          ...(partial.summary ?? []),
+          `Skipped ${skipped} because Envision couldn't confirm the answer`,
+        ],
+      };
     }
 
     onProgress({ label: "Finishing your game", percent: 97 });

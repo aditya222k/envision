@@ -181,11 +181,16 @@ const SUBSCRIPTS = "₀₁₂₃₄₅₆₇₈₉";
 // Models write LaTeX even when told not to, and the game shows plain text.
 export function cleanMathText(text: string) {
   return text
+    .replace(/[\t\f\r](?=[a-z])/g, (character) =>
+      character === "\t" ? "\\t" : character === "\f" ? "\\f" : "\\r",
+    )
     .replace(/\$([^$]*[\\_^{][^$]*)\$/g, "$1")
     .replace(/\\(?:rightarrow|to)\b/g, "→")
     .replace(/\\times\b/g, "×")
     .replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, "$1/$2")
     .replace(/\\(?:text|mathrm)\{([^{}]*)\}/g, "$1")
+    .replace(/\\sqrt\{([^{}]*)\}/g, "√($1)")
+    .replace(/\^\{([^{}]*)\}/g, "^$1")
     .replace(/_\{?(\d+)\}?/g, (_, digits: string) =>
       [...digits].map((digit) => SUBSCRIPTS[Number(digit)]).join(""),
     )
@@ -205,7 +210,9 @@ function cleanRoundText(value: unknown) {
     explanation: cleanMathText(round.explanation),
     choices: Array.isArray(round.choices)
       ? round.choices.map((choice) =>
-          typeof choice === "string" ? cleanMathText(choice) : choice,
+          typeof choice === "string"
+            ? cleanMathText(choice).replace(/^[a-d][).:]\s+/i, "")
+            : choice,
         )
       : round.choices,
     pairs: Array.isArray(round.pairs)

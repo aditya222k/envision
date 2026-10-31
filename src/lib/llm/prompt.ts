@@ -11,7 +11,8 @@ Write 6 to 8 rounds, in order from easier to harder, and cover the teacher's top
 - Each prompt is the full question or instruction a student reads, such as "Which fraction is greater?". Never write a heading or topic name, and never number the rounds.
 - Most rounds use kind "choice": a question, 4 different choices with exactly one correct, and answerIndex, which counts from 0. Set pairs to [].
 - Use kind "match" for 1 or 2 rounds, where linking terms works well: 3 to 5 pairs with different left and right values. Set choices to [] and answerIndex to 0.
-- Wrong choices must be believable mistakes a student could make.
+- Wrong choices must be believable mistakes a student could make. Do not put letters like a) or b) in front of them.
+- Avoid questions that need long calculations or very large numbers.
 
 Be accurate, and check any calculation before you commit to an answer. Keep everything appropriate for school, use plain text, and write math like 2 1/3 or x^2, and formulas like H2O. Do not use LaTeX. Do not ask students for personal information.`;
 
@@ -26,9 +27,13 @@ Each change has one action:
 Examples:
 - "Set it in space" is one set_field change: field theme, value space.
 - "Question 3 is wrong" is one replace_round change with roundNumber 3.
-- "Make the game easier" is a replace_round change for each round that's too hard.
+- "Make the game easier" or "Make it harder" is a replace_round change for each round that needs it.
+- "Use simpler words" is a replace_round change for every round with hard words.
+- "Make it more fun" is a set_field change to story.intro, story.win and story.lose, plus the characters if that helps.
 
-A complete round follows these rules: prompt is the full question a student reads. Write explanation first, working out the correct answer. Kind "choice" has 4 different choices, answerIndex counting from 0, and pairs set to []. Kind "match" has 3 to 5 pairs, choices set to [], and answerIndex 0.
+Only use remove_round when the teacher asks to remove something. Only change the mechanic or theme when the teacher asks for that. To make a question harder, make the idea harder, and avoid long calculations or very large numbers.
+
+A complete round follows these rules: prompt is the full question a student reads. Do not put letters like a) or b) in front of choices. Write explanation first, working out the correct answer. Kind "choice" has 4 different choices, answerIndex counting from 0, and pairs set to []. Kind "match" has 3 to 5 pairs, choices set to [], and answerIndex 0.
 
 A game has 5 to 8 rounds. Be accurate, and keep everything appropriate for school. Use plain text, and do not use LaTeX.`;
 

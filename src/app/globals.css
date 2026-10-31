@@ -111,6 +111,62 @@ body {
     background: var(--paper);
   }
 
+  .drawer-button {
+    min-height: 40px;
+    padding: 0 1rem;
+    border: 3px solid var(--ink);
+    border-radius: 4px;
+    background: var(--paper);
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .drawer-button:hover:enabled {
+    background: var(--pencil-light);
+  }
+
+  .drawer-button:disabled {
+    color: #4e5e59;
+    cursor: not-allowed;
+  }
+
+  .drawer {
+    width: min(400px, 100vw);
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    border-right: 3px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .drawer::backdrop {
+    background: rgba(21, 35, 31, 0.6);
+  }
+
+  .drawer-game {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1.25rem;
+    border-bottom: 3px solid var(--ink);
+    text-align: left;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .drawer-game:hover {
+    background: var(--pencil-light);
+  }
+
+  .drawer-game[aria-current="true"] {
+    background: var(--pencil-light);
+    box-shadow: inset 6px 0 0 var(--ink);
+  }
+
   .incognito {
     display: inline-flex;
     align-items: center;
@@ -177,7 +233,17 @@ body {
   }
 }
 
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  .drawer[open] {
+    animation: drawer-in 180ms ease-out;
+  }
+
   .progress span {
     transition: width 400ms ease-out;
   }

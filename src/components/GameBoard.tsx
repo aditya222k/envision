@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BuildProgress } from "@/components/BuildProgress";
+import { GameDrawer } from "@/components/GameDrawer";
 import { EXAMPLE_GAMES, type Subject } from "@/lib/games/examples";
 import { setIncognito, useIncognito } from "@/lib/incognito";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -190,6 +191,22 @@ export function GameBoard() {
     }
   }
 
+  async function handleOpenGame(id: string) {
+    setError(null);
+    setNotice(null);
+    setActiveAction("build");
+    try {
+      const response = await fetch(`/api/games/${id}`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error();
+      }
+      setDemoHistory([]);
+      showGame((await response.json()).game);
+    } catch {
+      setError("Envision couldn't open that game. It may have been deleted.");
+    }
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     startRun("build", { prompt });
@@ -321,19 +338,27 @@ export function GameBoard() {
 
   return (
     <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isIncognito}
-        disabled={isLoading}
-        onClick={() => setIncognito(!isIncognito)}
-        className="incognito self-start"
-      >
-        <span aria-hidden="true" className="incognito-track">
-          <span />
-        </span>
-        Incognito
-      </button>
+      <div className="flex flex-wrap items-center gap-5">
+        <GameDrawer
+          currentGameId={game?.id ?? null}
+          isIncognito={isIncognito}
+          disabled={isLoading}
+          onOpenGame={handleOpenGame}
+        />
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isIncognito}
+          disabled={isLoading}
+          onClick={() => setIncognito(!isIncognito)}
+          className="incognito"
+        >
+          <span aria-hidden="true" className="incognito-track">
+            <span />
+          </span>
+          Incognito
+        </button>
+      </div>
     <div className="board grid grid-cols-2 lg:grid-cols-4 lg:grid-rows-[auto_1fr_1fr_auto]">
       {game && (
         <section
@@ -403,9 +428,6 @@ export function GameBoard() {
             Describe a game for your class, and Envision builds it. Pick a
             square to start from an example.
           </p>
-          <Link href="/games" className="font-bold text-ink underline">
-            See your games
-          </Link>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
