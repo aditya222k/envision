@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "eval:games": "node scripts/eval-games.mjs",
-    "preview:worlds": "node scripts/preview-worlds.mjs"
+    "preview:worlds": "node scripts/preview-worlds.mjs",
+    "preview:labs": "node scripts/preview-labs.mjs"
   },
   "dependencies": {
     "next": "16.4.3",

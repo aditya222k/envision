@@ -4,6 +4,7 @@ import {
   getGameDetails,
   MAX_NAME_LENGTH,
   renameGame,
+  resolveReview,
   setPublished,
   undoVersion,
 } from "@/lib/games/store";
@@ -26,6 +27,20 @@ export async function PATCH(request: Request, { params }: Context) {
   if (body?.undo === true) {
     const game = await undoVersion(id);
     return game ? Response.json({ game }) : notFound();
+  }
+
+  if (typeof body?.reviewIndex === "number") {
+    const result = await resolveReview(
+      id,
+      body.reviewIndex,
+      typeof body.answerIndex === "number" ? body.answerIndex : null,
+    );
+    if (!result) {
+      return notFound();
+    }
+    return "error" in result
+      ? Response.json({ error: result.error }, { status: 400 })
+      : Response.json({ game: result });
   }
 
   if (typeof body?.published === "boolean") {

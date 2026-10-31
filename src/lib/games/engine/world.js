@@ -458,6 +458,8 @@
       hop(player, GROUND_Y - 52, 26);
     }
 
+    var setbackLabel = "Not quite";
+
     function hurtPlayer() {
       player.setTint(0xff5a5a);
       scene.time.delayedCall(420, function () {
@@ -466,7 +468,7 @@
       burst(player.x, player.y, 0xff6a4f, 26);
       scene.cameras.main.flash(180, 160, 20, 20);
       shake(260, 0.012);
-      shout("Not quite", "#ffb4a8");
+      shout(setbackLabel, "#ffb4a8");
     }
 
     function fireAtChallenger() {
@@ -514,7 +516,7 @@
     function handlers() {
       return {
         correct: function (detail) {
-          shout("Correct!", "#b8ffb0");
+          shout(detail.label || "Correct!", "#b8ffb0");
           burst(player.x, player.y - 30, 0x8affa0, 30);
           if (spec.mechanic === "boss-battle") {
             fireAtChallenger();
@@ -530,7 +532,8 @@
             });
           }
         },
-        wrong: function () {
+        wrong: function (detail) {
+          setbackLabel = detail.label || "Not quite";
           if (spec.mechanic === "boss-battle") {
             lungeAtPlayer();
           } else {

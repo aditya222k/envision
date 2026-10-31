@@ -206,6 +206,230 @@ body {
     background: var(--ink);
   }
 
+  .story-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .story-level {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.75rem;
+    border: 2px solid var(--ink);
+  }
+
+  .story-chapters {
+    position: relative;
+    display: grid;
+    gap: 3px;
+  }
+
+  .story-string {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .story-string-line {
+    fill: none;
+    stroke: var(--history);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .story-string-arrow {
+    fill: var(--history);
+  }
+
+  .story-string-pin {
+    fill: var(--history);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+
+  .story-pin-spot {
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    width: 1px;
+    height: 1px;
+  }
+
+  .story-note {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 2px solid var(--ink);
+    min-height: 190px;
+    background: var(--pencil-light);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .story-note.is-dragging {
+    z-index: 20;
+    box-shadow: 0 16px 30px rgba(21, 35, 31, 0.4);
+    cursor: grabbing;
+  }
+
+  .story-level.is-drop-target {
+    outline: 3px solid var(--pencil);
+    outline-offset: 2px;
+  }
+
+  .story-note textarea {
+    user-select: text;
+  }
+
+  .note-move {
+    padding: 0 0.5rem;
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .note-move:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .timeline-item {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    padding: 0.75rem 0.75rem 0.75rem 1rem;
+    border-left: 6px solid #c4cfca;
+    color: var(--ink);
+  }
+
+  .timeline-building {
+    border-left-color: var(--pencil);
+    background: var(--pencil-light);
+  }
+
+  .timeline-done {
+    border-left-color: var(--science);
+  }
+
+  .timeline-failed {
+    border-left-color: var(--history);
+  }
+
+  .reveal-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    color: var(--ink);
+  }
+
+  .reveal-facts dt {
+    font-size: 0.875rem;
+  }
+
+  .reveal-facts dd {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+
+  .reveal-question {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    padding: 0.5rem 0.75rem;
+    border-left: 6px solid #c4cfca;
+    color: var(--ink);
+  }
+
+  .reveal-checking {
+    border-left-color: var(--pencil);
+  }
+
+  .reveal-confirmed {
+    border-left-color: var(--science);
+  }
+
+  .reveal-doubtful {
+    border-left-color: var(--history);
+    background: var(--pencil-light);
+  }
+
+  .companion {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    border: 3px solid var(--ink);
+    background: var(--pencil-light);
+  }
+
+  .companion-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+    border: 0;
+  }
+
+  .companion-group legend {
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .option {
+    min-height: 40px;
+    padding: 0.25rem 0.75rem;
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    background: var(--paper);
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .option[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .story-level {
+    position: relative;
+  }
+
+  .path-step {
+    padding: 0.25rem 0.75rem;
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .path-step[aria-current="step"] {
+    background: var(--pencil);
+  }
+
+  .path-step-done {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
   .link-action {
     display: inline-flex;
     align-items: center;
@@ -246,6 +470,17 @@ body {
 
   .progress span {
     transition: width 400ms ease-out;
+  }
+
+  .story-note {
+    transition:
+      transform 220ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .story-note.is-dragging,
+  .story-note.no-transition {
+    transition: none;
   }
 
   .action:active:enabled,

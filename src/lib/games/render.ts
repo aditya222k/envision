@@ -96,6 +96,18 @@ button:disabled { cursor: default; }
 .wrong { background: #f8c9c4; }
 .selected { box-shadow: inset 0 0 0 3px var(--accent); }
 .feedback { margin-top: 16px; }
+.order-list { margin: 0 0 14px; padding: 0; list-style: none; }
+.order-item { display: flex; align-items: center; gap: 8px; padding: 8px; border: 3px solid var(--ink); border-radius: 8px; background: #fff; cursor: grab; touch-action: none; user-select: none; transition: transform 180ms ease; }
+.dragging { position: relative; z-index: 10; transition: none !important; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35); cursor: grabbing; }
+.drop-target { outline: 3px solid var(--accent); outline-offset: 2px; }
+.order-text { flex: 1; font-weight: 700; }
+.small { width: auto; min-height: 36px; padding: 2px 10px; }
+.palette { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.token { width: auto; min-height: 40px; touch-action: none; }
+.token[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.bin { display: flex; flex-direction: column; gap: 4px; min-height: 110px; margin-bottom: 12px; }
+@media (prefers-reduced-motion: reduce) { .order-item { transition: none; } }
+.placed { font-weight: 400; }
 @media (prefers-reduced-motion: reduce) { .meter span { transition: none; } }
 `;
 
@@ -333,6 +345,7 @@ const RUNTIME = `
   function finish(won) {
     stopTimer();
     world.send("finish", { won: won });
+    window.parent.postMessage({ type: "envision-finished", won: won }, "*");
     var end = make("h1", "end", won ? "You won!" : "Game over");
     end.dataset.result = won ? "win" : "lose";
     show(
@@ -359,13 +372,79 @@ function inlineScript(code: string) {
   return code.replace(/<\/script/gi, "<\\/script");
 }
 
+const LAB_STYLES = `
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  display: grid; gap: 12px; padding: 12px; background: var(--ink); color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+canvas { display: block; width: 100%; height: auto; border-radius: 12px; background: #070a1f; touch-action: none; cursor: crosshair; }
+#panel { min-width: 0; padding: 18px; border-radius: 12px; background: var(--panel); }
+h1 { margin: 0 0 6px; font-size: 24px; line-height: 1.15; }
+h2 { margin: 16px 0 6px; font-size: 17px; }
+p { margin: 0 0 8px; }
+button {
+  min-height: 40px; padding: 6px 12px; cursor: pointer; border: 3px solid var(--ink);
+  border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-weight: 700;
+}
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.palette { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.hint { font-size: 14px; }
+.control { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; font-weight: 700; }
+.control input { width: 100%; }
+.selection { margin-bottom: 8px; }
+.missions, .tips { margin: 0; padding-left: 20px; }
+.missions li { margin-bottom: 4px; }
+.missions .done { font-weight: 700; color: #177a52; }
+.win { margin-top: 12px; padding: 10px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+@media (min-width: 820px) {
+  body { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+  #panel { max-height: calc(100vh - 24px); overflow-y: auto; }
+}
+`;
+
+async function renderLab(spec: GameSpec) {
+  const theme = THEME_STYLES[spec.theme];
+  const data = JSON.stringify(spec).replace(/</g, "\\u003c");
+  const runtime = await readFile(
+    path.join(process.cwd(), "src/lib/games/engine/lab.js"),
+    "utf8",
+  );
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">
+<title>${escapeHtml(spec.title)}</title>
+<style>:root { --sky: ${theme.sky}; --panel: ${theme.panel}; --ink: ${theme.ink}; --accent: ${theme.accent}; --on-accent: ${theme.onAccent}; }${LAB_STYLES}</style>
+</head>
+<body>
+<canvas id="lab" width="900" height="600" aria-label="${escapeHtml(spec.title)} simulation"></canvas>
+<aside id="panel"></aside>
+<script type="application/json" id="game-data">${data}</script>
+<script>${inlineScript(runtime)}</script>
+</body>
+</html>`;
+}
+
 export async function renderGame(spec: GameSpec) {
+  if (spec.lab?.kit === "bodies" || spec.lab?.kit === "systems") {
+    return renderLab(spec);
+  }
+
   const theme = THEME_STYLES[spec.theme];
   const data = JSON.stringify(spec).replace(/</g, "\\u003c");
   const root = process.cwd();
-  const [phaser, world] = await Promise.all([
+  const [phaser, world, activities] = await Promise.all([
     readFile(path.join(root, "node_modules/phaser/dist/phaser.min.js"), "utf8"),
     readFile(path.join(root, "src/lib/games/engine/world.js"), "utf8"),
+    spec.lab
+      ? readFile(path.join(root, "src/lib/games/engine/activities.js"), "utf8")
+      : RUNTIME,
   ]);
 
   return `<!doctype html>
@@ -384,7 +463,7 @@ export async function renderGame(spec: GameSpec) {
 <script type="application/json" id="game-data">${data}</script>
 <script>${inlineScript(phaser)}</script>
 <script>${inlineScript(world)}</script>
-<script>${RUNTIME}</script>
+<script>${inlineScript(activities)}</script>
 </body>
 </html>`;
 }

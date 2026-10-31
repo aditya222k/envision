@@ -1,5 +1,5 @@
 import { GenerationStoppedError } from "@/lib/llm/types";
-import type { ProgressReporter } from "./pipeline";
+import type { EventReporter, ProgressReporter } from "./pipeline";
 import { renderGame } from "./render";
 import { SAMPLE_GAMES } from "./samples";
 import { MECHANICS, THEMES, type GameSpec, type Theme } from "./spec";
@@ -63,9 +63,8 @@ export async function runDemoBuild(
   prompt: string,
   signal: AbortSignal,
   onProgress: ProgressReporter,
+  onEvent: EventReporter = () => {},
 ) {
-  await playSteps(BUILD_STEPS, signal, onProgress);
-
   const games = await ensureSampleGames();
   const promptWords = words(prompt);
   const scored = games.map((game) => ({
@@ -78,7 +77,40 @@ export async function runDemoBuild(
     item.score > top.score ? item : top,
   );
 
-  return getGameDetails(best.game.id);
+  const details = await getGameDetails(best.game.id);
+  const spec = details?.spec;
+
+  for (const [index, step] of BUILD_STEPS.entries()) {
+    onProgress({ label: step.label, percent: step.percent });
+    if (spec) {
+      onEvent({
+        type: "draft",
+        draft: {
+          title: spec.title,
+          mechanic: spec.mechanic,
+          theme: spec.theme,
+          player: spec.player,
+          challenger: spec.challenger,
+          intro: index > 0 ? spec.story.intro : undefined,
+          questions: spec.rounds
+            .slice(0, Math.round((index / 3) * spec.rounds.length))
+            .map((round) => round.prompt),
+        },
+      });
+      if (step.label === "Checking the answers") {
+        onEvent({
+          type: "check",
+          questions: spec.rounds.map((round) => ({
+            prompt: round.prompt,
+            status: round.kind === "match" ? "not-checked" : "confirmed",
+          })),
+        });
+      }
+    }
+    await wait(step.wait, signal);
+  }
+
+  return details;
 }
 
 // Changes only what's shown on the page. Saved games are never touched.

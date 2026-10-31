@@ -3,11 +3,14 @@ import {
   GAME_DESIGN_SYSTEM_PROMPT,
 } from "@/lib/llm/prompt";
 import { ProviderRequestError, type LlmProvider } from "@/lib/llm/types";
+import { readDraft } from "./draft";
 import {
   GAME_SPEC_SCHEMA,
+  MIN_PLAYABLE_ROUNDS,
   MIN_ROUNDS,
   parseGameSpec,
   type ChoiceRound,
+  type GameSpec,
   type Round,
 } from "./spec";
 
@@ -21,6 +24,7 @@ export type BuildProgress = {
 };
 
 export type ProgressReporter = (progress: BuildProgress) => void;
+export type EventReporter = (event: object) => void;
 
 export function parseJson(text: string): unknown {
   try {
@@ -86,9 +90,17 @@ export async function buildGame(
   prompt: string,
   signal?: AbortSignal,
   onProgress: ProgressReporter = () => {},
+  onEvent: EventReporter = () => {},
 ) {
   let request = prompt;
   let totalDisputed = 0;
+  let lastDraft = "";
+  let best: {
+    model: string;
+    spec: GameSpec;
+    attempts: number;
+    doubtfulRounds: ChoiceRound[];
+  } | null = null;
   const startedAt = Date.now();
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -111,13 +123,19 @@ export async function buildGame(
       prompt: request,
       schema: GAME_SPEC_SCHEMA,
       signal,
-      onCharacters: (count) =>
+      onCharacters: (count, partial) => {
         onProgress({
           label,
           percent:
             start +
             Math.min(count / EXPECTED_DESIGN_CHARACTERS, 1) * (end - start),
-        }),
+        });
+        const draft = JSON.stringify(readDraft(partial));
+        if (draft !== lastDraft) {
+          lastDraft = draft;
+          onEvent({ type: "draft", draft: JSON.parse(draft) });
+        }
+      },
     });
 
     const parsed = parseGameSpec(parseJson(text));
@@ -132,24 +150,42 @@ Write the complete design again and fix them.`;
     }
 
     onProgress({ label: "Checking the answers", percent: 90 });
+    const describeChecks = (doubtful: Round[] | null) =>
+      parsed.spec.rounds.map((round) => ({
+        prompt: round.prompt,
+        status:
+          round.kind === "match"
+            ? "not-checked"
+            : doubtful === null
+              ? "checking"
+              : doubtful.includes(round)
+                ? "doubtful"
+                : "confirmed",
+      }));
+    onEvent({ type: "check", questions: describeChecks(null) });
     const disputed = await findDisputedRounds(
       provider,
       parsed.spec.rounds,
       signal,
     );
     totalDisputed += disputed.length;
+    onEvent({ type: "check", questions: describeChecks(disputed) });
     const rounds = parsed.spec.rounds.filter(
       (round) => !disputed.includes(round as ChoiceRound),
     );
 
+    const candidate = {
+      model,
+      spec: { ...parsed.spec, rounds },
+      attempts: attempt,
+      doubtfulRounds: disputed,
+    };
     if (rounds.length >= MIN_ROUNDS) {
       onProgress({ label: "Finishing your game", percent: 97 });
-      return {
-        model,
-        spec: { ...parsed.spec, rounds },
-        attempts: attempt,
-        disputedRounds: totalDisputed,
-      };
+      return { ...candidate, disputedRounds: totalDisputed };
+    }
+    if (!best || rounds.length > best.spec.rounds.length) {
+      best = candidate;
     }
 
     request = `${prompt}
@@ -160,7 +196,13 @@ These questions from your last design had the wrong answer marked as correct:
 Write the complete design again. Work out each answer carefully in its explanation first, then check that answerIndex points to that answer.`;
   }
 
+  // A shorter game plus a review list is better than losing the work.
+  if (best && best.spec.rounds.length >= MIN_PLAYABLE_ROUNDS) {
+    onProgress({ label: "Finishing your game", percent: 97 });
+    return { ...best, disputedRounds: totalDisputed };
+  }
+
   throw new ProviderRequestError(
-    "Envision couldn't confirm the answers for this game, so it wasn't built. Try a simpler topic or a different AI provider.",
+    "Envision couldn't confirm enough answers for this game, so it wasn't built. Try a simpler topic or a different AI provider.",
   );
 }

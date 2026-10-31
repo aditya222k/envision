@@ -2,8 +2,17 @@
 
 import Link from "next/link";
 import { BuildProgress } from "@/components/BuildProgress";
+import {
+  Companion,
+  type CompanionAnswer,
+  type Experience,
+} from "@/components/Companion";
 import { GameDrawer } from "@/components/GameDrawer";
+import { LiveReveal, type CheckedQuestion } from "@/components/LiveReveal";
+import { ReviewPanel } from "@/components/ReviewPanel";
+import type { GameDraft } from "@/lib/games/draft";
 import { EXAMPLE_GAMES, type Subject } from "@/lib/games/examples";
+import type { ChoiceRound } from "@/lib/games/spec";
 import { setIncognito, useIncognito } from "@/lib/incognito";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -15,6 +24,8 @@ import {
 
 type GenerateEvent =
   | { type: "progress"; label: string; percent: number }
+  | { type: "draft"; draft: GameDraft }
+  | { type: "check"; questions: CheckedQuestion[] }
   | { type: "result"; game: CurrentGame; spec?: unknown }
   | { type: "error"; status: number; error: string }
   | { type: "stopped" };
@@ -33,6 +44,7 @@ type CurrentGame = {
   summary: string;
   html: string;
   spec?: unknown;
+  reviewRounds?: ChoiceRound[];
 };
 
 type RunAction = "build" | "change";
@@ -57,6 +69,10 @@ export function GameBoard() {
   const [isStopping, setIsStopping] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [demoHistory, setDemoHistory] = useState<CurrentGame[]>([]);
+  const [draft, setDraft] = useState<GameDraft | null>(null);
+  const [checks, setChecks] = useState<CheckedQuestion[] | null>(null);
+  const [companion, setCompanion] = useState<CompanionAnswer | null>(null);
+  const [isAsking, setIsAsking] = useState(false);
   const isIncognito = useIncognito();
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLElement>(null);
@@ -105,6 +121,11 @@ export function GameBoard() {
             }
           : current,
       );
+    } else if (event.type === "draft") {
+      setDraft(event.draft);
+      setChecks(null);
+    } else if (event.type === "check") {
+      setChecks(event.questions);
     } else if (event.type === "result") {
       if (isIncognito && action === "change" && game) {
         setDemoHistory((current) => [...current, game]);
@@ -136,6 +157,8 @@ export function GameBoard() {
     setError(null);
     setNeedsSetup(false);
     setNotice(null);
+    setDraft(null);
+    setChecks(null);
 
     const label = PROVIDER_LABELS[provider];
     const run = { id: crypto.randomUUID(), controller: new AbortController() };
@@ -187,6 +210,8 @@ export function GameBoard() {
     } finally {
       setIsLoading(false);
       setProgress(null);
+      setDraft(null);
+      setChecks(null);
       runRef.current = null;
     }
   }
@@ -207,9 +232,41 @@ export function GameBoard() {
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  // The companion suggests a type of game and asks anything it needs first.
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    startRun("build", { prompt });
+    setActiveAction("build");
+    setError(null);
+    setNotice(null);
+    setIsAsking(true);
+    try {
+      const response = await fetch("/api/companion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, provider, demo: isIncognito }),
+      });
+      const data = await response.json().catch(() => null);
+      if (response.ok && data) {
+        setCompanion(data);
+      } else if (response.status === 503) {
+        setError(`${PROVIDER_LABELS[provider]} isn't set up yet.`);
+        setNeedsSetup(true);
+      } else {
+        startRun("build", { prompt, experience: "quest" });
+      }
+    } catch {
+      setError("Envision couldn't reach the server. Try again.");
+    } finally {
+      setIsAsking(false);
+    }
+  }
+
+  function handleCompanionBuild(experience: Experience, choices: string) {
+    setCompanion(null);
+    startRun("build", {
+      prompt: choices ? `${prompt}\n\nTeacher's choices:\n${choices}` : prompt,
+      experience,
+    });
   }
 
   function handleChange(event: FormEvent<HTMLFormElement>) {
@@ -220,6 +277,29 @@ export function GameBoard() {
       spec: game?.spec,
       versionCount: game?.versionCount,
     });
+  }
+
+  async function handleReview(index: number, answerIndex: number | null) {
+    if (!game) {
+      return;
+    }
+    setError(null);
+    try {
+      const response = await fetch(`/api/games/${game.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewIndex: index, answerIndex }),
+      });
+      const data = await response.json().catch(() => null);
+      if (response.ok) {
+        showGame(data.game);
+      } else {
+        setActiveAction("change");
+        setError(data?.error ?? "That didn't save. Try again.");
+      }
+    } catch {
+      setError("Envision couldn't reach the server. Try again.");
+    }
   }
 
   async function handleUndo() {
@@ -345,6 +425,9 @@ export function GameBoard() {
           disabled={isLoading}
           onOpenGame={handleOpenGame}
         />
+        <Link href="/storylines" className="drawer-button link-action">
+          Storylines
+        </Link>
         <button
           type="button"
           role="switch"
@@ -360,7 +443,8 @@ export function GameBoard() {
         </button>
       </div>
     <div className="board grid grid-cols-2 lg:grid-cols-4 lg:grid-rows-[auto_1fr_1fr_auto]">
-      {game && (
+      {draft && <LiveReveal draft={draft} checks={checks} />}
+      {game && !draft && (
         <section
           ref={resultRef}
           className="col-span-2 flex flex-col gap-4 bg-paper p-4 sm:p-6 lg:col-span-4 lg:row-start-5"
@@ -377,6 +461,14 @@ export function GameBoard() {
             sandbox="allow-scripts"
             className="h-[85vh] w-full border-2 border-ink bg-white lg:h-[640px]"
           />
+
+          {!isIncognito && (
+            <ReviewPanel
+              rounds={game.reviewRounds ?? []}
+              disabled={isLoading}
+              onResolve={handleReview}
+            />
+          )}
 
           <form onSubmit={handleChange} className="flex flex-col gap-4">
             <label className="field-label">
@@ -467,15 +559,24 @@ export function GameBoard() {
 
             <button
               type="submit"
-              disabled={isLoading || !prompt.trim()}
+              disabled={isLoading || isAsking || Boolean(companion) || !prompt.trim()}
               className="action h-12 px-6 sm:flex-1"
             >
-              {isLoading && activeAction === "build"
-                ? "Building your game..."
-                : "Build my game"}
+              {isAsking
+                ? "Thinking about your idea..."
+                : isLoading && activeAction === "build"
+                  ? "Building your game..."
+                  : "Build my game"}
             </button>
           </div>
 
+          {companion && (
+            <Companion
+              answer={companion}
+              onBuild={handleCompanionBuild}
+              onCancel={() => setCompanion(null)}
+            />
+          )}
           {activeAction === "build" && runStatus}
         </form>
       </section>

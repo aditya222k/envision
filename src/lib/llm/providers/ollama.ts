@@ -73,7 +73,7 @@ export const ollama: LlmProvider = {
           }
           text += chunk.message?.content ?? "";
         }
-        onCharacters?.(text.length);
+        onCharacters?.(text.length, text);
       }
     } catch (error) {
       if (signal?.aborted) {

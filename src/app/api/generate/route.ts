@@ -1,8 +1,12 @@
+import { buildLab, reviseLab } from "@/lib/games/buildLab";
 import { runDemoBuild, runDemoChange } from "@/lib/games/demo";
+import { LAB_KITS, type LabKit } from "@/lib/games/lab";
 import { buildGame } from "@/lib/games/pipeline";
 import { reviseGame } from "@/lib/games/revise";
 import { finishRun, startRun } from "@/lib/games/runs";
 import { parseGameSpec } from "@/lib/games/spec";
+import { topicPrompt } from "@/lib/games/storyline";
+import { getStoryline, linkTopicGame } from "@/lib/games/storylineStore";
 import {
   addVersion,
   createGame,
@@ -55,6 +59,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "That game no longer exists." }, { status: 404 });
   }
 
+  const storyline =
+    typeof body.storylineId === "string"
+      ? await getStoryline(body.storylineId)
+      : null;
+  const topicRun =
+    storyline && typeof body.topicId === "string"
+      ? topicPrompt(storyline, body.topicId)
+      : null;
+  if (body.storylineId && !topicRun) {
+    return Response.json({ error: "That level no longer exists." }, { status: 404 });
+  }
+
   const runId = typeof body.runId === "string" ? body.runId : crypto.randomUUID();
   const run = startRun(runId);
   const signal = AbortSignal.any([request.signal, run.signal]);
@@ -87,8 +103,40 @@ export async function POST(request: Request) {
                   signal,
                   onProgress,
                 )
-              : await runDemoBuild(body.prompt, signal, onProgress);
+              : await runDemoBuild(body.prompt, signal, onProgress, send);
+          if (storyline && topicRun && game) {
+            await linkTopicGame(storyline.id, topicRun.topic.id, game.id);
+          }
           send({ type: "result", game, spec: game?.spec });
+        } else if (gameId && currentSpec?.lab) {
+          const revision = await reviseLab(
+            provider,
+            currentSpec,
+            body.prompt,
+            signal,
+            onProgress,
+            send,
+          );
+          const game = await addVersion(gameId, revision.spec, "Updated the lab.");
+          send(
+            game
+              ? { type: "result", game }
+              : { type: "error", status: 404, error: "That game no longer exists." },
+          );
+        } else if (LAB_KITS.includes(body.experience as LabKit) && !gameId) {
+          const build = await buildLab(
+            provider,
+            body.experience as LabKit,
+            topicRun?.prompt ?? body.prompt,
+            signal,
+            onProgress,
+            send,
+          );
+          const game = await createGame(build.spec);
+          if (storyline && topicRun) {
+            await linkTopicGame(storyline.id, topicRun.topic.id, game.id);
+          }
+          send({ type: "result", game, spec: build.spec });
         } else if (gameId && currentSpec) {
           const revision = await reviseGame(
             provider,
@@ -101,6 +149,7 @@ export async function POST(request: Request) {
             gameId,
             revision.spec,
             `${revision.changes.join(". ")}.`,
+            revision.doubtfulRounds,
           );
           send(
             game
@@ -110,14 +159,28 @@ export async function POST(request: Request) {
         } else {
           const build = await buildGame(
             provider,
-            body.prompt,
+            topicRun?.prompt ?? body.prompt,
             signal,
             onProgress,
+            send,
           );
+          // Every game in a storyline keeps the same hero and its chapter's world.
+          const spec =
+            storyline && topicRun
+              ? {
+                  ...build.spec,
+                  player: storyline.hero,
+                  theme: topicRun.chapter.theme,
+                }
+              : build.spec;
+          const game = await createGame(spec, build.doubtfulRounds);
+          if (storyline && topicRun) {
+            await linkTopicGame(storyline.id, topicRun.topic.id, game.id);
+          }
           send({
             type: "result",
-            game: await createGame(build.spec),
-            spec: build.spec,
+            game,
+            spec,
             attempts: build.attempts,
             disputedRounds: build.disputedRounds,
           });

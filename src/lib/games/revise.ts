@@ -9,7 +9,7 @@ import {
   EDITABLE_FIELDS,
   GAME_CHANGES_SCHEMA,
   MAX_ROUNDS,
-  MIN_ROUNDS,
+  MIN_PLAYABLE_ROUNDS,
   parseGameSpec,
   parseRound,
   type ChoiceRound,
@@ -113,9 +113,9 @@ export function applyChanges(spec: GameSpec, changes: Change[]) {
     ...slots.filter((_, index) => !removed.has(index)),
     ...added.map((round) => ({ round, changed: true })),
   ];
-  if (finalSlots.length < MIN_ROUNDS || finalSlots.length > MAX_ROUNDS) {
+  if (finalSlots.length < MIN_PLAYABLE_ROUNDS || finalSlots.length > MAX_ROUNDS) {
     errors.push(
-      `a game needs ${MIN_ROUNDS} to ${MAX_ROUNDS} rounds, and this change would leave ${finalSlots.length}`,
+      `a game needs ${MIN_PLAYABLE_ROUNDS} to ${MAX_ROUNDS} rounds, and this change would leave ${finalSlots.length}`,
     );
   }
   if (summary.length === 0) {
@@ -233,11 +233,17 @@ Teacher's change: ${instruction}`;
           ...(partial.summary ?? []),
           `Skipped ${skipped} because Envision couldn't confirm the answer`,
         ],
+        doubtfulRounds: disputed,
       };
     }
 
     onProgress({ label: "Finishing your game", percent: 97 });
-    return { model, spec: applied.spec, changes: applied.summary };
+    return {
+      model,
+      spec: applied.spec,
+      changes: applied.summary,
+      doubtfulRounds: [],
+    };
   }
 
   throw new ProviderRequestError(

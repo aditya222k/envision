@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
     "/api/generate": [
       "./node_modules/phaser/dist/phaser.min.js",
       "./src/lib/games/engine/world.js",
+      "./src/lib/games/engine/lab.js",
+      "./src/lib/games/engine/activities.js",
     ],
   },
   turbopack: {

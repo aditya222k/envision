@@ -1,3 +1,5 @@
+import type { LabConfig } from "./lab";
+
 export const MECHANICS = ["journey", "beat-the-clock", "boss-battle"] as const;
 export const THEMES = [
   "jungle",
@@ -9,6 +11,7 @@ export const THEMES = [
 ] as const;
 export const ROUND_KINDS = ["choice", "match"] as const;
 
+export const MIN_PLAYABLE_ROUNDS = 3;
 export const MIN_ROUNDS = 5;
 export const TARGET_ROUNDS = 6;
 export const MAX_ROUNDS = 8;
@@ -51,6 +54,7 @@ export type GameSpec = {
     lose: string;
   };
   rounds: Round[];
+  lab?: LabConfig;
 };
 
 const shortText = { type: "string", minLength: 1, maxLength: 80 };
@@ -315,9 +319,9 @@ export function parseGameSpec(
     .map(parseRound)
     .filter((round) => round !== null)
     .slice(0, MAX_ROUNDS);
-  if (rounds.length < MIN_ROUNDS) {
+  if (rounds.length < MIN_PLAYABLE_ROUNDS) {
     errors.push(
-      `only ${rounds.length} of ${rawRounds.length} rounds are usable; at least ${MIN_ROUNDS} are needed. A choice round needs 2 to 4 different choices and a valid answerIndex. A match round needs 3 to 5 different pairs.`,
+      `only ${rounds.length} of ${rawRounds.length} rounds are usable; at least ${MIN_PLAYABLE_ROUNDS} are needed. A choice round needs 2 to 4 different choices and a valid answerIndex. A match round needs 3 to 5 different pairs.`,
     );
   }
 

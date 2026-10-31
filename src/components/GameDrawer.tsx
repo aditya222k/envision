@@ -115,9 +115,12 @@ export function GameDrawer({
             ))}
           </div>
 
-          <div className="border-t-[3px] border-ink p-5">
+          <div className="flex flex-wrap gap-5 border-t-[3px] border-ink p-5">
             <Link href="/games" className="font-bold text-ink underline">
               Manage all games
+            </Link>
+            <Link href="/storylines" className="font-bold text-ink underline">
+              Storylines
             </Link>
           </div>
         </div>

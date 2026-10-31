@@ -18,6 +18,29 @@ Envision lets teachers of grade 8 and high school students describe a learning g
 
 ## Timeline
 
+### 2026-10-31: Interactive labs and the companion
+
+- Moved beyond question-and-answer games. Added two hand-built lab engines that the model configures: a bodies lab for gravity and electric forces, and a systems lab with sliders and a live graph.
+- Added missions that the simulation checks by itself.
+- Added two more game types that work for any lesson: Decide, a branching story with consequences, and Arrange, for ordering and sorting. All game types use the same pipeline, so they work with local and stronger models.
+- Added a companion that suggests a type of game and asks the teacher quick questions with options before building.
+
+### 2026-10-31: Interactive builds
+
+- Added a live reveal. The title, hero, world and questions appear on the page as the model writes them.
+- Made the answer check visible, with a status for each question.
+- Doubtful questions now go to a review list, where a teacher picks the right answer and adds the question, or leaves it out.
+
+### 2026-10-31: Storylines
+
+- Added storylines at `/storylines`: subject, then chapters, then levels, where each level is one game.
+- The model plans the overall story, each chapter's story, and a story note for each level. Each game receives the story so far, and Envision keeps the same hero and the chapter's world.
+- A level can use a new game or a saved one.
+- Added a sticky board for each chapter. Story notes can be dragged or moved between that chapter's levels, and a level warns when its game was built for a different note.
+- Added a red string that joins the story notes in order, pin to pin and across chapters, with a story step number on each note.
+- Added **Build all games**, which builds missing levels one at a time and shows a timeline. It runs in the open page, so closing the page ends it, and running it again resumes with what's missing.
+- Publishing a storyline gives students one link at `/path/<id>`. Winning a game unlocks the next, and the overall ending appears at the end.
+
 ### 2026-10-31: Reliable game changes and the games drawer
 
 - Added the **Your games** drawer on the left of the home page.

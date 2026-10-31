@@ -1,7 +1,7 @@
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { renderGame } from "./render";
-import type { GameSpec } from "./spec";
+import { MAX_ROUNDS, type ChoiceRound, type GameSpec } from "./spec";
 
 export const MAX_NAME_LENGTH = 80;
 
@@ -16,6 +16,7 @@ type StoredGame = {
   createdAt: string;
   updatedAt: string;
   versions: GameVersion[];
+  reviewRounds?: ChoiceRound[];
   published: { spec: GameSpec; publishedAt: string; version: number } | null;
 };
 
@@ -79,6 +80,7 @@ async function describe(game: StoredGame) {
     ...summarize(game),
     summary: current.summary,
     spec: current.spec,
+    reviewRounds: game.reviewRounds ?? [],
     html: await renderGame(current.spec),
   };
 }
@@ -106,27 +108,73 @@ export async function getLatestSpec(id: string) {
   return game ? latest(game).spec : null;
 }
 
-export async function createGame(spec: GameSpec) {
+export async function createGame(
+  spec: GameSpec,
+  reviewRounds: ChoiceRound[] = [],
+) {
   const now = new Date().toISOString();
   const game: StoredGame = {
     id: crypto.randomUUID(),
     createdAt: now,
     updatedAt: now,
     versions: [{ spec, summary: "New game", createdAt: now }],
+    reviewRounds,
     published: null,
   };
   await writeGame(game);
   return describe(game);
 }
 
-export async function addVersion(id: string, spec: GameSpec, summary: string) {
+export async function addVersion(
+  id: string,
+  spec: GameSpec,
+  summary: string,
+  reviewRounds: ChoiceRound[] = [],
+) {
   const game = await readGame(id);
   if (!game) {
     return null;
   }
   const now = new Date().toISOString();
   game.versions.push({ spec, summary, createdAt: now });
+  game.reviewRounds = [...(game.reviewRounds ?? []), ...reviewRounds];
   game.updatedAt = now;
+  await writeGame(game);
+  return describe(game);
+}
+
+// The teacher's answer settles a doubtful question, so it joins as a new version.
+export async function resolveReview(
+  id: string,
+  index: number,
+  answerIndex: number | null,
+) {
+  const game = await readGame(id);
+  const round = game?.reviewRounds?.[index];
+  if (!game || !round) {
+    return null;
+  }
+
+  if (answerIndex !== null) {
+    const current = latest(game);
+    if (current.spec.rounds.length >= MAX_ROUNDS) {
+      return { error: `A game can have up to ${MAX_ROUNDS} rounds. Remove one first.` };
+    }
+    if (!Number.isInteger(answerIndex) || !round.choices[answerIndex]) {
+      return { error: "Choose one of the answers." };
+    }
+    game.versions.push({
+      spec: {
+        ...current.spec,
+        rounds: [...current.spec.rounds, { ...round, answerIndex }],
+      },
+      summary: "Added a question you reviewed.",
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  game.reviewRounds = game.reviewRounds?.filter((_, item) => item !== index);
+  game.updatedAt = new Date().toISOString();
   await writeGame(game);
   return describe(game);
 }
