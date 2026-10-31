@@ -17,6 +17,12 @@ npm run dev
 
 Then open http://localhost:3000.
 
+## AI providers
+
+Games will be generated through `POST /api/generate`, which can use Claude, OpenAI, Gemini or a local Ollama host. The providers in `src/lib/llm/providers/` are stubs for now, so the route returns a 501 until they're implemented.
+
+To configure a provider, copy `.env.example` to `.env.local` and fill in its values. Choose the provider from the dropdown on the home page. `LLM_PROVIDER` only applies to API requests that don't name one.
+
 ## How we work
 
 - Don't push directly to `main`. Create a branch, then open a pull request.

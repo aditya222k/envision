@@ -1,3 +1,5 @@
+import { GameForm } from "@/components/GameForm";
+
 export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -9,6 +11,7 @@ export default function Home() {
           Describe a game for your class, and Envision builds it for your
           students.
         </p>
+        <GameForm />
       </main>
     </div>
   );
