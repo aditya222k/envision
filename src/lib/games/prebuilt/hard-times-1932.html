@@ -1,0 +1,3836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hard Times: 1932</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* ---------- 1930s sepia palette ---------- */
+  :root{
+    --ink:        #2b2118;
+    --sepia-deep: #1b1410;
+    --sepia:      #3a2c20;
+    --brown:      #6b4e32;
+    --cream:      #efe3c8;
+    --cream-dim:  #cdbb97;
+    --moss:       #6c7a5b;
+    --rust:       #8c3b2b;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; background:var(--sepia-deep); overflow:hidden; }
+  body{ font-family:"Special Elite", "Courier New", monospace; color:var(--cream); }
+
+  #stage{ position:fixed; inset:0; }
+  #scene{ display:block; width:100%; height:100%; }
+
+  /* ---------- vignette ---------- */
+  #vignette{
+    position:absolute; inset:0; pointer-events:none; z-index:2;
+    background:
+      radial-gradient(ellipse 72% 62% at 50% 46%,
+        rgba(0,0,0,0) 38%,
+        rgba(16,10,6,0.35) 70%,
+        rgba(10,6,4,0.82) 100%);
+    mix-blend-mode:multiply;
+  }
+
+  /* ---------- animated film grain ---------- */
+  #grain{
+    position:absolute; inset:-150px; pointer-events:none; z-index:3;
+    opacity:0.13;
+    mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grainShift 0.7s steps(1) infinite, grainBreathe 5.3s ease-in-out infinite;
+  }
+  @keyframes grainShift{
+    0%  { transform:translate(0,0); }
+    12% { transform:translate(-7%, 4%); }
+    25% { transform:translate(5%, -8%); }
+    37% { transform:translate(-9%, -3%); }
+    50% { transform:translate(8%, 6%); }
+    62% { transform:translate(-4%, 9%); }
+    75% { transform:translate(6%, -5%); }
+    87% { transform:translate(-8%, 2%); }
+    100%{ transform:translate(3%, 7%); }
+  }
+  @keyframes grainBreathe{
+    0%,100%{ opacity:0.10; }
+    43%    { opacity:0.17; }
+  }
+
+  /* faint scan of projector flicker over everything */
+  #flicker{
+    position:absolute; inset:0; pointer-events:none; z-index:4;
+    background:rgba(255, 228, 176, 0.05);
+    animation:flick 3.1s ease-in-out infinite;
+  }
+  @keyframes flick{
+    0%,100%{ opacity:0.25; }
+    17%    { opacity:0.65; }
+    34%    { opacity:0.15; }
+    58%    { opacity:0.5; }
+    79%    { opacity:0.2; }
+  }
+
+  /* ---------- hover label ---------- */
+  #label{
+    position:absolute; z-index:6; pointer-events:none;
+    transform:translate(-50%, -140%);
+    padding:5px 11px 4px;
+    font-family:"Special Elite", monospace;
+    font-size:14px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--cream);
+    background:rgba(27,20,16,0.78);
+    border:1px solid rgba(205,187,151,0.45);
+    border-radius:2px;
+    box-shadow:0 2px 14px rgba(0,0,0,0.6);
+    white-space:nowrap;
+    opacity:0; transition:opacity 140ms ease;
+  }
+  #label.on{ opacity:1; }
+  #label::after{
+    content:""; position:absolute; left:50%; bottom:-5px;
+    width:7px; height:7px; margin-left:-4px;
+    background:rgba(27,20,16,0.78);
+    border-right:1px solid rgba(205,187,151,0.45);
+    border-bottom:1px solid rgba(205,187,151,0.45);
+    transform:rotate(45deg);
+  }
+
+  /* ---------- loading ---------- */
+  #loading{
+    position:absolute; inset:0; z-index:9;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--sepia-deep); color:var(--cream-dim);
+    font-size:13px; letter-spacing:0.3em; text-transform:uppercase;
+    transition:opacity 700ms ease;
+  }
+  #loading.gone{ opacity:0; pointer-events:none; }
+
+  /* ---------- dev panel (press D) ---------- */
+  #dev{
+    position:absolute; right:18px; top:18px; z-index:7;
+    width:198px; padding:10px 11px 12px;
+    background:rgba(27,20,16,0.88);
+    border:1px solid rgba(205,187,151,0.3);
+    font-size:11px; color:var(--cream-dim);
+    display:none;
+  }
+  #dev.on{ display:block; }
+  #dev h2{
+    margin:0 0 8px; font-size:10px; letter-spacing:0.2em;
+    text-transform:uppercase; color:var(--cream);
+    border-bottom:1px solid rgba(205,187,151,0.25); padding-bottom:6px;
+  }
+  #dev button{
+    font-family:inherit; font-size:10.5px; color:var(--cream);
+    background:rgba(107,78,50,0.45); border:1px solid rgba(205,187,151,0.3);
+    padding:4px 6px; margin:0 3px 4px 0; cursor:pointer;
+  }
+  #dev button:hover{ background:rgba(140,59,43,0.55); }
+  #dev .row{ margin-bottom:6px; }
+  #dev .k{ display:block; margin-bottom:3px; color:var(--moss); letter-spacing:0.08em; }
+  #hint{
+    position:absolute; left:14px; bottom:5px; z-index:7;
+    font-size:9px; letter-spacing:0.16em; text-transform:uppercase;
+    color:rgba(205,187,151,0.3); pointer-events:none;
+  }
+
+  /* ==========================================================
+     GAME UI — aged newsprint and ledger paper
+     ========================================================== */
+  .ui{ position:absolute; z-index:5; }
+  button{ font-family:"Special Elite", monospace; cursor:pointer; }
+
+  /* --- paper surfaces --- */
+  .paper{
+    background:
+      repeating-linear-gradient(180deg,
+        rgba(120,90,50,0.00) 0 25px,
+        rgba(120,90,50,0.10) 25px 26px),
+      linear-gradient(165deg, #efe3c6 0%, #e2d2ad 55%, #d6c49b 100%);
+    color:#2b2118;
+    box-shadow:0 10px 34px rgba(0,0,0,0.6), inset 0 0 50px rgba(140,104,60,0.22);
+  }
+  .paper::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse at 30% 20%, rgba(150,110,60,0) 40%, rgba(96,66,32,0.26) 100%);
+  }
+
+  /* --- top bar --- */
+  #topbar{
+    top:0; left:0; right:0; height:62px;
+    display:flex; align-items:center; gap:26px;
+    padding:0 20px;
+    background:linear-gradient(180deg, rgba(20,14,10,0.92), rgba(20,14,10,0.62) 70%, rgba(20,14,10,0));
+    opacity:0; transition:opacity 500ms ease; pointer-events:none;
+  }
+  #topbar.on{ opacity:1; pointer-events:auto; }
+  #topbar .stat{ display:flex; flex-direction:column; gap:2px; }
+  #topbar .k{
+    font-size:9.5px; letter-spacing:0.22em; text-transform:uppercase;
+    color:rgba(205,187,151,0.65);
+  }
+  #topbar .v{ font-size:17px; color:var(--cream); letter-spacing:0.05em; }
+  #topbar .v.flash{ animation:statFlash 700ms ease; }
+  @keyframes statFlash{ 0%{ color:#f6d27a; transform:scale(1.18); } 100%{ color:var(--cream); transform:scale(1); } }
+
+  #wellStat{ min-width:220px; }
+  #wellRow{ display:flex; align-items:center; gap:9px; }
+  .meter{
+    position:relative; width:170px; height:11px;
+    background:rgba(0,0,0,0.55);
+    border:1px solid rgba(205,187,151,0.35);
+  }
+  .meter-fill{
+    position:absolute; inset:1px auto 1px 1px; width:100%;
+    background:var(--moss);
+    transition:width 800ms cubic-bezier(.22,1,.36,1), background-color 800ms ease;
+  }
+  .meter-ticks{
+    position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(90deg,
+      rgba(0,0,0,0) 0 16px, rgba(27,20,16,0.55) 16px 17px);
+  }
+  #uiWell{ font-size:15px; min-width:30px; }
+
+  #topbar .spacer{ flex:1; }
+  #topbar .icon{
+    height:30px; padding:0 11px; line-height:1;
+    font-size:10px; letter-spacing:0.18em; text-transform:uppercase;
+    color:var(--cream-dim);
+    background:rgba(107,78,50,0.3); border:1px solid rgba(205,187,151,0.3);
+  }
+  #topbar .icon:hover{ color:var(--cream); background:rgba(140,59,43,0.45); }
+  #topbar .icon.off{
+    color:rgba(205,187,151,0.3); text-decoration:line-through;
+    background:rgba(107,78,50,0.12);
+  }
+  #topbar .icon.hot{ color:#f6d27a; border-color:rgba(246,210,122,0.5); }
+  #topbar .icon:disabled{ opacity:0.3; cursor:default; text-decoration:none; }
+
+  /* --- bottom narration bar --- */
+  #subtitle{
+    left:0; right:0; bottom:0; min-height:96px;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px 10% 26px;
+    background:linear-gradient(0deg, rgba(14,9,6,0.93), rgba(14,9,6,0.72) 55%, rgba(14,9,6,0));
+    opacity:0; transition:opacity 420ms ease; pointer-events:none;
+  }
+  #subtitle.on{ opacity:1; }
+  #subtitle .block{ max-width:860px; }
+  #subtitle .line{
+    text-align:center;
+    font-size:17px; line-height:1.62; color:var(--cream);
+    text-shadow:0 2px 12px rgba(0,0,0,0.9);
+  }
+  #subtitle .tag{
+    display:block; margin-bottom:7px; text-align:center;
+    font-size:9px; letter-spacing:0.3em; text-transform:uppercase;
+    color:rgba(214,190,140,0.65);
+  }
+  #subtitle .line.fact{
+    color:#e6d2a4; font-style:italic;
+    border-top:1px solid rgba(205,187,151,0.3);
+    border-bottom:1px solid rgba(205,187,151,0.3);
+    padding:11px 0;
+  }
+  #subtitle .caret{ opacity:0.75; animation:caret 0.9s steps(1) infinite; }
+  @keyframes caret{ 0%,49%{opacity:0.75;} 50%,100%{opacity:0;} }
+  #advance{
+    position:absolute; right:30px; bottom:12px;
+    font-size:10px; letter-spacing:0.2em; text-transform:uppercase;
+    color:rgba(205,187,151,0.5);
+  }
+
+  /* --- newspaper clipping --- */
+  #clipping{
+    position:absolute; z-index:6;
+    right:46px; top:96px; width:330px; padding:20px 22px 24px;
+    transform:rotate(2.2deg) translateY(-140%);
+    opacity:0;
+    clip-path:polygon(0% 1%, 9% 0%, 21% 1.4%, 33% 0.2%, 47% 1.6%, 61% 0.3%, 74% 1.5%, 88% 0.4%, 100% 1.2%,
+                      99% 14%, 100% 32%, 98.8% 51%, 100% 70%, 99% 88%, 100% 99%,
+                      88% 98.4%, 73% 99.6%, 59% 98.2%, 44% 99.7%, 30% 98.3%, 16% 99.6%, 0% 98.6%,
+                      1.2% 80%, 0% 62%, 1.4% 43%, 0% 25%);
+    pointer-events:none;
+  }
+  #clipping.on{
+    animation:clipDrop 900ms cubic-bezier(.19,1.3,.42,1) forwards;
+    pointer-events:auto;
+  }
+  @keyframes clipDrop{
+    0%  { opacity:0; transform:rotate(-7deg) translateY(-150%) scale(1.1); }
+    62% { opacity:1; transform:rotate(3.4deg) translateY(6%) scale(1); }
+    82% { transform:rotate(1.2deg) translateY(-2%); }
+    100%{ opacity:1; transform:rotate(2.2deg) translateY(0); }
+  }
+  #clipping .kicker{
+    font-family:"Playfair Display", Georgia, serif;
+    font-size:11px; letter-spacing:0.26em; text-transform:uppercase;
+    text-align:center; color:#6b4e32;
+    border-bottom:2px solid #3a2c20; padding-bottom:7px;
+  }
+  #clipping h3{
+    margin:12px 0 0; text-align:center;
+    font-family:"Playfair Display", Georgia, serif;
+    font-weight:700; font-size:25px; line-height:1.14; letter-spacing:-0.01em;
+    color:#241a12;
+  }
+  #clipping .rule{ height:1px; background:#5b452e; margin:12px 0 11px; }
+  #clipping .body{
+    font-size:13.5px; line-height:1.66; color:#3c2d1f;
+    column-count:1; text-align:justify;
+  }
+  #clipping .dateline{
+    margin-top:14px; text-align:right;
+    font-size:9.5px; letter-spacing:0.2em; text-transform:uppercase; color:#7a5c3c;
+  }
+
+  /* --- budget ledger --- */
+  #budget{
+    position:absolute; z-index:6;
+    left:34px; top:96px; width:332px; padding:18px 20px 18px;
+    opacity:0; transform:translateX(-26px);
+    transition:opacity 420ms ease, transform 420ms cubic-bezier(.22,1,.36,1);
+    pointer-events:none;
+  }
+  #budget.on{ opacity:1; transform:none; pointer-events:auto; }
+  #budget .ledgerline{
+    position:absolute; left:46px; top:0; bottom:0; width:1px;
+    background:rgba(140,59,43,0.5);
+  }
+  #budget h2{
+    margin:0 0 3px; font-family:"Playfair Display", Georgia, serif;
+    font-size:19px; color:#241a12; letter-spacing:0.01em;
+  }
+  #budget .note{
+    margin:0 0 14px; font-size:10.5px; line-height:1.5; color:#6b543a;
+  }
+  .need{
+    position:relative; padding:9px 0 10px;
+    border-top:1px solid rgba(90,66,40,0.3);
+  }
+  .need.focus{ background:rgba(140,59,43,0.09); box-shadow:-10px 0 0 rgba(140,59,43,0.09), 10px 0 0 rgba(140,59,43,0.09); }
+  .need .top{ display:flex; align-items:baseline; justify-content:space-between; }
+  .need .name{ font-size:14.5px; color:#2b2118; letter-spacing:0.04em; }
+  .need .amt{ font-size:14.5px; color:#2b2118; }
+  .need .sub{
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    margin-top:1px;
+  }
+  .need .hint{ font-size:10px; color:#7a5c3c; }
+  .need .eff{ font-size:11.5px; flex:none; letter-spacing:0.04em; }
+  .need .eff.ok{ color:#4a6134; }
+  .need .eff.bad{ color:#8c3b2b; }
+  .need .chip{
+    display:inline-block; margin-left:8px; padding:1px 6px;
+    font-size:9px; letter-spacing:0.16em; text-transform:uppercase;
+    border:1px solid currentColor;
+  }
+  .chip.ok{ color:#4a6134; }
+  .chip.bad{ color:#8c3b2b; }
+  .need input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:16px; margin:7px 0 0; background:transparent; cursor:pointer;
+  }
+  .need input[type=range]::-webkit-slider-runnable-track{
+    height:5px; background:rgba(60,44,30,0.3); border:1px solid rgba(60,44,30,0.35);
+  }
+  .need input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:15px; height:19px; margin-top:-8px;
+    background:#5b4028; border:1px solid #2b2118; border-radius:1px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.5);
+  }
+  .need input[type=range]:disabled{ cursor:default; opacity:0.45; }
+  .need input[type=range]::-moz-range-track{ height:5px; background:rgba(60,44,30,0.3); }
+  .need input[type=range]::-moz-range-thumb{
+    width:15px; height:19px; background:#5b4028; border:1px solid #2b2118; border-radius:1px;
+  }
+  #budget .totals{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-top:12px; padding-top:10px;
+    border-top:2px solid rgba(60,44,30,0.55);
+    font-size:14px; color:#2b2118;
+  }
+  #budget .totals .left{ font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#6b543a; }
+
+  /* --- buttons --- */
+  .btn{
+    display:inline-block; margin-top:14px; width:100%;
+    padding:11px 14px;
+    font-size:13px; letter-spacing:0.2em; text-transform:uppercase;
+    color:#efe3c8; background:#5e3124;
+    border:1px solid #2b2118;
+    box-shadow:0 4px 0 rgba(0,0,0,0.35);
+    transition:transform 90ms ease, background-color 160ms ease;
+  }
+  .btn:hover{ background:#7a3f2c; }
+  .btn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,0.35); }
+
+  /* --- result card --- */
+  #result{
+    position:absolute; z-index:7;
+    left:50%; top:50%; width:430px; padding:24px 28px 26px;
+    transform:translate(-50%,-46%) scale(0.96);
+    opacity:0; pointer-events:none;
+    transition:opacity 380ms ease, transform 380ms cubic-bezier(.22,1,.36,1);
+  }
+  #result.on{ opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+  #result h2{
+    margin:0 0 4px; text-align:center;
+    font-family:"Playfair Display", Georgia, serif; font-size:23px; color:#241a12;
+  }
+  #result .week{
+    text-align:center; font-size:10px; letter-spacing:0.26em;
+    text-transform:uppercase; color:#7a5c3c; margin-bottom:16px;
+  }
+  #result ul{ list-style:none; margin:0; padding:0; }
+  #result li{
+    display:flex; gap:10px; align-items:flex-start;
+    padding:8px 0; border-top:1px solid rgba(90,66,40,0.28);
+    font-size:13px; line-height:1.5; color:#3c2d1f;
+  }
+  #result li .mark{ font-size:14px; line-height:1.35; width:14px; flex:none; text-align:center; }
+  #result li.ok .mark{ color:#4a6134; }
+  #result li.part .mark{ color:#8a6a24; }
+  #result li.bad .mark{ color:#8c3b2b; }
+  #result li .delta{ margin-left:auto; flex:none; font-size:12px; opacity:0.75; }
+  #result .swing{
+    margin-top:14px; padding-top:11px;
+    border-top:2px solid rgba(60,44,30,0.55);
+    display:flex; justify-content:space-between; font-size:14px; color:#2b2118;
+  }
+
+  /* --- title screen --- */
+  #title{
+    position:absolute; inset:0; z-index:8;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at 50% 45%, rgba(24,16,11,0.72), rgba(10,6,4,0.95));
+    transition:opacity 900ms ease;
+  }
+  #title.gone{ opacity:0; pointer-events:none; }
+  #title .rule{ width:112px; height:1px; background:rgba(205,187,151,0.5); margin:20px 0; }
+  #title h1{
+    margin:0; font-family:"Playfair Display", Georgia, serif;
+    font-weight:700; font-size:66px; letter-spacing:0.01em; color:var(--cream);
+    text-shadow:0 4px 40px rgba(0,0,0,0.9);
+  }
+  #title .year{
+    margin-top:6px; font-size:14px; letter-spacing:0.56em; text-indent:0.56em;
+    text-transform:uppercase; color:var(--cream-dim);
+  }
+  #title .sub{
+    font-size:15px; letter-spacing:0.14em; color:#cdbb97; margin:0;
+  }
+  #title .subject{
+    position:absolute; bottom:26px;
+    font-size:10px; letter-spacing:0.28em; text-transform:uppercase;
+    color:rgba(205,187,151,0.33);
+  }
+  #title .btn{ width:auto; padding:13px 44px; margin-top:30px; }
+
+  /* --- intro overlay --- */
+  #intro{
+    position:absolute; inset:0; z-index:8;
+    display:none; align-items:center; justify-content:center;
+    padding:0 12%;
+    background:rgba(10,6,4,0.88);
+    cursor:pointer;
+  }
+  #intro.on{ display:flex; }
+  #intro p{
+    max-width:760px; margin:0; text-align:center;
+    font-size:21px; line-height:1.75; color:var(--cream);
+    text-shadow:0 2px 20px rgba(0,0,0,0.9);
+  }
+
+  /* --- Hooverville crisis overlay --- */
+  #crisis{
+    position:absolute; inset:0; z-index:8;
+    display:none; flex-direction:column; align-items:center; justify-content:flex-end;
+    background:linear-gradient(180deg, #070a0e 0%, #141b23 42%, #2e3a45 78%, #46545f 100%);
+    opacity:0; transition:opacity 2200ms ease;
+  }
+  #crisis.on{ display:flex; }
+  #crisis.vis{ opacity:1; }
+  #crisis svg{ width:100%; height:46%; display:block; }
+  #crisis .text{
+    position:absolute; top:22%; left:0; right:0; padding:0 14%;
+    text-align:center; font-size:19px; line-height:1.7;
+    color:#b9c3c9; text-shadow:0 2px 18px rgba(0,0,0,0.9);
+  }
+  #crisis .cap{
+    position:absolute; bottom:22px; left:0; right:0; text-align:center;
+    font-size:10px; letter-spacing:0.3em; text-transform:uppercase; color:rgba(185,195,201,0.4);
+  }
+
+  /* --- narrow windows: keep the ledger and the clipping apart --- */
+  @media (max-width: 1120px){
+    #budget{ width:292px; left:22px; padding:15px 17px; }
+    #clipping{ width:272px; right:22px; padding:16px 18px 19px; }
+    #clipping h3{ font-size:21px; }
+    #clipping .body{ font-size:12.5px; }
+  }
+  @media (max-width: 860px){
+    #clipping{ width:244px; top:80px; }
+    #budget{ width:268px; top:80px; }
+    /* !important beats the drop-in animation's fill state */
+    body.budgeting #clipping{ opacity:0.16 !important; }
+    #result{ width:min(430px, 90vw); }
+    #subtitle .line{ font-size:15px; }
+  }
+
+  /* --- act 2: government posters --- */
+  #act2{
+    position:absolute; inset:0; z-index:8;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(10,6,4,0.9);
+  }
+  #act2.on{ display:flex; }
+  #act2 .head{ text-align:center; margin-bottom:22px; }
+  #act2 h2{
+    margin:0; font-family:"Playfair Display", Georgia, serif;
+    font-size:34px; color:var(--cream); letter-spacing:0.01em;
+  }
+  #act2 .instruction{
+    margin:7px 0 0; font-size:12px; letter-spacing:0.24em;
+    text-transform:uppercase; color:var(--cream-dim);
+  }
+  #act2 .count{
+    margin-top:5px; font-size:10px; letter-spacing:0.22em;
+    text-transform:uppercase; color:rgba(205,187,151,0.5);
+  }
+  #posters{
+    display:flex; gap:16px; flex-wrap:wrap; justify-content:center;
+    padding:0 20px; max-width:1100px;
+  }
+  .poster{
+    position:relative; width:188px; padding:0 0 14px;
+    display:flex; flex-direction:column; text-align:left;
+    font-family:"Special Elite", monospace;
+    background:#e6d9ba; color:#241a12;
+    border:none; border-bottom:5px solid rgba(0,0,0,0.35);
+    box-shadow:0 10px 26px rgba(0,0,0,0.6);
+    transition:transform 160ms cubic-bezier(.22,1,.36,1), box-shadow 160ms ease, filter 300ms ease;
+  }
+  .poster:hover:not(:disabled){ transform:translateY(-7px) rotate(-0.6deg); box-shadow:0 18px 34px rgba(0,0,0,0.7); }
+  .poster:disabled{ cursor:default; filter:grayscale(0.75) brightness(0.62); transform:none; }
+  .poster .art{
+    display:block; padding:16px 0 12px;
+    background:var(--pc); color:#efe3c8;
+  }
+  .poster .art svg{ display:block; width:76%; margin:0 auto; fill:currentColor; }
+  .poster .short{
+    display:block; padding:9px 13px 0;
+    font-family:"Playfair Display", Georgia, serif;
+    font-weight:700; font-size:20px; line-height:1.08; color:#241a12;
+  }
+  .poster .name{
+    display:block; padding:3px 13px 0;
+    font-size:9.5px; line-height:1.4; color:#6b543a;
+  }
+  .poster .year{
+    display:block; padding:7px 13px 0;
+    font-size:10px; letter-spacing:0.2em; color:var(--pc);
+  }
+  .poster .desc{
+    display:block; padding:7px 13px 0;
+    font-size:11.5px; line-height:1.5; color:#3c2d1f;
+  }
+  .poster .target{
+    display:block; margin:11px 13px 0; padding-top:8px;
+    border-top:1px solid rgba(90,66,40,0.3);
+    font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:#8c3b2b;
+  }
+  .poster .stamp{
+    position:absolute; right:-6px; top:10px;
+    padding:3px 9px; font-size:9px; letter-spacing:0.2em; text-transform:uppercase;
+    color:#efe3c8; background:#5e3124; transform:rotate(3deg);
+    box-shadow:0 2px 8px rgba(0,0,0,0.5);
+    display:none;
+  }
+  .poster.chosen .stamp{ display:block; }
+
+  /* --- ending score card --- */
+  #ending{
+    position:absolute; inset:0; z-index:8;
+    display:none; align-items:center; justify-content:center;
+    padding:28px 20px;
+    background:rgba(10,6,4,0.9);
+    overflow-y:auto;
+  }
+  #ending.on{ display:flex; }
+  #ending .card{
+    position:relative; width:min(560px, 94vw); padding:28px 32px 30px;
+  }
+  #ending h2{
+    margin:0; text-align:center;
+    font-family:"Playfair Display", Georgia, serif; font-size:36px; color:#241a12;
+  }
+  #ending .lead{
+    margin:4px 0 20px; text-align:center;
+    font-size:12.5px; line-height:1.6; color:#6b543a;
+  }
+  #ending .sec{ margin-top:18px; }
+  #ending .sec > .k{
+    display:block; margin-bottom:7px; padding-bottom:5px;
+    border-bottom:2px solid rgba(60,44,30,0.5);
+    font-size:9.5px; letter-spacing:0.24em; text-transform:uppercase; color:#6b543a;
+  }
+  #ending .wb{ display:flex; align-items:center; gap:12px; }
+  #ending .wb .num{
+    font-family:"Playfair Display", Georgia, serif; font-size:34px; color:#241a12; line-height:1;
+  }
+  #ending .wb .band{ font-size:12.5px; line-height:1.55; color:#3c2d1f; }
+  #ending ul{ list-style:none; margin:0; padding:0; }
+  #ending li{
+    display:flex; gap:9px; align-items:baseline;
+    padding:6px 0; border-bottom:1px solid rgba(90,66,40,0.22);
+    font-size:12.5px; color:#3c2d1f;
+  }
+  #ending li .mark{ width:13px; flex:none; text-align:center; }
+  #ending li .via{ margin-left:auto; flex:none; font-size:10px; letter-spacing:0.1em; color:#7a5c3c; }
+  #ending li.ok .mark{ color:#4a6134; }
+  #ending li.no .mark{ color:#8c3b2b; }
+  #ending li.struck .mark{ color:#8c3b2b; }
+  #ending .lasted{
+    margin:0; padding:11px 13px;
+    background:rgba(76,97,52,0.16); border-left:3px solid #4a6134;
+    font-size:12.5px; line-height:1.6; color:#2f3f22;
+  }
+  #ending .q{ margin:0 0 9px; font-size:13.5px; line-height:1.62; color:#2b2118; }
+  #ending textarea{
+    width:100%; min-height:92px; resize:vertical;
+    padding:10px 11px;
+    font-family:"Special Elite", monospace; font-size:12.5px; line-height:1.6;
+    color:#2b2118; background:rgba(255,252,240,0.5);
+    border:1px solid rgba(90,66,40,0.45); border-radius:0;
+  }
+  #ending textarea:focus{ outline:2px solid rgba(140,59,43,0.45); outline-offset:-1px; }
+  #ending textarea::placeholder{ color:rgba(107,84,58,0.6); }
+
+  /* --- act transition card --- */
+  #transition{
+    position:absolute; inset:0; z-index:8;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(10,6,4,0.93);
+  }
+  #transition.on{ display:flex; }
+  #transition .over{
+    font-size:12px; letter-spacing:0.36em; text-transform:uppercase;
+    color:var(--cream-dim); margin-bottom:14px;
+  }
+  #transition h2{
+    margin:0; max-width:760px; text-align:center;
+    font-family:"Playfair Display", Georgia, serif;
+    font-size:46px; line-height:1.14; color:var(--cream);
+    text-shadow:0 4px 40px rgba(0,0,0,0.9);
+  }
+  #transition p{
+    max-width:620px; text-align:center; font-size:15px; line-height:1.7;
+    color:var(--cream-dim); margin:18px 0 0;
+  }
+  #transition p{
+    margin-top:18px; font-size:11px; letter-spacing:0.3em;
+    text-transform:uppercase; color:rgba(205,187,151,0.5);
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="scene"></canvas>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+  <div id="flicker"></div>
+  <div id="label"></div>
+  <div id="hint">D — skip to transition &nbsp;·&nbsp; G — room controls</div>
+  <div id="dev">
+    <h2>Room state</h2>
+    <div class="row"><span class="k">setFood</span>
+      <button data-fn="setFood" data-arg="true">on</button>
+      <button data-fn="setFood" data-arg="false">off</button></div>
+    <div class="row"><span class="k">setStoveLit</span>
+      <button data-fn="setStoveLit" data-arg="true">lit</button>
+      <button data-fn="setStoveLit" data-arg="false">cold</button></div>
+    <div class="row"><span class="k">setJarCoins</span>
+      <button data-fn="setJarCoins" data-arg="0">0</button>
+      <button data-fn="setJarCoins" data-arg="0.35">.35</button>
+      <button data-fn="setJarCoins" data-arg="0.7">.7</button>
+      <button data-fn="setJarCoins" data-arg="1">1</button></div>
+    <div class="row"><span class="k">setEvictionNotice</span>
+      <button data-fn="setEvictionNotice" data-arg="true">post</button>
+      <button data-fn="setEvictionNotice" data-arg="false">clear</button></div>
+    <div class="row"><span class="k">setRadioGlow</span>
+      <button data-fn="setRadioGlow" data-arg="true">on</button>
+      <button data-fn="setRadioGlow" data-arg="false">off</button></div>
+    <div class="row"><span class="k">focusCamera</span>
+      <button data-fn="focusCamera" data-arg="'table'">table</button>
+      <button data-fn="focusCamera" data-arg="'stove'">stove</button>
+      <button data-fn="focusCamera" data-arg="'jar'">jar</button>
+      <button data-fn="focusCamera" data-arg="'door'">door</button>
+      <button data-fn="focusCamera" data-arg="'radio'">radio</button>
+      <button data-fn="focusCamera" data-arg="null">orbit</button></div>
+  </div>
+  <!-- ===================== GAME UI ===================== -->
+  <div id="topbar" class="ui">
+    <div class="stat">
+      <span class="k" id="uiWeekLabel">Week</span>
+      <span class="v" id="uiWeek">&ndash;</span>
+    </div>
+    <div class="stat">
+      <span class="k" id="uiCashLabel">Cash on hand</span>
+      <span class="v" id="uiCash">$0</span>
+    </div>
+    <div class="stat" id="wellStat">
+      <span class="k" id="uiWellLabel">Family Wellbeing</span>
+      <span class="v" id="wellRow">
+        <span class="meter"><span class="meter-fill" id="uiWellFill"></span><span class="meter-ticks"></span></span>
+        <span id="uiWell">100</span>
+      </span>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon" id="btnMuteMusic" title="Music and sound effects"></button>
+    <button class="icon" id="btnMuteVoice" title="Spoken narration"></button>
+    <button class="icon" id="btnSkip" title="Skip the line being spoken"></button>
+  </div>
+
+  <div id="clipping" class="paper">
+    <div class="kicker"></div>
+    <h3></h3>
+    <div class="rule"></div>
+    <div class="body"></div>
+    <div class="dateline"></div>
+  </div>
+
+  <div id="budget" class="paper">
+    <div class="ledgerline"></div>
+    <h2></h2>
+    <p class="note"></p>
+    <div id="needRows"></div>
+    <div class="totals"><span class="left"></span><span id="uiUnassigned">$0</span></div>
+    <button class="btn" id="btnEndWeek"></button>
+  </div>
+
+  <div id="result" class="paper">
+    <h2></h2>
+    <div class="week"></div>
+    <ul></ul>
+    <div class="swing"><span>Family Wellbeing</span><span class="val"></span></div>
+    <button class="btn" id="btnResultNext"></button>
+  </div>
+
+  <div id="subtitle" class="ui">
+    <div class="block"><div class="tag"></div><div class="line"></div></div>
+    <div id="advance"></div>
+  </div>
+
+  <div id="intro"><p></p></div>
+
+  <div id="crisis">
+    <div class="text"></div>
+    <svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+      <!-- rail yard horizon -->
+      <rect x="0" y="300" width="1200" height="120" fill="#10161c"/>
+      <g fill="#080c10">
+        <!-- shacks of scrap wood and tar paper -->
+        <polygon points="40,300 40,228 118,206 196,236 196,300"/>
+        <rect x="150" y="248" width="20" height="26" fill="#1c232a"/>
+        <polygon points="214,300 214,250 286,232 352,258 352,300"/>
+        <polygon points="300,232 312,170 320,170 320,234" />
+        <polygon points="372,300 372,214 452,190 534,222 534,300"/>
+        <rect x="470" y="238" width="24" height="34" fill="#1c232a"/>
+        <polygon points="556,300 556,246 626,224 692,250 692,300"/>
+        <polygon points="640,224 650,166 658,166 658,226"/>
+        <polygon points="712,300 712,222 798,198 876,230 876,300"/>
+        <polygon points="896,300 896,254 962,234 1026,258 1026,300"/>
+        <rect x="978" y="266" width="18" height="22" fill="#1c232a"/>
+        <polygon points="1044,300 1044,232 1120,210 1176,238 1176,300"/>
+      </g>
+      <!-- thin smoke -->
+      <g stroke="#232c33" stroke-width="3" fill="none" opacity="0.8">
+        <path d="M316 170 q -10 -26 4 -46 q 12 -18 2 -40"/>
+        <path d="M654 166 q -11 -24 3 -44 q 13 -19 1 -38"/>
+      </g>
+      <!-- figures -->
+      <g fill="#070a0d">
+        <ellipse cx="258" cy="300" rx="7" ry="4"/>
+        <rect x="255" y="272" width="6" height="28"/><circle cx="258" cy="268" r="5"/>
+        <ellipse cx="742" cy="300" rx="7" ry="4"/>
+        <rect x="739" y="274" width="6" height="26"/><circle cx="742" cy="270" r="5"/>
+        <ellipse cx="760" cy="300" rx="5" ry="3"/>
+        <rect x="758" y="282" width="5" height="18"/><circle cx="760" cy="278" r="4"/>
+      </g>
+    </svg>
+    <div class="cap"></div>
+  </div>
+
+  <div id="transition">
+    <div class="over"></div>
+    <h2></h2>
+    <p></p>
+  </div>
+
+  <div id="act2">
+    <div class="head">
+      <h2></h2>
+      <p class="instruction"></p>
+      <div class="count"></div>
+    </div>
+    <div id="posters"></div>
+  </div>
+
+  <div id="ending">
+    <div class="card paper">
+      <h2></h2>
+      <p class="lead"></p>
+
+      <div class="sec"><span class="k" data-k="wellbeing"></span>
+        <div class="wb"><span class="num"></span><span class="band"></span></div>
+      </div>
+
+      <div class="sec"><span class="k" data-k="problems"></span>
+        <ul></ul>
+      </div>
+
+      <div class="sec"><span class="k" data-k="lasted"></span>
+        <p class="lasted"></p>
+      </div>
+
+      <div class="sec"><span class="k" data-k="reflection"></span>
+        <p class="q"></p>
+        <textarea id="reflectionBox" rows="4"></textarea>
+      </div>
+
+      <button class="btn" id="btnPlayAgain"></button>
+    </div>
+  </div>
+
+  <div id="title">
+    <h1></h1>
+    <div class="year"></div>
+    <div class="rule"></div>
+    <p class="sub"></p>
+    <button class="btn" id="btnBegin"></button>
+    <div class="subject"></div>
+  </div>
+
+  <div id="loading">Winding the reel&hellip;</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   LESSON
+   All lesson content lives here so other lessons can be
+   swapped in. The game logic below reads only from this object
+   and never hard-codes a number, a name or a line of text.
+   ============================================================ */
+const LESSON = {
+
+  id: "us-history/great-depression/new-deal",
+  subject: "US History",
+
+  title: {
+    name: "Hard Times",
+    year: "1932",
+    full: "Hard Times: 1932",
+    subtitle: "A family. A nation. A choice.",
+    begin: "Begin"
+  },
+
+  family: { surname: "Miller", city: "Detroit" },
+
+  /* shown one line at a time, click to advance */
+  intro: [
+    "Detroit, 1932. Three years ago, the stock market crashed. Now nearly one in four American workers has no job.",
+    "You are the Miller family. Every week, there is less money — and the same bills.",
+    "Your job: keep this family together."
+  ],
+
+  /* the three weekly needs. `object` names a hotspot in the room. */
+  needs: [
+    {
+      key: "rent", label: "Rent", cost: 5, object: "door",
+      hint: "The landlord takes the week in full or not at all.",
+      bonus: 5, penalty: 20,
+      allOrNothing: true,
+      paidLine: "The rent is paid. The door stays yours another week.",
+      unpaidLine: "The rent went unpaid. A notice is tacked to the door."
+    },
+    {
+      key: "food", label: "Food", cost: 7, object: "table",
+      hint: "Bread, beans, a little milk.",
+      bonus: 5, penalty: 25,
+      paidLine: "There is supper on the table tonight.",
+      partialLine: "Thin soup, stretched to go round. Nobody leaves the table full.",
+      unpaidLine: "The bowls stay empty. The children go to bed hungry."
+    },
+    {
+      key: "heat", label: "Heat", cost: 3, object: "stove",
+      hint: "Coal for the stove.",
+      bonus: 5, penalty: 15,
+      paidLine: "The stove is lit. The kitchen holds its warmth.",
+      partialLine: "A small fire, banked low, out well before morning.",
+      unpaidLine: "The stove sits cold. Everyone sleeps in their coats."
+    }
+  ],
+
+  wellbeing: {
+    label: "Family Wellbeing",
+    start: 80, min: 0, max: 100,
+    /* below this at the end of the act, the family loses the house */
+    crisis: 30
+  },
+
+  savings: {
+    label: "To the bank",
+    hint: "Deposited on Grand River Avenue. The jar on the shelf keeps the count.",
+    max: 5
+  },
+
+  ui: {
+    week: "Week", cash: "Cash on hand",
+    unassigned: "Unassigned", paid: "Paid", short: "Short",
+    endWeek: "End Week", continueLabel: "Continue",
+    atCeiling: "at the ceiling", atFloor: "at the floor",
+    arrears: "Still behind from an earlier week. The notice stays on the door.",
+    clickHint: "Click to continue",
+    skipHint: "Speaking \u2014 press Skip",
+    fromTheRecord: "From the record",
+    music: "Music", voice: "Voice", skip: "Skip",
+    budgetTitle: "The Week's Ledger",
+    budgetNote: "Click the door, the table or the stove to pay a need in full.",
+    resultTitle: "End of the Week"
+  },
+
+  act1: {
+    name: "Act One",
+    weeks: [
+
+      /* ---------------- WEEK 1 ---------------- */
+      {
+        n: 1,
+        income: 17,
+        incomeLine: "Father brings home $17 in wages from the Ford plant.",
+        clipping: {
+          kicker: "The Detroit Free Press",
+          headline: "HOURS TO BE CUT",
+          body: "Father's factory will cut his hours in half next week.",
+          dateline: "Week One"
+        },
+        savingsAllowed: true,
+        beats: [
+          { line: "A full week's pay. It will not come again.", radio: true },
+          { line: "Anything you do not spend, Father can carry to the bank on Grand River Avenue.", focus: "jar" }
+        ]
+      },
+
+      /* ---------------- WEEK 2 ---------------- */
+      {
+        n: 2,
+        income: 9,
+        incomeLine: "Half hours, half pay. Father brings home $9.",
+        clipping: {
+          kicker: "Extra Edition",
+          headline: "THE BANK CLOSES ITS DOORS!",
+          body: "Depositors gathered on the sidewalk at dawn. The windows stayed shuttered.",
+          dateline: "Week Two"
+        },
+        savingsAllowed: false,
+        beats: [
+          { line: "The bank on Grand River Avenue did not open this morning.", radio: true, focus: "jar" },
+          { line: "Whatever you deposited is gone. The jar keeps the count, and the count is nothing.", action: "emptyJar", focus: "jar" },
+          {
+            line: "Between 1930 and 1933, about 9,000 American banks failed. When a bank failed, families simply lost their savings.",
+            fact: true, voice: "history" 
+          }
+        ]
+      },
+
+      /* ---------------- WEEK 3 ---------------- */
+      {
+        n: 3,
+        income: 9,
+        incomeLine: "Another half week. $9.",
+        clipping: [
+          {
+            cond: "rentOwed",
+            kicker: "At the door",
+            headline: "THE LANDLORD KNOCKS",
+            body: "Three knocks, slow and even. He waits on the step with his book open, and the Millers are in it.",
+            dateline: "Week Three"
+          },
+          {
+            kicker: "At the door",
+            headline: "THE LANDLORD CALLS",
+            body: "He marks the Millers paid and carries on down the street. Not every door is paid up this week.",
+            dateline: "Week Three"
+          }
+        ],
+        savingsAllowed: false,
+        beats: [
+          { cond: "rentOwed", line: "Three knocks at the door. He has his book open, and your name is in it.", focus: "door", action: "knock" },
+          { cond: "rentClear", line: "Two knocks, and a nod. He marks the Millers paid and goes on to the next door.", focus: "door" },
+          {
+            line: "Behind on rent, many families were evicted. Some built shacks from scrap wood in camps people bitterly named 'Hoovervilles,' after President Hoover.",
+            fact: true, voice: "history" 
+          }
+        ]
+      }
+    ],
+
+    /* shown when wellbeing falls below the crisis line by the end of the act */
+    crisisScene: {
+      title: "Hooverville",
+      lines: [
+        "The kitchen goes dark and cold.",
+        "By the rail yard, there is a camp of scrap wood and tar paper. The Millers are not the first to arrive."
+      ]
+    },
+
+    closing: "Three weeks. The arithmetic does not work, and no amount of care makes it work."
+  },
+
+  /* ---------------- TRANSITION ---------------- */
+  transition: {
+    lines: [
+      "March 1933. A new president speaks to the nation by radio, in what would become known as his 'fireside chats.'"
+    ],
+    card: {
+      over: "Now YOU are",
+      name: "President Franklin D. Roosevelt",
+      under: "March 1933"
+    }
+  },
+
+  /* ---------------- ACT 2 ---------------- */
+  act2: {
+    name: "Act Two",
+    heading: "The New Deal",
+    instruction: "Choose three programs.",
+    counter: "Chosen",
+    pickCount: 3,
+
+    /* the problems of 1932, named once and referred to by key */
+    problems: {
+      savings: "Savings wiped out",
+      jobs:    "No work to be had",
+      elderly: "Old age with no income",
+      farms:   "Farm prices collapsed"
+    },
+
+    programs: [
+      {
+        key: "fdic",
+        short: "FDIC",
+        name: "Federal Deposit Insurance Corporation",
+        year: "1933",
+        desc: "Insures the money people keep in banks.",
+        problem: "savings",
+        solves: true,
+        reveal: "After 1933, if a bank failed, your savings were protected. The FDIC still insures deposits today.",
+        effect: "refillJar",
+        focus: "jar",
+        colour: "#2f5d52",
+        art: '<svg viewBox="0 0 120 80"><rect x="8" y="62" width="104" height="8"/><polygon points="60,10 110,32 10,32"/><rect x="18" y="36" width="10" height="24"/><rect x="38" y="36" width="10" height="24"/><rect x="58" y="36" width="10" height="24"/><rect x="78" y="36" width="10" height="24"/><rect x="94" y="36" width="10" height="24"/></svg>'
+      },
+      {
+        key: "ccc",
+        short: "CCC",
+        name: "Civilian Conservation Corps",
+        year: "1933",
+        desc: "Work in the forests and parks for young men.",
+        problem: "jobs",
+        solves: true,
+        reveal: "Young men planted trees and built parks for $30 a month, and $25 of it went home to their families.",
+        effect: "food",
+        focus: "table",
+        colour: "#3d5a34",
+        art: '<svg viewBox="0 0 120 80"><rect x="0" y="72" width="120" height="8"/><rect x="36" y="56" width="6" height="17"/><polygon points="39,6 54,28 24,28"/><polygon points="39,20 58,44 20,44"/><polygon points="39,34 62,60 16,60"/><rect x="86" y="60" width="5" height="13"/><polygon points="88,24 99,42 77,42"/><polygon points="88,36 103,62 73,62"/></svg>'
+      },
+      {
+        key: "wpa",
+        short: "WPA",
+        name: "Works Progress Administration",
+        year: "1935",
+        desc: "Public wages for public building.",
+        problem: "jobs",
+        solves: true,
+        reveal: "Millions of people were hired to build roads, bridges and schools.",
+        effect: "heat",
+        focus: "stove",
+        colour: "#2f4a63",
+        art: '<svg viewBox="0 0 120 80"><rect x="0" y="24" width="120" height="8"/><path d="M14 70 A 46 38 0 0 1 106 70 L 94 70 A 34 28 0 0 0 26 70 Z"/><rect x="2" y="32" width="9" height="38"/><rect x="109" y="32" width="9" height="38"/><rect x="34" y="32" width="6" height="13"/><rect x="57" y="32" width="6" height="9"/><rect x="80" y="32" width="6" height="13"/><rect x="0" y="70" width="120" height="10"/></svg>'
+      },
+      {
+        key: "ssa",
+        short: "Social Security",
+        name: "Social Security Act",
+        year: "1935",
+        desc: "A pension for Americans too old to work.",
+        problem: "elderly",
+        solves: true,
+        reveal: "Support for older Americans. It still exists today.",
+        effect: "chair",
+        focus: null,
+        colour: "#8a6a24",
+        art: '<svg viewBox="0 0 120 80"><circle cx="60" cy="34" r="19"/><g><rect x="58" y="2" width="4" height="12"/><rect x="58" y="54" width="4" height="12"/><rect x="28" y="32" width="12" height="4"/><rect x="80" y="32" width="12" height="4"/><rect x="34" y="10" width="4" height="12" transform="rotate(-45 36 16)"/><rect x="82" y="10" width="4" height="12" transform="rotate(45 84 16)"/></g><rect x="0" y="70" width="120" height="10"/></svg>'
+      },
+      {
+        key: "aaa",
+        short: "AAA",
+        name: "Agricultural Adjustment Act",
+        year: "1933",
+        desc: "Pays farmers to plant fewer acres.",
+        problem: "farms",
+        solves: false,
+        reveal: "Paid farmers to grow less so crop prices would rise — while some families went hungry. The Supreme Court struck it down in 1936.",
+        effect: "none",
+        focus: null,
+        colour: "#7a3f2a",
+        art: '<svg viewBox="0 0 120 80"><path d="M60 72 L60 28" stroke-width="5" stroke="currentColor" fill="none"/><path d="M60 40 q -18 -8 -22 -26 q 18 2 22 20 Z"/><path d="M60 52 q 18 -8 22 -26 q -18 2 -22 20 Z"/><path d="M60 30 q -14 -6 -17 -22 q 14 2 17 16 Z"/><rect x="0" y="72" width="120" height="8"/></svg>'
+      }
+    ]
+  },
+
+  /* ---------------- ENDING ---------------- */
+  ending: {
+    title: "1940",
+    lead: "Eight years on. Not fixed — but held together.",
+    wellbeingLabel: "Family Wellbeing, 1932",
+    problemsLabel: "Problems you took on",
+    solvedMark: "addressed",
+    unsolvedMark: "left standing",
+    struckMark: "struck down, 1936",
+    lastedLabel: "What lasted",
+    lasted: "FDIC and Social Security are still with us today.",
+    reflectionLabel: "One last question",
+    reflection: "The government stepped in to help families. Where should government help — and where should families decide for themselves?",
+    reflectionPlaceholder: "Write your answer here. Nothing is saved — this is for you.",
+    playAgain: "Play again",
+    /* read out by wellbeing, highest band first */
+    bands: [
+      { min: 70, text: "The Millers kept the house, and kept each other." },
+      { min: 40, text: "The Millers held on, thinner and colder than before." },
+      { min: 0,  text: "The Millers lost the house. They were far from alone." }
+    ]
+  }
+};
+
+/* ============================================================
+   PALETTE — 1930s sepia: warm browns, faded cream, muted greens
+   ============================================================ */
+const C = {
+  floor:      0x3c2a19,
+  floorDark:  0x2c1e11,
+  wall:       0x5f5238,
+  wallShadow: 0x443a28,
+  ceiling:    0x3a3023,
+  wood:       0x5b4028,
+  woodDark:   0x3e2c1b,
+  iron:       0x2a2622,
+  ironWarm:   0x3a2f26,
+  cream:      0xefe3c8,
+  paper:      0xe3d5b4,
+  bread:      0xa8763f,
+  crust:      0x81552a,
+  bowl:       0xb9ae8e,
+  moss:       0x6c7a5b,
+  rust:       0x8c3b2b,
+  brass:      0xb08d4a,
+  coin:       0xa9a08a,
+  glass:      0xaebfae,
+  daylight:   0xc9d2c6,
+  paneLight:  0xf4f7ee,
+  fire:       0xff8c3a,
+  cold:       0x6a8296
+};
+
+const ROOM = { hx: 4.0, hz: 3.5, h: 3.2 };
+
+/* ============================================================
+   RENDERER / SCENE / CAMERA
+   ============================================================ */
+const canvas   = document.getElementById("scene");
+const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x120c08);
+scene.fog = new THREE.FogExp2(0x15100c, 0.085);
+
+const camera = new THREE.PerspectiveCamera(
+  54, window.innerWidth / window.innerHeight, 0.1, 100
+);
+
+/* ============================================================
+   MATERIAL + GEOMETRY HELPERS
+   Every call returns a fresh material so hover glow on one
+   object never leaks into another.
+   ============================================================ */
+function std(color, opts) {
+  return new THREE.MeshStandardMaterial(Object.assign({
+    color: color, roughness: 0.86, metalness: 0.0
+  }, opts || {}));
+}
+function box(w, h, d, mat, x, y, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x || 0, y || 0, z || 0);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function cyl(rt, rb, h, seg, mat, x, y, z) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 20), mat);
+  m.position.set(x || 0, y || 0, z || 0);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
+/* canvas-drawn textures — no external assets */
+function makeCanvas(w, h) {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  return { c: c, g: c.getContext("2d") };
+}
+function toTex(c) {
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  t.encoding = THREE.sRGBEncoding;
+  return t;
+}
+
+function calendarTexture() {
+  const { c, g } = makeCanvas(256, 330);
+  g.fillStyle = "#e8dbbd"; g.fillRect(0, 0, 256, 330);
+  g.fillStyle = "#8c3b2b"; g.fillRect(0, 0, 256, 86);
+  g.fillStyle = "#e8dbbd";
+  g.textAlign = "center";
+  g.font = "bold 46px Georgia, serif"; g.fillText("1932", 128, 48);
+  g.font = "20px Georgia, serif";      g.fillText("OCTOBER", 128, 74);
+  g.strokeStyle = "rgba(60,44,30,0.45)"; g.lineWidth = 1;
+  g.fillStyle = "#3c2c1e"; g.font = "15px Georgia, serif";
+  let day = 1;
+  for (let r = 0; r < 5; r++) {
+    for (let col = 0; col < 7; col++) {
+      const x = 10 + col * 34, y = 100 + r * 44;
+      g.strokeRect(x, y, 34, 44);
+      if (day <= 31) { g.fillText(String(day), x + 17, y + 28); day++; }
+    }
+  }
+  // two pencil crosses over rent days
+  g.strokeStyle = "#8c3b2b"; g.lineWidth = 2.5;
+  [[10 + 0 * 34, 100 + 0 * 44]].forEach(function (p) {
+    g.beginPath();
+    g.moveTo(p[0] + 6, p[1] + 8); g.lineTo(p[0] + 28, p[1] + 36);
+    g.moveTo(p[0] + 28, p[1] + 8); g.lineTo(p[0] + 6, p[1] + 36);
+    g.stroke();
+  });
+  // paper staining
+  g.fillStyle = "rgba(120,86,48,0.10)";
+  for (let i = 0; i < 40; i++) {
+    g.beginPath();
+    g.arc(Math.random() * 256, Math.random() * 330, 4 + Math.random() * 16, 0, 6.3);
+    g.fill();
+  }
+  return toTex(c);
+}
+
+function noticeTexture() {
+  const { c, g } = makeCanvas(256, 320);
+  g.fillStyle = "#ded0ad"; g.fillRect(0, 0, 256, 320);
+  g.strokeStyle = "#5b4530"; g.lineWidth = 4; g.strokeRect(8, 8, 240, 304);
+  g.textAlign = "center"; g.fillStyle = "#6e1f16";
+  g.font = "bold 30px Georgia, serif"; g.fillText("NOTICE", 128, 70);
+  g.font = "bold 22px Georgia, serif"; g.fillText("TO VACATE", 128, 100);
+  g.fillStyle = "#3c2c1e"; g.font = "13px Georgia, serif";
+  const lines = ["RENT PAST DUE", "", "THE OCCUPANTS OF", "THESE PREMISES ARE",
+                 "DIRECTED TO QUIT", "AND SURRENDER", "WITHIN SEVEN DAYS", "", "BY ORDER OF THE", "LANDLORD"];
+  lines.forEach(function (ln, i) { g.fillText(ln, 128, 142 + i * 17); });
+  g.fillStyle = "rgba(110,31,22,0.9)";
+  g.font = "bold 16px Georgia, serif"; g.fillText("OCT. 1932", 128, 304);
+  return toTex(c);
+}
+
+function emberTexture() {
+  const { c, g } = makeCanvas(128, 96);
+  g.fillStyle = "#1a0d05"; g.fillRect(0, 0, 128, 96);
+  const grad = g.createRadialGradient(64, 72, 4, 64, 72, 78);
+  grad.addColorStop(0.0, "#ff9a3c");
+  grad.addColorStop(0.35, "#c9451a");
+  grad.addColorStop(0.7, "#601c08");
+  grad.addColorStop(1.0, "#140902");
+  g.fillStyle = grad; g.fillRect(0, 0, 128, 96);
+  // coals
+  for (let i = 0; i < 60; i++) {
+    const x = 10 + Math.random() * 108, y = 40 + Math.random() * 52;
+    const r = 2 + Math.random() * 7;
+    g.fillStyle = Math.random() < 0.3 ? "rgba(255,182,88,0.8)" : "rgba(72,26,10,0.7)";
+    g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fill();
+  }
+  // log bars
+  g.fillStyle = "rgba(40,18,8,0.85)";
+  g.fillRect(8, 56, 112, 7);
+  g.fillRect(16, 70, 96, 6);
+  return toTex(c);
+}
+
+function dialTexture() {
+  const { c, g } = makeCanvas(256, 96);
+  g.fillStyle = "#1d1711"; g.fillRect(0, 0, 256, 96);
+  g.strokeStyle = "#d9c48a"; g.lineWidth = 2;
+  for (let i = 0; i < 16; i++) {
+    const x = 14 + i * 15.2;
+    g.beginPath(); g.moveTo(x, 58); g.lineTo(x, i % 4 === 0 ? 30 : 44); g.stroke();
+  }
+  g.fillStyle = "#d9c48a"; g.textAlign = "center";
+  g.font = "16px Georgia, serif"; g.fillText("5  7  9  11  13  15", 128, 82);
+  g.strokeStyle = "#8c3b2b"; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(96, 22); g.lineTo(96, 66); g.stroke();
+  return toTex(c);
+}
+
+/* ============================================================
+   ROOM SHELL
+   ============================================================ */
+const room = new THREE.Group();
+scene.add(room);
+
+// floor — planks
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(ROOM.hx * 2, ROOM.hz * 2),
+  std(C.floor, { roughness: 0.95 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+room.add(floor);
+for (let i = -ROOM.hx + 0.5; i < ROOM.hx; i += 0.62) {
+  const plank = box(0.035, 0.012, ROOM.hz * 2, std(C.floorDark, { roughness: 1 }), i, 0.008, 0);
+  plank.castShadow = false;
+  room.add(plank);
+}
+
+// ceiling
+const ceil = new THREE.Mesh(
+  new THREE.PlaneGeometry(ROOM.hx * 2, ROOM.hz * 2),
+  std(C.ceiling, { roughness: 1 })
+);
+ceil.rotation.x = Math.PI / 2;
+ceil.position.y = ROOM.h;
+room.add(ceil);
+
+function wall(w, h, x, y, z, ry, color) {
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, h),
+    std(color, { roughness: 0.98, side: THREE.DoubleSide })
+  );
+  m.position.set(x, y, z);
+  m.rotation.y = ry;
+  m.receiveShadow = true;
+  room.add(m);
+  return m;
+}
+wall(ROOM.hx * 2, ROOM.h,  0, ROOM.h / 2, -ROOM.hz, 0,              C.wall);        // north (window)
+wall(ROOM.hx * 2, ROOM.h,  0, ROOM.h / 2,  ROOM.hz, Math.PI,        C.wallShadow);  // south
+wall(ROOM.hz * 2, ROOM.h, -ROOM.hx, ROOM.h / 2, 0,  Math.PI / 2,    C.wallShadow);  // west (door)
+wall(ROOM.hz * 2, ROOM.h,  ROOM.hx, ROOM.h / 2, 0, -Math.PI / 2,    C.wall);        // east (shelf)
+
+// baseboards
+[[0, -ROOM.hz + 0.02, ROOM.hx * 2, 0.06],
+ [0,  ROOM.hz - 0.02, ROOM.hx * 2, 0.06]].forEach(function (b) {
+  room.add(box(b[2], 0.16, b[3], std(C.woodDark), b[0], 0.08, b[1]));
+});
+[[-ROOM.hx + 0.02, 0], [ROOM.hx - 0.02, 0]].forEach(function (b) {
+  room.add(box(0.06, 0.16, ROOM.hz * 2, std(C.woodDark), b[0], 0.08, b[1]));
+});
+
+/* ============================================================
+   WINDOW (north wall) — pale light
+   ============================================================ */
+const windowGroup = new THREE.Group();
+windowGroup.position.set(1.5, 1.95, -ROOM.hz + 0.03);
+room.add(windowGroup);
+
+const paneMat = new THREE.MeshBasicMaterial({ color: C.paneLight });
+const pane = new THREE.Mesh(new THREE.PlaneGeometry(1.26, 1.36), paneMat);
+windowGroup.add(pane);
+
+const frameMat = std(C.woodDark, { roughness: 0.9 });
+windowGroup.add(box(1.5, 0.11, 0.1, frameMat, 0,  0.74, 0.03));
+windowGroup.add(box(1.5, 0.11, 0.1, frameMat, 0, -0.74, 0.03));
+windowGroup.add(box(0.11, 1.6, 0.1, frameMat, -0.70, 0, 0.03));
+windowGroup.add(box(0.11, 1.6, 0.1, frameMat,  0.70, 0, 0.03));
+windowGroup.add(box(1.4, 0.06, 0.07, frameMat, 0, 0, 0.04));   // mullion h
+windowGroup.add(box(0.06, 1.44, 0.07, frameMat, 0, 0, 0.04));  // mullion v
+windowGroup.add(box(1.66, 0.1, 0.26, std(C.wood), 0, -0.82, 0.12)); // sill
+
+// a soft haze of light where the window sits
+const haze = new THREE.Mesh(
+  new THREE.PlaneGeometry(2.6, 2.6),
+  new THREE.MeshBasicMaterial({
+    color: C.paneLight, transparent: true, opacity: 0.14, depthWrite: false
+  })
+);
+haze.position.set(0, -0.1, 0.22);
+windowGroup.add(haze);
+
+/* ============================================================
+   TABLE  —  bread loaf + bowls      (label: Food)
+   ============================================================ */
+const table = new THREE.Group();
+table.position.set(0.35, 0, 0.35);
+room.add(table);
+
+const topMat = std(C.wood, { roughness: 0.82 });
+table.add(box(2.3, 0.1, 1.35, topMat, 0, 0.78, 0));
+table.add(box(2.1, 0.12, 1.15, std(C.woodDark), 0, 0.68, 0));
+[[-1.0, -0.55], [1.0, -0.55], [-1.0, 0.55], [1.0, 0.55]].forEach(function (p) {
+  table.add(box(0.12, 0.73, 0.12, std(C.woodDark), p[0], 0.365, p[1]));
+});
+
+// cutting board + loaf
+const breadGroup = new THREE.Group();
+breadGroup.position.set(-0.45, 0.83, -0.1);
+table.add(breadGroup);
+breadGroup.add(box(0.72, 0.035, 0.42, std(0x8a6a44, { roughness: 0.9 }), 0, 0, 0));
+
+const loaf = new THREE.Mesh(new THREE.SphereGeometry(0.21, 24, 16), std(C.bread, { roughness: 0.95 }));
+loaf.scale.set(1.5, 0.78, 0.95);
+loaf.position.y = 0.14;
+loaf.castShadow = true;
+breadGroup.add(loaf);
+const crustTop = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), std(C.crust, { roughness: 1 }));
+crustTop.scale.set(1.45, 0.4, 0.9);
+crustTop.position.y = 0.22;
+breadGroup.add(crustTop);
+// a cut slice beside it
+const slice = box(0.19, 0.045, 0.26, std(C.bread, { roughness: 0.95 }), 0.31, 0.04, 0.06);
+slice.rotation.y = 0.22;
+breadGroup.add(slice);
+const sliceCrust = box(0.19, 0.012, 0.26, std(C.crust, { roughness: 1 }), 0.31, 0.065, 0.06);
+sliceCrust.rotation.y = 0.22;
+breadGroup.add(sliceCrust);
+
+// bowls
+function makeBowl(x, z) {
+  const g = new THREE.Group();
+  g.position.set(x, 0.83, z);
+  const shell = new THREE.Mesh(
+    new THREE.SphereGeometry(0.17, 24, 14, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+    std(C.bowl, { roughness: 0.7, side: THREE.DoubleSide })
+  );
+  shell.position.y = 0.11;
+  shell.castShadow = true; shell.receiveShadow = true;
+  g.add(shell);
+  g.add(cyl(0.085, 0.085, 0.012, 18, std(C.bowl, { roughness: 0.7 }), 0, 0.005, 0));
+  // stripe
+  const stripe = new THREE.Mesh(
+    new THREE.TorusGeometry(0.163, 0.009, 8, 28),
+    std(C.moss, { roughness: 0.6 })
+  );
+  stripe.rotation.x = Math.PI / 2;
+  stripe.position.y = 0.105;
+  g.add(stripe);
+  // contents (hidden when there is no food)
+  const mush = cyl(0.135, 0.12, 0.04, 20, std(0xa98f5e, { roughness: 0.95 }), 0, 0.075, 0);
+  g.add(mush);
+  g.userData.mush = mush;
+  table.add(g);
+  return g;
+}
+const bowlA = makeBowl(0.52, -0.2);
+const bowlB = makeBowl(0.78, 0.26);
+const bowlC = makeBowl(0.2, 0.33);
+
+/* ============================================================
+   STOVE  —  cast iron + chimney pipe     (label: Heat)
+   ============================================================ */
+const stove = new THREE.Group();
+stove.position.set(-2.55, 0, -2.45);
+stove.rotation.y = 0.18;
+room.add(stove);
+
+const ironMat = std(C.iron, { roughness: 0.55, metalness: 0.45 });
+stove.add(box(1.35, 0.9, 0.8, ironMat, 0, 0.58, 0));                // body
+stove.add(box(1.46, 0.08, 0.9, std(C.ironWarm, { roughness: 0.5, metalness: 0.5 }), 0, 1.06, 0)); // cooktop
+[[-0.56, -0.3], [0.56, -0.3], [-0.56, 0.3], [0.56, 0.3]].forEach(function (p) {
+  stove.add(cyl(0.05, 0.07, 0.14, 10, ironMat, p[0], 0.07, p[1]));   // legs
+});
+// burner rings
+[[-0.35, 0], [0.35, 0]].forEach(function (p) {
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.022, 8, 26), ironMat);
+  ring.rotation.x = Math.PI / 2;
+  ring.position.set(p[0], 1.11, p[1]);
+  stove.add(ring);
+});
+// firebox door + its glow
+const stoveDoor = box(0.62, 0.46, 0.06, std(C.iron, { roughness: 0.5, metalness: 0.5 }), -0.02, 0.6, 0.42);
+stove.add(stoveDoor);
+const emberMap = emberTexture();
+const fireMouth = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.46, 0.3),
+  new THREE.MeshBasicMaterial({ map: emberMap, color: 0xffffff, transparent: true, opacity: 0.95 })
+);
+fireMouth.position.set(-0.02, 0.6, 0.46);
+stove.add(fireMouth);
+stove.add(cyl(0.035, 0.035, 0.3, 10, std(C.brass, { roughness: 0.4, metalness: 0.7 }), 0.36, 0.6, 0.48)); // handle
+// ash drawer
+stove.add(box(0.7, 0.14, 0.05, ironMat, -0.02, 0.25, 0.42));
+
+// chimney pipe, elbow into the wall
+const pipeMat = std(0x3b332b, { roughness: 0.7, metalness: 0.3 });
+stove.add(cyl(0.11, 0.11, 1.5, 14, pipeMat, 0, 1.85, -0.15));
+const elbow = cyl(0.11, 0.11, 0.6, 14, pipeMat, 0, 2.58, -0.42);
+elbow.rotation.x = Math.PI / 2;
+stove.add(elbow);
+[1.25, 1.95].forEach(function (y) {
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.118, 0.015, 7, 18), pipeMat);
+  band.rotation.x = Math.PI / 2;
+  band.position.set(0, y, -0.15);
+  stove.add(band);
+});
+// kettle on the cooktop
+const kettle = new THREE.Group();
+kettle.position.set(0.35, 1.1, 0);
+stove.add(kettle);
+kettle.add(cyl(0.14, 0.16, 0.2, 18, std(0x5a5349, { roughness: 0.5, metalness: 0.5 }), 0, 0.11, 0));
+kettle.add(cyl(0.03, 0.05, 0.12, 10, std(0x5a5349, { roughness: 0.5, metalness: 0.5 }), 0.13, 0.17, 0));
+
+/* ============================================================
+   SHELF + SAVINGS JAR        (label: Savings)
+   ============================================================ */
+const shelf = box(0.38, 0.06, 1.7, std(C.wood), ROOM.hx - 0.2, 1.52, -1.1);
+room.add(shelf);
+[-1.75, -0.45].forEach(function (z) {
+  room.add(box(0.3, 0.1, 0.07, std(C.woodDark), ROOM.hx - 0.22, 1.44, z));
+});
+
+const jarGroup = new THREE.Group();
+jarGroup.position.set(ROOM.hx - 0.22, 1.55, -1.5);
+room.add(jarGroup);
+
+const glassMat = new THREE.MeshStandardMaterial({
+  color: C.glass, roughness: 0.08, metalness: 0.0,
+  transparent: true, opacity: 0.3
+});
+const jarBody = cyl(0.17, 0.165, 0.36, 24, glassMat, 0, 0.18, 0);
+jarBody.castShadow = false;
+jarGroup.add(jarBody);
+jarGroup.add(cyl(0.12, 0.155, 0.07, 24, glassMat, 0, 0.395, 0));          // neck
+const lid = cyl(0.13, 0.13, 0.05, 24, std(C.brass, { roughness: 0.45, metalness: 0.7 }), 0, 0.45, 0);
+jarGroup.add(lid);
+// paper label on the jar
+const jarLabel = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.172, 0.172, 0.14, 24, 1, true, -0.6, 1.2),
+  std(C.paper, { roughness: 1, side: THREE.DoubleSide })
+);
+jarLabel.position.y = 0.17;
+jarGroup.add(jarLabel);
+
+// coin stack inside the jar
+const coins = [];
+const COIN_MAX = 9;
+for (let i = 0; i < COIN_MAX; i++) {
+  const c = cyl(0.055 + Math.random() * 0.012, 0.055, 0.016, 16,
+    std(C.coin, { roughness: 0.35, metalness: 0.8 }),
+    (Math.random() - 0.5) * 0.11, 0.03 + i * 0.022, (Math.random() - 0.5) * 0.11);
+  c.rotation.set((Math.random() - 0.5) * 0.4, Math.random() * 3, (Math.random() - 0.5) * 0.4);
+  c.castShadow = false;
+  jarGroup.add(c);
+  coins.push(c);
+}
+
+// a few things keeping the jar company on the shelf
+room.add(cyl(0.1, 0.1, 0.26, 16, std(0x7d6a4d, { roughness: 0.9 }), ROOM.hx - 0.22, 1.68, -0.95));
+room.add(box(0.2, 0.26, 0.14, std(C.paper, { roughness: 1 }), ROOM.hx - 0.24, 1.68, -0.6));
+
+/* ============================================================
+   FRONT DOOR        (label: Rent)
+   ============================================================ */
+const door = new THREE.Group();
+door.position.set(-ROOM.hx + 0.06, 0, 0.9);
+door.rotation.y = Math.PI / 2;
+room.add(door);
+
+door.add(box(1.18, 2.32, 0.09, std(C.woodDark, { roughness: 0.9 }), 0, 1.16, 0));
+// panels
+[[-0.28, 1.72], [0.28, 1.72], [-0.28, 0.72], [0.28, 0.72]].forEach(function (p) {
+  door.add(box(0.44, 0.84, 0.03, std(0x5c432b, { roughness: 0.92 }), p[0], p[1], 0.05));
+});
+door.add(cyl(0.05, 0.05, 0.1, 14, std(C.brass, { roughness: 0.35, metalness: 0.8 }), 0.44, 1.08, 0.09));
+door.add(box(0.1, 0.18, 0.04, std(C.brass, { roughness: 0.4, metalness: 0.7 }), 0.44, 0.88, 0.07));
+// frame
+door.add(box(1.4, 0.12, 0.14, std(C.wood), 0, 2.38, 0));
+door.add(box(0.1, 2.5, 0.14, std(C.wood), -0.65, 1.25, 0));
+door.add(box(0.1, 2.5, 0.14, std(C.wood),  0.65, 1.25, 0));
+
+// eviction notice, tacked on — hidden by default
+const notice = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.44, 0.55),
+  new THREE.MeshStandardMaterial({ map: noticeTexture(), roughness: 1 })
+);
+notice.position.set(-0.04, 1.5, 0.08);
+notice.rotation.z = -0.07;
+notice.visible = false;
+door.add(notice);
+
+/* ============================================================
+   SIDEBOARD + TABLETOP RADIO      (label: Radio)
+   ============================================================ */
+const sideboard = new THREE.Group();
+sideboard.position.set(2.4, 0, 2.75);
+sideboard.rotation.y = Math.PI - 0.12;
+room.add(sideboard);
+sideboard.add(box(1.4, 0.82, 0.52, std(C.wood), 0, 0.45, 0));
+sideboard.add(box(1.5, 0.06, 0.6, std(0x7a5a39), 0, 0.89, 0));
+[[-0.6, -0.2], [0.6, -0.2], [-0.6, 0.2], [0.6, 0.2]].forEach(function (p) {
+  sideboard.add(box(0.08, 0.08, 0.08, std(C.woodDark), p[0], 0.04, p[1]));
+});
+sideboard.add(box(0.6, 0.3, 0.03, std(0x5c432b), -0.32, 0.56, 0.27));
+sideboard.add(box(0.6, 0.3, 0.03, std(0x5c432b), 0.32, 0.56, 0.27));
+
+const radio = new THREE.Group();
+radio.position.set(-0.05, 0.92, 0.0);
+radio.rotation.y = 0.3;
+sideboard.add(radio);
+
+const radioWood = std(0x74502e, { roughness: 0.6 });
+radio.add(box(0.6, 0.4, 0.3, radioWood, 0, 0.2, 0));
+// half-round top: a half cylinder laid across the body
+const archTop = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.3, 0.3, 0.3, 24, 1, false, 0, Math.PI),
+  radioWood
+);
+archTop.rotation.z = -Math.PI / 2;
+archTop.rotation.y = Math.PI / 2;
+archTop.position.set(0, 0.4, 0);
+archTop.scale.set(1, 1, 0.5);
+archTop.castShadow = true;
+radio.add(archTop);
+
+// speaker grille
+const grille = new THREE.Mesh(
+  new THREE.CircleGeometry(0.15, 26),
+  std(0x2a2118, { roughness: 1 })
+);
+grille.position.set(0, 0.3, 0.152);
+radio.add(grille);
+for (let i = -3; i <= 3; i++) {
+  const bar = box(0.26, 0.012, 0.01, std(0x8a6a44, { roughness: 0.8 }), 0, 0.3 + i * 0.035, 0.156);
+  bar.castShadow = false;
+  radio.add(bar);
+}
+// glowing dial
+const dialMat = new THREE.MeshStandardMaterial({
+  map: dialTexture(), emissiveMap: dialTexture(),
+  emissive: new THREE.Color(0xffc46b), emissiveIntensity: 0.0, roughness: 0.6
+});
+const dial = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.12), dialMat);
+dial.position.set(0, 0.1, 0.152);
+radio.add(dial);
+// knobs
+[-0.22, 0.22].forEach(function (x) {
+  const k = cyl(0.045, 0.05, 0.04, 14, std(0x2f2620, { roughness: 0.5, metalness: 0.3 }), x, 0.1, 0.16);
+  k.rotation.x = Math.PI / 2;
+  radio.add(k);
+});
+const radioLight = new THREE.PointLight(0xffb463, 0.0, 1.6, 2.2);
+radioLight.position.set(0, 0.18, 0.3);
+radio.add(radioLight);
+
+/* ============================================================
+   ROCKING CHAIR — hidden until a program puts it there
+   ============================================================ */
+const chairPivot = new THREE.Group();
+chairPivot.position.set(-2.15, 0, 0.95);
+chairPivot.rotation.y = -2.75;          // turned toward the stove
+chairPivot.visible = false;
+room.add(chairPivot);
+
+// everything hangs off the centre the rockers roll around, at y = ROCKER_R
+const ROCKER_R = 0.45;
+const chair = new THREE.Group();
+chair.position.y = ROCKER_R;
+chairPivot.add(chair);
+
+const chairWood = std(0x4e3722, { roughness: 0.78 });
+const chairWoodDark = std(0x3a2817, { roughness: 0.82 });
+
+// the two curved runners, arcs of a torus lying in the ZY plane
+[-0.21, 0.21].forEach(function (x) {
+  const arc = 1.15;
+  const runner = new THREE.Mesh(
+    new THREE.TorusGeometry(ROCKER_R, 0.022, 8, 24, arc),
+    chairWoodDark
+  );
+  runner.geometry.rotateZ(-Math.PI / 2 - arc / 2);   // swing the arc to the bottom
+  runner.rotation.y = Math.PI / 2;
+  runner.position.set(x, 0, 0);
+  runner.castShadow = true;
+  chair.add(runner);
+});
+
+// legs down to the runners
+[[-0.19, -0.17], [0.19, -0.17], [-0.19, 0.17], [0.19, 0.17]].forEach(function (p) {
+  chair.add(box(0.035, 0.38, 0.035, chairWood, p[0], -0.195, p[1]));
+});
+// seat
+chair.add(box(0.46, 0.045, 0.44, chairWood, 0, 0.02, 0));
+// back uprights and slats
+[-0.2, 0.2].forEach(function (x) {
+  const up = box(0.038, 0.58, 0.038, chairWood, x, 0.3, -0.2);
+  up.rotation.x = -0.1;
+  chair.add(up);
+});
+[0.16, 0.33, 0.5].forEach(function (y) {
+  const slat = box(0.37, 0.055, 0.02, chairWoodDark, 0, y, -0.2 + (y - 0.16) * 0.1);
+  slat.rotation.x = -0.1;
+  chair.add(slat);
+});
+// armrests
+[-0.21, 0.21].forEach(function (x) {
+  chair.add(box(0.04, 0.03, 0.4, chairWood, x, 0.22, -0.02));
+  chair.add(box(0.035, 0.2, 0.035, chairWood, x, 0.12, 0.16));
+});
+// a folded blanket over the back
+const blanket = box(0.34, 0.2, 0.035, std(0x6c7a5b, { roughness: 0.95 }), 0, 0.42, -0.19);
+blanket.rotation.x = -0.1;
+chair.add(blanket);
+
+/* ============================================================
+   WALL CALENDAR (east wall) — not interactive
+   ============================================================ */
+const calendar = new THREE.Group();
+calendar.position.set(ROOM.hx - 0.04, 2.15, 0.95);
+calendar.rotation.y = -Math.PI / 2;
+room.add(calendar);
+calendar.add(box(0.56, 0.72, 0.02, std(0x4a3a28, { roughness: 1 }), 0, 0, -0.012));
+const calPaper = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.52, 0.67),
+  new THREE.MeshStandardMaterial({ map: calendarTexture(), roughness: 1 })
+);
+calendar.add(calPaper);
+calendar.add(cyl(0.012, 0.012, 0.03, 8, std(C.iron, { metalness: 0.6, roughness: 0.4 }), 0, 0.36, 0.02));
+
+/* a bare bulb hanging from the ceiling (unlit — they are saving on light) */
+const bulbCord = cyl(0.008, 0.008, 0.9, 6, std(0x2a2118), 0.2, ROOM.h - 0.45, -0.4);
+room.add(bulbCord);
+const bulb = new THREE.Mesh(
+  new THREE.SphereGeometry(0.06, 14, 10),
+  new THREE.MeshStandardMaterial({ color: 0xd8cdb0, roughness: 0.3, transparent: true, opacity: 0.55 })
+);
+bulb.position.set(0.2, ROOM.h - 0.92, -0.4);
+room.add(bulb);
+
+/* ============================================================
+   LIGHTING
+   ============================================================ */
+const ambient = new THREE.AmbientLight(0x3b3022, 0.17);
+scene.add(ambient);
+
+const hemi = new THREE.HemisphereLight(0x6e7260, 0x241a10, 0.09);
+scene.add(hemi);
+
+// warm flickering light from the stove
+const stoveLight = new THREE.PointLight(C.fire, 3.2, 11.0, 1.7);
+stoveLight.position.set(-2.5, 0.72, -2.0);
+stoveLight.castShadow = true;
+stoveLight.shadow.mapSize.set(1024, 1024);
+stoveLight.shadow.bias = -0.004;
+scene.add(stoveLight);
+
+const stoveFill = new THREE.PointLight(C.fire, 0.9, 4.5, 2.0);
+stoveFill.position.set(-2.5, 1.3, -2.1);
+scene.add(stoveFill);
+
+// pale light through the window
+const windowLight = new THREE.DirectionalLight(C.daylight, 0.30);
+windowLight.position.set(2.0, 3.4, -6.0);
+windowLight.target.position.set(0.2, 0.8, 1.0);
+scene.add(windowLight);
+scene.add(windowLight.target);
+
+const windowGlow = new THREE.PointLight(C.daylight, 0.45, 6.0, 2.0);
+windowGlow.position.set(1.5, 1.95, -ROOM.hz + 0.5);
+scene.add(windowGlow);
+
+// a dim fill over the middle of the room, so surfaces facing up still read
+const roomFill = new THREE.PointLight(0xc49a63, 0.45, 8.5, 2.0);
+roomFill.position.set(0.2, 2.5, 0.1);
+scene.add(roomFill);
+
+/* ============================================================
+   DUST PARTICLES
+   ============================================================ */
+const PANE_BASE = new THREE.Color(C.paneLight);
+
+const DUST = 420;
+const dustGeo = new THREE.BufferGeometry();
+const dustPos = new Float32Array(DUST * 3);
+const dustVel = new Float32Array(DUST);
+const dustPhase = new Float32Array(DUST);
+for (let i = 0; i < DUST; i++) {
+  dustPos[i * 3]     = (Math.random() - 0.5) * (ROOM.hx * 2 - 0.4);
+  dustPos[i * 3 + 1] = Math.random() * (ROOM.h - 0.3) + 0.1;
+  dustPos[i * 3 + 2] = (Math.random() - 0.5) * (ROOM.hz * 2 - 0.4);
+  dustVel[i] = 0.012 + Math.random() * 0.035;
+  dustPhase[i] = Math.random() * 6.28;
+}
+dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+  color: 0xd8c49a, size: 0.011, transparent: true, opacity: 0.42,
+  depthWrite: false, sizeAttenuation: true
+}));
+scene.add(dust);
+
+/* ============================================================
+   HOTSPOTS  —  raycast targets, hover glow, floating labels
+   ============================================================ */
+const HOTSPOTS = {};
+const pickable = [];
+
+function addHotspot(key, label, group, anchor, focus) {
+  const spot = {
+    key: key, label: label, group: group,
+    anchor: anchor,                 // local-space point the label floats over
+    focus: focus,                   // { dist, height } for focusCamera
+    meshes: []
+  };
+  group.traverse(function (o) {
+    if (!o.isMesh) return;
+    o.userData.hotspot = key;
+    if (o.material && o.material.emissive) {
+      o.userData.baseEmissive = o.material.emissive.clone();
+      o.userData.baseEmissiveIntensity =
+        o.material.emissiveIntensity === undefined ? 1 : o.material.emissiveIntensity;
+      spot.meshes.push(o);
+    }
+    pickable.push(o);
+  });
+  // the camera frames the object's middle, not the label's perch above it
+  group.updateWorldMatrix(true, true);
+  spot.center = new THREE.Box3().setFromObject(group).getCenter(new THREE.Vector3());
+  HOTSPOTS[key] = spot;
+  return spot;
+}
+
+addHotspot("table", "Food",    table,     new THREE.Vector3(0, 1.08, 0),    { dist: 2.7, height: 1.85 });
+addHotspot("stove", "Heat",    stove,     new THREE.Vector3(0, 1.5, 0.1),   { dist: 2.9, height: 1.7 });
+addHotspot("jar",   "Savings", jarGroup,  new THREE.Vector3(0, 0.62, 0),    { dist: 1.3, height: 1.9 });
+addHotspot("door",  "Rent",    door,      new THREE.Vector3(0, 2.0, 0.1),   { dist: 2.5, height: 1.6 });
+addHotspot("radio", "Radio",   radio,     new THREE.Vector3(0, 0.62, 0),    { dist: 1.9, height: 1.5 });
+
+const GLOW = new THREE.Color(0xb8762c);
+let hovered = null;
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2(-10, -10);
+let pointerInside = false;
+
+const labelEl = document.getElementById("label");
+
+window.addEventListener("pointermove", function (e) {
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  pointerInside = true;
+});
+window.addEventListener("pointerleave", function () {
+  pointerInside = false;
+  pointer.set(-10, -10);
+});
+
+let onRoomClick = null;   // set by the game layer below
+let onEmptyClick = null;
+
+window.addEventListener("click", function (e) {
+  if (e.target.closest("#dev")) return;
+  if (e.target.closest(".ui, #budget, #result, #clipping, #title, #intro, #crisis, #transition, #act2, #ending")) return;
+  // raycast from the click itself — a fast click may land before the hover frame
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(pickable, false);
+  if (hits.length) {
+    const key = hits[0].object.userData.hotspot;
+    console.log(key);
+    if (onRoomClick) onRoomClick(key);
+  } else if (onEmptyClick) {
+    onEmptyClick();
+  }
+});
+
+function setHovered(key) {
+  if (hovered === key) return;
+  // clear the old one
+  if (hovered && HOTSPOTS[hovered]) {
+    HOTSPOTS[hovered].meshes.forEach(function (m) {
+      m.material.emissive.copy(m.userData.baseEmissive);
+      m.material.emissiveIntensity = m.userData.baseEmissiveIntensity;
+    });
+  }
+  hovered = key;
+  document.body.style.cursor = key ? "pointer" : "default";
+  if (key) {
+    labelEl.textContent = HOTSPOTS[key].label;
+    labelEl.classList.add("on");
+  } else {
+    labelEl.classList.remove("on");
+  }
+}
+
+function updateHoverGlow(t) {
+  if (!hovered) return;
+  const pulse = 0.12 + 0.05 * Math.sin(t * 3.2);
+  HOTSPOTS[hovered].meshes.forEach(function (m) {
+    m.material.emissive.copy(m.userData.baseEmissive).lerp(GLOW, pulse);
+    m.material.emissiveIntensity = Math.max(m.userData.baseEmissiveIntensity, 0.85);
+  });
+}
+
+const _labelWorld = new THREE.Vector3();
+function updateLabelPosition() {
+  if (!hovered) return;
+  const spot = HOTSPOTS[hovered];
+  _labelWorld.copy(spot.anchor);
+  spot.group.localToWorld(_labelWorld);
+  _labelWorld.project(camera);
+  labelEl.style.left = ((_labelWorld.x * 0.5 + 0.5) * window.innerWidth) + "px";
+  labelEl.style.top  = ((-_labelWorld.y * 0.5 + 0.5) * window.innerHeight) + "px";
+}
+
+/* ============================================================
+   CAMERA  —  slow orbit, with focusCamera() override
+   ============================================================ */
+const orbit = {
+  center: new THREE.Vector3(0, 1.15, 0),
+  radius: 3.05,
+  height: 2.0,
+  angle: 2.1,
+  speed: 0.055,
+  auto: true
+};
+const camTarget = orbit.center.clone();   // where the camera is looking (lerped)
+const camWanted = new THREE.Vector3();    // where the camera wants to be (lerped)
+const _wp = new THREE.Vector3();
+
+function autoCameraWanted(t) {
+  const bob = Math.sin(t * 0.21) * 0.16;
+  camWanted.set(
+    orbit.center.x + Math.sin(orbit.angle) * orbit.radius,
+    orbit.height + bob,
+    orbit.center.z + Math.cos(orbit.angle) * orbit.radius
+  );
+  return orbit.center;
+}
+
+let focusSpot = null;
+const focusLook = new THREE.Vector3();
+
+let camShake = 0;           // decays to zero each frame
+function shakeCamera(amount) { camShake = Math.max(camShake, amount); }
+
+function focusCameraWanted() {
+  const spot = focusSpot;
+  _wp.copy(spot.center);
+  focusLook.copy(_wp);
+  // stand between the object and the middle of the room
+  const toCenter = new THREE.Vector3(orbit.center.x - _wp.x, 0, orbit.center.z - _wp.z);
+  if (toCenter.lengthSq() < 0.0001) toCenter.set(0, 0, 1);
+  toCenter.normalize().multiplyScalar(spot.focus.dist);
+  camWanted.set(_wp.x + toCenter.x, spot.focus.height, _wp.z + toCenter.z);
+  return focusLook;
+}
+
+/* ============================================================
+   ROOM STATE HELPERS — called by later steps
+   ============================================================ */
+const state = {
+  food: true,
+  stoveLit: true,
+  jarCoins: 0.65,
+  eviction: false,
+  radioGlow: false,
+  heat: 1,
+  warmth: 0,
+  chair: false
+};
+
+/** 0 = nothing in the house, 1 = the week's food covered. Booleans still work. */
+function level(v) {
+  if (v === true) return 1;
+  if (v === false || v === null || v === undefined) return 0;
+  return Math.max(0, Math.min(1, Number(v) || 0));
+}
+
+function setFood(amount) {
+  const v = level(amount);
+  state.food = v;
+  breadGroup.visible = v >= 1;          // a whole loaf only when the week is covered
+  [bowlA, bowlB, bowlC].forEach(function (b, i) {
+    // bowls fill one at a time as more of the week is paid for
+    b.userData.mush.visible = v > i / 3;
+  });
+  return v;
+}
+
+function setStoveLit(amount) {
+  const v = level(amount);
+  state.heat = v;
+  state.stoveLit = v > 0;
+  if (state.stoveLit) {
+    stoveLight.color.set(C.fire);
+    stoveFill.color.set(C.fire);
+    fireMouth.material.color.set(0xffffff);
+    fireMouth.material.opacity = 0.55 + 0.4 * v;
+    fireMouth.visible = true;
+  } else {
+    // a cold stove gives a blue-grey light
+    stoveLight.color.set(C.cold);
+    stoveFill.color.set(C.cold);
+    fireMouth.material.color.set(0x37444e);
+    fireMouth.material.opacity = 0.75;
+    fireMouth.visible = true;
+  }
+  return v;
+}
+
+function setJarCoins(v) {
+  v = Math.max(0, Math.min(1, Number(v) || 0));
+  state.jarCoins = v;
+  const n = Math.round(v * COIN_MAX);
+  coins.forEach(function (c, i) { c.visible = i < n; });
+  return v;
+}
+
+function setEvictionNotice(on) {
+  state.eviction = !!on;
+  notice.visible = state.eviction;
+  return state.eviction;
+}
+
+/* how much light the room has won back, 0 (1932) to 1 (warm again) */
+const WARMTH_BASE = { ambient: 0.17, hemi: 0.09, fill: 0.45 };
+function setRoomWarmth(v) {
+  v = Math.max(0, Math.min(1, Number(v) || 0));
+  state.warmth = v;
+  ambient.intensity  = WARMTH_BASE.ambient + 0.20 * v;
+  hemi.intensity     = WARMTH_BASE.hemi    + 0.11 * v;
+  roomFill.intensity = WARMTH_BASE.fill    + 0.70 * v;
+  renderer.toneMappingExposure = 0.95 + 0.14 * v;
+  return v;
+}
+
+function setRockingChair(on) {
+  state.chair = !!on;
+  chairPivot.visible = state.chair;
+  return state.chair;
+}
+
+function setRadioGlow(on) {
+  state.radioGlow = !!on;
+  dialMat.emissiveIntensity = state.radioGlow ? 1.5 : 0.0;
+  radioLight.intensity = state.radioGlow ? 0.55 : 0.0;
+  return state.radioGlow;
+}
+
+/** focusCamera("table"|"stove"|"jar"|"door"|"radio") — pass null to resume the orbit */
+function focusCamera(objectName) {
+  if (!objectName || objectName === "room" || !HOTSPOTS[objectName]) {
+    focusSpot = null;
+    orbit.auto = true;
+    if (objectName && objectName !== "room") {
+      console.warn("focusCamera: unknown object '" + objectName + "' — resuming orbit");
+    }
+    return null;
+  }
+  focusSpot = HOTSPOTS[objectName];
+  orbit.auto = false;
+  return objectName;
+}
+
+// expose for later steps and for the console
+window.LESSON = LESSON;
+window.setFood = setFood;
+window.setStoveLit = setStoveLit;
+window.setJarCoins = setJarCoins;
+window.setEvictionNotice = setEvictionNotice;
+window.setRadioGlow = setRadioGlow;
+window.setRoomWarmth = setRoomWarmth;
+window.setRockingChair = setRockingChair;
+window.focusCamera = focusCamera;
+window.ROOM_STATE = state;
+window.THREE_SCENE = { scene: scene, camera: camera, renderer: renderer, orbit: orbit, HOTSPOTS: HOTSPOTS };
+
+// opening state of the room
+setFood(true);
+setStoveLit(true);
+setJarCoins(0.65);
+setEvictionNotice(false);
+setRadioGlow(false);
+setRoomWarmth(0);
+setRockingChair(false);
+
+/* ============================================================
+   DEV PANEL (press D)
+   ============================================================ */
+const devEl = document.getElementById("dev");
+document.addEventListener("keydown", function (e) {
+  if (e.key === "g" || e.key === "G") devEl.classList.toggle("on");
+});
+devEl.addEventListener("click", function (e) {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const fn = window[btn.dataset.fn];
+  if (typeof fn !== "function") return;
+  // eslint-disable-next-line no-new-func
+  const arg = new Function("return (" + btn.dataset.arg + ");")();
+  console.log(btn.dataset.fn + "(" + btn.dataset.arg + ") ->", fn(arg));
+});
+
+/* ============================================================
+   ANIMATION LOOP
+   ============================================================ */
+const clock = new THREE.Clock();
+let flickerSeed = 0;
+
+function tick() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  // --- camera ---
+  let look;
+  if (orbit.auto) {
+    orbit.angle += dt * orbit.speed;
+    look = autoCameraWanted(t);
+  } else {
+    look = focusCameraWanted();
+    // keep the orbit angle in step with where we are, so resuming is smooth
+    orbit.angle = Math.atan2(camera.position.x - orbit.center.x, camera.position.z - orbit.center.z);
+  }
+  camera.position.lerp(camWanted, 1 - Math.pow(0.001, dt));
+  camTarget.lerp(look, 1 - Math.pow(0.002, dt));
+  camera.lookAt(camTarget);
+  if (camShake > 0.0005) {
+    camera.position.x += Math.sin(t * 71) * camShake;
+    camera.position.y += Math.sin(t * 53 + 1.7) * camShake * 0.7;
+    camShake *= Math.pow(0.02, dt);
+  } else {
+    camShake = 0;
+  }
+
+  // --- stove light: warm flicker when lit, steady chill when cold ---
+  if (state.stoveLit) {
+    flickerSeed += dt * (2.2 + Math.random());
+    const f = 0.80
+      + 0.13 * Math.sin(t * 9.3)
+      + 0.07 * Math.sin(t * 23.7 + 1.3)
+      + 0.06 * Math.sin(flickerSeed * 3.1);
+    const h = 0.45 + 0.55 * state.heat;   // a banked fire throws less light
+    stoveLight.intensity = 3.2 * f * h;
+    stoveFill.intensity = 0.9 * f * h;
+    fireMouth.material.opacity = (0.80 + 0.18 * f) * (0.6 + 0.4 * state.heat);
+  } else {
+    stoveLight.intensity = 0.55;
+    stoveFill.intensity = 0.18;
+  }
+
+  // --- the chair rocks, slow as breathing ---
+  if (chairPivot.visible) {
+    chair.rotation.x = Math.sin(t * 1.15) * 0.05;
+  }
+
+  // --- radio dial breathes when it is on ---
+  if (state.radioGlow) {
+    dialMat.emissiveIntensity = 1.35 + 0.25 * Math.sin(t * 2.3);
+    radioLight.intensity = 0.5 + 0.1 * Math.sin(t * 2.3);
+  }
+
+  // --- window pane breathes very slightly (clouds) ---
+  const d = 0.9 + 0.1 * Math.sin(t * 0.17);
+  paneMat.color.copy(PANE_BASE).multiplyScalar(d);
+  windowGlow.intensity = 0.45 * d;
+
+  // --- dust ---
+  const p = dustGeo.attributes.position.array;
+  for (let i = 0; i < DUST; i++) {
+    const i3 = i * 3;
+    p[i3 + 1] += dustVel[i] * dt;
+    p[i3]     += Math.sin(t * 0.5 + dustPhase[i]) * dt * 0.035;
+    p[i3 + 2] += Math.cos(t * 0.37 + dustPhase[i]) * dt * 0.03;
+    if (p[i3 + 1] > ROOM.h - 0.1) {
+      p[i3 + 1] = 0.05;
+      p[i3]     = (Math.random() - 0.5) * (ROOM.hx * 2 - 0.4);
+      p[i3 + 2] = (Math.random() - 0.5) * (ROOM.hz * 2 - 0.4);
+    }
+  }
+  dustGeo.attributes.position.needsUpdate = true;
+
+  // --- hover ---
+  if (pointerInside) {
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(pickable, false);
+    setHovered(hits.length ? hits[0].object.userData.hotspot : null);
+  } else {
+    setHovered(null);
+  }
+  updateHoverGlow(t);
+  updateLabelPosition();
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+
+window.addEventListener("resize", function () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// place the camera before the first frame so it does not swing in
+autoCameraWanted(0);
+camera.position.copy(camWanted);
+camera.lookAt(orbit.center);
+
+tick();
+
+setTimeout(function () {
+  document.getElementById("loading").classList.add("gone");
+}, 450);
+
+/* ============================================================
+   AUDIO
+   Everything is generated at runtime with Tone.js — no files.
+   The musical material is here rather than in LESSON because it
+   is the game's voice, not the lesson's content: swap the lesson
+   and this score still fits.
+   ============================================================ */
+
+const SCALES = {
+  minor: [0, 2, 3, 5, 7, 8, 10],
+  major: [0, 2, 4, 5, 7, 9, 11]
+};
+
+/* One melody, written in scale degrees so the very same shape can be
+   played in the minor of 1932 and the major of the New Deal.
+   32 quarter-notes; null is a rest. */
+const MELODY = [
+   4, null,  3, null,   2, null, null,  1,
+   0, null,  2, null,   1, null, null, null,
+   4, null,  5, null,   4, null,  2, null,
+   0, null, -2, null,   0, null, null, null
+];
+const BASS = [0, 0, 5, 6, 0, 3, 5, 4];     // one root per bar
+
+const SCORE = {
+  // pad "hollow" is root and fifth with no third — the bare sound of 1932
+  act1: { scale: "minor", bpm: 60, root: 57, level: 0.34, pad: "hollow",
+          drone: 0.085, wind: 0.055, toll: true },   // A3
+  act2: { scale: "major", bpm: 76, root: 57, level: 0.44, pad: "full",
+          drone: 0.03,  wind: 0.018, toll: false }
+};
+
+/**
+ * A small Schroeder-style hall built only from native Web Audio nodes.
+ * Tone's own Freeverb is made of comb filters that run on an AudioWorklet,
+ * and AudioWorklet is unavailable outside a secure context — so it would be
+ * silent on a file:// page, which is exactly how this game is opened.
+ */
+function makeHall(wet, damping) {
+  const input = new Tone.Gain(1);
+  const output = new Tone.Gain(1);
+  input.connect(output);                       // dry path
+  const wetBus = new Tone.Gain(wet).connect(output);
+  // mutually prime delay times, so the tail does not ring on one pitch
+  [0.0297, 0.0371, 0.0411, 0.0437].forEach(function (time, i) {
+    const delay = new Tone.Delay(time, 1);
+    const damp = new Tone.Filter(damping, "lowpass");
+    const feedback = new Tone.Gain(0.76 - i * 0.02);
+    input.connect(delay);
+    delay.connect(damp);
+    damp.connect(feedback);
+    feedback.connect(delay);                   // the tail
+    damp.connect(wetBus);
+  });
+  return { input: input, output: output };
+}
+
+/** scale degree -> midi note, with degrees running past either end */
+function degToMidi(root, scale, deg) {
+  const oct = Math.floor(deg / 7);
+  let i = deg % 7;
+  if (i < 0) i += 7;
+  return root + oct * 12 + scale[i];
+}
+function midiName(m) { return Tone.Frequency(m, "midi").toNote(); }
+
+const audio = {
+  ready: false,
+  started: false,
+  musicMuted: false,
+  voiceMuted: false,
+  ducked: false,
+  movement: null,      // "act1" | "act2"
+  nodes: null,
+  seq: null
+};
+
+/** Built once, after the first user gesture unlocks the audio context. */
+async function initAudio() {
+  if (audio.started) return audio.ready;
+  audio.started = true;
+  if (typeof Tone === "undefined") {
+    console.warn("Tone.js did not load — running without sound.");
+    return false;
+  }
+  try {
+    await Tone.start();
+  } catch (err) {
+    console.warn("Could not start the audio context:", err);
+    return false;
+  }
+
+  try {
+    buildAudioGraph();
+  } catch (err) {
+    console.warn("Audio graph could not be built \u2014 playing silently:", err);
+    audio.ready = false;
+    return false;
+  }
+  return audio.ready;
+}
+
+function buildAudioGraph() {
+  const out = new Tone.Gain(0.9).toDestination();
+
+  // ---- music bus, ducked under narration ----
+  const musicBus = new Tone.Gain(0).connect(out);
+  const hall = makeHall(0.34, 1800);
+  hall.output.connect(musicBus);
+
+  const piano = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: "triangle" },
+    envelope: { attack: 0.012, decay: 1.5, sustain: 0.06, release: 2.6 }
+  }).connect(hall.input);
+  piano.volume.value = -9;
+
+  const bass = new Tone.Synth({
+    oscillator: { type: "sine" },
+    envelope: { attack: 0.05, decay: 1.8, sustain: 0.12, release: 2.2 }
+  }).connect(hall.input);
+  bass.volume.value = -13;
+
+  const pad = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: "sine" },
+    envelope: { attack: 1.4, decay: 2, sustain: 0.4, release: 3 }
+  }).connect(hall.input);
+  pad.volume.value = -24;
+
+  const brass = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: "sawtooth" },
+    envelope: { attack: 0.04, decay: 0.3, sustain: 0.55, release: 0.7 }
+  });
+  const brassTone = new Tone.Filter(1500, "lowpass").connect(hall.input);
+  brass.connect(brassTone);
+  brass.volume.value = -8;
+
+  // ---- effects bus, independent of the music bed ----
+  const sfxBus = new Tone.Gain(0.9).connect(out);
+  const sfxHall = makeHall(0.16, 3000);
+  sfxHall.output.connect(sfxBus);
+
+  const bell = new Tone.Synth({
+    oscillator: { type: "sine" },
+    envelope: { attack: 0.002, decay: 0.28, sustain: 0, release: 0.3 }
+  }).connect(sfxHall.input);
+  bell.volume.value = -16;
+
+  const chime = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: "sine" },
+    envelope: { attack: 0.01, decay: 1.6, sustain: 0, release: 2.4 }
+  }).connect(sfxHall.input);
+  chime.volume.value = -18;
+
+  const paper = new Tone.NoiseSynth({
+    noise: { type: "white" },
+    envelope: { attack: 0.012, decay: 0.2, sustain: 0 }
+  });
+  const paperTone = new Tone.Filter(2600, "highpass").connect(sfxBus);
+  paper.connect(paperTone);
+  paper.volume.value = -22;
+
+  const knock = new Tone.MembraneSynth({
+    pitchDecay: 0.03, octaves: 2,
+    envelope: { attack: 0.001, decay: 0.22, sustain: 0 }
+  }).connect(sfxHall.input);
+  knock.volume.value = -4;
+
+  // a heavier slap to go with the membrane thud, so a knock is a bang
+  const bang = new Tone.NoiseSynth({
+    noise: { type: "brown" },
+    envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+  });
+  const bangTone = new Tone.Filter({ type: "bandpass", frequency: 520, Q: 1.1 }).connect(sfxHall.input);
+  bang.connect(bangTone);
+  bang.volume.value = -7;
+
+  /* ---- ambience: continuous beds the room turns on and off ---- */
+  const ambBus = new Tone.Gain(1).connect(out);
+
+  function bed(type, filterOpts) {
+    const src = new Tone.Noise(type);
+    const filt = new Tone.Filter(filterOpts);
+    const gain = new Tone.Gain(0).connect(ambBus);
+    src.connect(filt); filt.connect(gain);
+    src.start();
+    return { src: src, filter: filt, gain: gain };
+  }
+
+  const wind = bed("brown", { type: "lowpass", frequency: 190, Q: 0.4 });
+  const hiss = bed("white", { type: "bandpass", frequency: 2300, Q: 0.6 });
+  const fire = bed("brown", { type: "bandpass", frequency: 430, Q: 0.7 });
+
+  // two oscillators a few cents apart, so the drone beats slowly against itself
+  const droneFilter = new Tone.Filter({ type: "lowpass", frequency: 300 });
+  const droneGain = new Tone.Gain(0).connect(ambBus);
+  droneFilter.connect(droneGain);
+  const droneA = new Tone.Oscillator(55, "sine").connect(droneFilter);
+  const droneB = new Tone.Oscillator(55, "sine").connect(droneFilter);
+  droneB.detune.value = 9;
+  droneA.volume.value = -6; droneB.volume.value = -6;
+  droneA.start(); droneB.start();
+
+  // short pops, for the radio and for the fire
+  const crackle = new Tone.NoiseSynth({
+    noise: { type: "pink" },
+    envelope: { attack: 0.001, decay: 0.03, sustain: 0 }
+  });
+  const crackleTone = new Tone.Filter({ type: "bandpass", frequency: 1900, Q: 1.4 }).connect(ambBus);
+  crackle.connect(crackleTone);
+  crackle.volume.value = -17;
+
+  audio.nodes = {
+    out, musicBus, hall, piano, bass, pad, brass,
+    sfxBus, sfxHall, bell, chime, paper, knock, bang,
+    ambBus, wind, hiss, fire, droneGain, droneFilter, crackle
+  };
+
+  // ---- the loop: one sequence, reading whichever movement is current ----
+  audio.seq = new Tone.Sequence(function (time, i) {
+    const m = SCORE[audio.movement];
+    if (!m) return;
+    const scale = SCALES[m.scale];
+    const deg = MELODY[i];
+    if (deg !== null) {
+      // a little unevenness so it sounds played rather than clocked
+      piano.triggerAttackRelease(midiName(degToMidi(m.root + 12, scale, deg)),
+        "2n", time, 0.42 + Math.random() * 0.16);
+    }
+    if (i % 4 === 0) {
+      const b = BASS[i / 4];
+      bass.triggerAttackRelease(midiName(degToMidi(m.root - 12, scale, b)), "1n", time, 0.5);
+      if (m.pad) {
+        const voicing = m.pad === "hollow" ? [0, 4] : [0, 2, 4];
+        pad.triggerAttackRelease(
+          voicing.map(function (k) { return midiName(degToMidi(m.root, scale, b + k)); }),
+          "1n", time, m.pad === "hollow" ? 0.34 : 0.3);
+      }
+    }
+    // a low toll at the top of each cycle, like something counting the weeks
+    if (m.toll && (i === 0 || i === 16)) {
+      piano.triggerAttackRelease(midiName(degToMidi(m.root - 24, scale, 0)), "1n", time, 0.5);
+    }
+  }, Array.from({ length: MELODY.length }, function (_, i) { return i; }), "4n");
+
+  Tone.Transport.bpm.value = SCORE.act1.bpm;
+  audio.ready = true;
+  return true;
+}
+
+/* ---------- music ---------- */
+function musicLevel() {
+  if (audio.musicMuted || !audio.movement) return 0;
+  const base = SCORE[audio.movement].level;
+  return audio.ducked ? base * 0.3 : base;
+}
+function applyMusicLevel(seconds) {
+  if (!audio.ready) return;
+  audio.nodes.musicBus.gain.rampTo(musicLevel(), seconds === undefined ? 0.4 : seconds);
+}
+
+function playMovement(name) {
+  if (!audio.ready) return;
+  const m = SCORE[name];
+  if (!m) return;
+  const first = audio.movement === null;
+  audio.movement = name;
+  // a zero-length ramp makes Tone's tick param emit a null, so set it outright
+  if (first || Tone.Transport.state !== "started") {
+    Tone.Transport.bpm.value = m.bpm;
+  } else {
+    Tone.Transport.bpm.rampTo(m.bpm, 2);
+  }
+  if (Tone.Transport.state !== "started") {
+    audio.seq.start(0);
+    Tone.Transport.start("+0.1");
+  }
+  applyMusicLevel(first ? 3 : 1.5);
+  setMovementAmbience(name);
+}
+
+function stopMusic() {
+  if (!audio.ready) return;
+  audio.nodes.musicBus.gain.rampTo(0, 1.2);
+  audio.movement = null;
+  setMovementAmbience(null);
+  setTimeout(function () {
+    if (!audio.movement && audio.ready) {
+      Tone.Transport.stop();
+      audio.seq.stop();
+    }
+  }, 1400);
+}
+
+function duckMusic(on) {
+  audio.ducked = !!on;
+  applyMusicLevel(0.25);
+}
+
+/** radio static, then a short fanfare — the moment the New Deal arrives */
+function playTransitionSting() {
+  if (!audio.ready) return;
+  const n = audio.nodes;
+  const t = Tone.now();
+
+  const noise = new Tone.Noise("pink").start(t);
+  const band = new Tone.Filter(1700, "bandpass");
+  band.Q.value = 0.9;
+  const ng = new Tone.Gain(0).connect(n.sfxBus);
+  noise.connect(band); band.connect(ng);
+  ng.gain.setValueAtTime(0, t);
+  ng.gain.linearRampToValueAtTime(0.7, t + 0.08);
+  ng.gain.linearRampToValueAtTime(0.5, t + 1.0);
+  ng.gain.linearRampToValueAtTime(0, t + 1.5);
+  band.frequency.setValueAtTime(900, t);
+  band.frequency.exponentialRampToValueAtTime(2600, t + 1.2);
+  setTimeout(function () {
+    noise.stop(); noise.dispose(); band.dispose(); ng.dispose();
+  }, 2000);
+
+  // the dial settles and the band strikes up, in the major to come
+  const scale = SCALES.major, root = SCORE.act2.root;
+  const f = t + 1.35;
+  [[0, 0], [4, 0.16], [7, 0.32]].forEach(function (pair) {
+    n.brass.triggerAttackRelease(midiName(degToMidi(root + 12, scale, pair[0])), 0.2, f + pair[1], 0.5);
+  });
+  n.brass.triggerAttackRelease(
+    [0, 2, 4].map(function (k) { return midiName(degToMidi(root + 12, scale, k)); }),
+    1.6, f + 0.5, 0.55);
+}
+
+const STING_LENGTH = 3000;   // static, then fanfare, before anyone speaks
+
+/** the chord the whole thing has been heading for */
+function playFinalChord() {
+  if (!audio.ready) return;
+  const scale = SCALES.major, root = SCORE.act2.root;
+  const t = Tone.now() + 0.1;
+  audio.nodes.piano.triggerAttackRelease(
+    [0, 2, 4, 7].map(function (k) { return midiName(degToMidi(root, scale, k)); }),
+    4, t, 0.5);
+  audio.nodes.bass.triggerAttackRelease(midiName(degToMidi(root - 12, scale, 0)), 4, t, 0.6);
+}
+
+/* ---------- ambience: beds tied to what the room is doing ---------- */
+const ambience = { radio: false, fire: 0 };
+let radioTimer = null;
+let fireTimer = null;
+
+function ambienceAudible() { return audio.ready && !audio.musicMuted; }
+
+/** wind and drone follow the movement; they are the grim under-layer */
+function setMovementAmbience(name, seconds) {
+  if (!audio.ready) return;
+  const m = SCORE[name];
+  const n = audio.nodes;
+  // slow when a movement changes, prompt when the player hits mute
+  const t = seconds === undefined ? 2.5 : seconds;
+  n.wind.gain.gain.rampTo(m && ambienceAudible() ? m.wind : 0, t);
+  n.droneGain.gain.rampTo(m && ambienceAudible() ? m.drone : 0, t);
+  if (m) n.droneFilter.frequency.rampTo(name === "act2" ? 480 : 300, t);
+}
+
+/** the radio's own hiss and crackle, on whenever its dial is lit */
+function setRadioNoise(on) {
+  ambience.radio = !!on;
+  clearTimeout(radioTimer); radioTimer = null;
+  if (!audio.ready) return;
+  audio.nodes.hiss.gain.gain.rampTo(on && ambienceAudible() ? 0.04 : 0, 0.6);
+  if (!on) return;
+  const pop = function () {
+    if (!ambience.radio) return;
+    if (ambienceAudible()) {
+      audio.nodes.crackle.triggerAttackRelease(0.02, Tone.now(), 0.25 + Math.random() * 0.6);
+    }
+    radioTimer = setTimeout(pop, 80 + Math.random() * 540);
+  };
+  radioTimer = setTimeout(pop, 200);
+}
+
+/** the fire, as loud as the coal you paid for */
+function setFireNoise(levelValue) {
+  const v = Math.max(0, Math.min(1, Number(levelValue) || 0));
+  ambience.fire = v;
+  clearTimeout(fireTimer); fireTimer = null;
+  if (!audio.ready) return;
+  audio.nodes.fire.gain.gain.rampTo(v > 0 && ambienceAudible() ? 0.025 + 0.055 * v : 0, 0.8);
+  if (v <= 0) return;
+  const spit = function () {
+    if (ambience.fire <= 0) return;
+    if (ambienceAudible()) {
+      audio.nodes.crackle.triggerAttackRelease(0.015, Tone.now(), 0.12 + Math.random() * 0.3 * ambience.fire);
+    }
+    fireTimer = setTimeout(spit, 180 + Math.random() * 900 / Math.max(0.3, ambience.fire));
+  };
+  fireTimer = setTimeout(spit, 300);
+}
+
+function refreshAmbience(seconds) {
+  setMovementAmbience(audio.movement, seconds);
+  setRadioNoise(ambience.radio);
+  setFireNoise(ambience.fire);
+}
+
+function silenceAmbience() {
+  ambience.radio = false;
+  ambience.fire = 0;
+  clearTimeout(radioTimer); radioTimer = null;
+  clearTimeout(fireTimer); fireTimer = null;
+  if (!audio.ready) return;
+  const n = audio.nodes;
+  [n.wind.gain, n.hiss.gain, n.fire.gain, n.droneGain].forEach(function (g) { g.gain.rampTo(0, 1); });
+}
+
+/* ---------- sound effects ---------- */
+let lastCoin = 0;
+const sfx = {
+  coin: function () {
+    if (!audio.ready || audio.musicMuted) return;
+    const now = performance.now();
+    if (now - lastCoin < 70) return;        // dragging a slider must not rattle
+    lastCoin = now;
+    const t = Tone.now();
+    audio.nodes.bell.triggerAttackRelease("E7", 0.04, t, 0.3);
+    audio.nodes.bell.triggerAttackRelease("B7", 0.03, t + 0.035, 0.2);
+  },
+  paper: function () {
+    if (!audio.ready || audio.musicMuted) return;
+    audio.nodes.paper.triggerAttackRelease(0.18, Tone.now(), 0.5);
+  },
+  knock: function () {
+    if (!audio.ready || audio.musicMuted) return;
+    // a fist on a door: the thud of the panel and the slap of the wood,
+    // with a second hit a hair later so it lands like a real knock
+    const t = Tone.now();
+    const force = 0.85 + Math.random() * 0.15;
+    audio.nodes.knock.triggerAttackRelease("C1", 0.3, t, force);
+    audio.nodes.bang.triggerAttackRelease(0.11, t, force);
+    audio.nodes.knock.triggerAttackRelease("G1", 0.18, t + 0.055, force * 0.5);
+  },
+  chime: function () {
+    if (!audio.ready || audio.musicMuted) return;
+    const t = Tone.now();
+    audio.nodes.chime.triggerAttackRelease(["C6", "G6"], 1.8, t, 0.4);
+  },
+  stove: function () {
+    if (!audio.ready || audio.musicMuted) return;
+    const t = Tone.now();
+    const n = new Tone.Noise("brown").start(t);
+    const band = new Tone.Filter(260, "bandpass");
+    band.Q.value = 1.3;
+    const g = new Tone.Gain(0).connect(audio.nodes.sfxBus);
+    n.connect(band); band.connect(g);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.42, t + 0.14);
+    g.gain.linearRampToValueAtTime(0, t + 0.95);
+    band.frequency.setValueAtTime(240, t);
+    band.frequency.exponentialRampToValueAtTime(1700, t + 0.45);
+    band.frequency.exponentialRampToValueAtTime(420, t + 0.95);
+    setTimeout(function () { n.stop(); n.dispose(); band.dispose(); g.dispose(); }, 1300);
+  }
+};
+
+/* ============================================================
+   NARRATION  —  Web Speech API, with subtitles as the fallback
+   ============================================================ */
+const SPEECH_OK =
+  typeof window.speechSynthesis !== "undefined" &&
+  typeof window.SpeechSynthesisUtterance !== "undefined";
+
+/* Two readers. The story is told by one; the historical record is read by
+   the other, so a student can hear which is which without being told. */
+const VOICE_WISHLIST = {
+  // Chrome's Google voices are network-synthesised and markedly less
+  // mechanical than the local ones, so they come first where they exist
+  story: ["Google UK English Male", "Daniel (Enhanced)", "Daniel", "Arthur",
+          "Oliver", "Microsoft George (Natural)", "Microsoft George",
+          "Alex", "Tom", "Rishi", "Gordon"],
+  history: ["Google UK English Female", "Serena (Enhanced)", "Serena",
+            "Kate", "Stephanie", "Fiona", "Martha",
+            "Microsoft Hazel (Natural)", "Microsoft Hazel",
+            "Samantha", "Karen", "Moira", "Tessa"]
+};
+
+/* Weary and low for the kitchen; clearer and a touch brighter for the record.
+   The jitter is what keeps a line from landing on one flat pitch. */
+const VOICE_STYLE = {
+  story:   { rate: 0.92, pitch: 0.86, gap: 200, jitterRate: 0.05, jitterPitch: 0.07 },
+  history: { rate: 0.88, pitch: 1.06, gap: 270, jitterRate: 0.035, jitterPitch: 0.05 }
+};
+
+const VOICE = { story: null, history: null };
+
+function resolveVoices() {
+  if (!SPEECH_OK) return;
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return;
+  const english = voices.filter(function (v) { return /^en/i.test(v.lang); });
+  const pool = english.length ? english : voices;
+
+  const byWish = function (wishes, taken) {
+    for (let i = 0; i < wishes.length; i++) {
+      const hit = pool.find(function (v) { return v.name === wishes[i] && v !== taken; });
+      if (hit) return hit;
+    }
+    return null;
+  };
+
+  VOICE.story = byWish(VOICE_WISHLIST.story, null);
+  VOICE.history = byWish(VOICE_WISHLIST.history, VOICE.story);
+
+  // nothing from the wishlist: take any two different English voices, so the
+  // two readers are still distinguishable
+  if (!VOICE.story) VOICE.story = pool[0] || null;
+  if (!VOICE.history) {
+    VOICE.history = pool.find(function (v) { return v !== VOICE.story; }) || VOICE.story;
+  }
+}
+if (SPEECH_OK) {
+  resolveVoices();
+  speechSynthesis.addEventListener("voiceschanged", resolveVoices);   // Chrome fills this in late
+}
+
+/**
+ * Breaks a line where a reader would breathe. Speaking one clause at a time,
+ * with a beat between, is most of what stops the voice sounding like a machine
+ * reading a paragraph.
+ */
+function phrasesOf(text) {
+  const sentences = text.match(/[^.!?;:]+[.!?;:]*/g) || [text];
+  const out = [];
+  sentences.forEach(function (raw) {
+    const part = raw.trim();
+    if (!part) return;
+    if (part.length <= 95) { out.push(part); return; }
+    // a long sentence gets split at its last comma or dash before the middle
+    let cut = -1;
+    [",", " — ", " - "].forEach(function (mark) {
+      const at = part.lastIndexOf(mark, Math.floor(part.length * 0.7));
+      if (at > 25 && at > cut) cut = at + mark.length - 1;
+    });
+    if (cut > 0) {
+      out.push(part.slice(0, cut + 1).trim());
+      out.push(part.slice(cut + 1).trim());
+    } else {
+      out.push(part);
+    }
+  });
+  return out.filter(Boolean);
+}
+
+let speechToken = 0;
+let speechGuard = null;
+let keepAlive = null;
+let onSpeechDone = null;
+
+/** Silences the voice without running the line's completion. */
+function stopSpeech() {
+  speechToken++;
+  clearTimeout(speechGuard); speechGuard = null;
+  clearInterval(keepAlive); keepAlive = null;
+  onSpeechDone = null;
+  if (SPEECH_OK) {
+    try { speechSynthesis.cancel(); } catch (e) { /* nothing to cancel */ }
+  }
+}
+
+/**
+ * Speaks one line, clause by clause, in the voice for `role`.
+ * Returns true if speech actually started, so the caller knows whether to
+ * hold the player until it finishes.
+ */
+function speak(text, done, role) {
+  if (!SPEECH_OK || audio.voiceMuted || !text) return false;
+  stopSpeech();
+
+  const style = VOICE_STYLE[role] || VOICE_STYLE.story;
+  const voice = VOICE[role] || VOICE.story;
+  const chunks = phrasesOf(text);
+  const token = speechToken;
+  let i = 0;
+  let finished = false;
+
+  const finish = function () {
+    if (finished) return;
+    finished = true;
+    clearTimeout(speechGuard); speechGuard = null;
+    clearInterval(keepAlive); keepAlive = null;
+    if (token === speechToken) onSpeechDone = null;
+    try { speechSynthesis.cancel(); } catch (e) { /* already quiet */ }
+    if (done) done();
+  };
+
+  const next = function () {
+    if (finished || token !== speechToken) return;
+    if (i >= chunks.length) { finish(); return; }
+    const u = new SpeechSynthesisUtterance(chunks[i]);
+    if (voice) u.voice = voice;
+    // a little drift either side of the base, so no two clauses sit on the
+    // same note; later clauses settle slightly, the way a sentence falls
+    const settle = chunks.length > 1 ? (i / (chunks.length - 1)) * 0.05 : 0;
+    u.rate = style.rate + (Math.random() - 0.5) * style.jitterRate;
+    u.pitch = Math.max(0.1, style.pitch - settle + (Math.random() - 0.5) * style.jitterPitch);
+    u.volume = 1;
+    u.onend = function () { i++; setTimeout(next, style.gap); };
+    u.onerror = function () { i++; setTimeout(next, style.gap); };
+    speechSynthesis.speak(u);
+  };
+
+  onSpeechDone = finish;
+  audio.lastSpoken = { role: role || "story", voice: voice ? voice.name : null };
+
+  // Chrome stops speaking after ~15s unless it is nudged
+  keepAlive = setInterval(function () {
+    if (!speechSynthesis.speaking) return;
+    speechSynthesis.pause();
+    speechSynthesis.resume();
+  }, 9000);
+
+  // and sometimes never fires onend at all, so cap the whole line by length
+  const perChunkGap = style.gap * chunks.length;
+  const estimate = 3000 + perChunkGap + (text.length / 11) * 1000 / style.rate;
+  speechGuard = setTimeout(finish, estimate);
+
+  next();
+  return true;
+}
+
+/* ============================================================
+   ACT ONE
+   A small state machine over LESSON. Nothing below reads a
+   number or a line of text that is not in that object.
+   ============================================================ */
+
+const $ = function (sel) { return document.querySelector(sel); };
+
+const el = {
+  topbar:     $("#topbar"),
+  week:       $("#uiWeek"),
+  weekLabel:  $("#uiWeekLabel"),
+  cash:       $("#uiCash"),
+  cashLabel:  $("#uiCashLabel"),
+  well:       $("#uiWell"),
+  wellLabel:  $("#uiWellLabel"),
+  wellFill:   $("#uiWellFill"),
+  muteMusic:  $("#btnMuteMusic"),
+  muteVoice:  $("#btnMuteVoice"),
+  skip:       $("#btnSkip"),
+
+  clipping:   $("#clipping"),
+  budget:     $("#budget"),
+  needRows:   $("#needRows"),
+  unassigned: $("#uiUnassigned"),
+  endWeek:    $("#btnEndWeek"),
+
+  result:     $("#result"),
+  resultNext: $("#btnResultNext"),
+
+  subtitle:   $("#subtitle"),
+  line:       $("#subtitle .line"),
+  tag:        $("#subtitle .tag"),
+  advance:    $("#advance"),
+
+  title:      $("#title"),
+  begin:      $("#btnBegin"),
+  intro:      $("#intro"),
+  crisis:     $("#crisis"),
+  transition: $("#transition"),
+  act2:       $("#act2"),
+  posters:    $("#posters"),
+  ending:     $("#ending"),
+  playAgain:  $("#btnPlayAgain")
+};
+
+const GAME = {
+  phase: "title",      // title | intro | beats | budget | result | crisis | transition
+  weekIndex: -1,
+  cash: 0,
+  wellbeing: LESSON.wellbeing.start,
+  savings: 0,
+  rentMissed: 0,
+  alloc: {},
+  picks: [],
+  speaking: false,
+  hintOpts: null,
+  beats: [],
+  beatIndex: 0,
+  onAdvance: null
+};
+
+const NEEDS = LESSON.needs;
+const WEEKS = LESSON.act1.weeks;
+const money = function (n) { return "$" + n; };
+const currentWeek = function () { return WEEKS[GAME.weekIndex]; };
+
+/* ---------- typed narration ---------- */
+let typeTimer = null;
+let typeFull = "";
+const TYPE_CPS = 95;   // characters a second
+
+function narrate(text, opts) {
+  opts = opts || {};
+  clearInterval(typeTimer);
+  typeFull = text;
+  const role = opts.voice === "history" ? "history" : "story";
+  el.line.className = "line" + (opts.fact ? " fact" : "");
+  el.tag.textContent = role === "history" ? LESSON.ui.fromTheRecord : "";
+  el.tag.style.display = role === "history" ? "" : "none";
+  el.subtitle.classList.add("on");
+
+  // the line is spoken as well as written; while it is speaking the player
+  // is held, exactly as a narrator holds a room
+  GAME.speaking = speak(text, function () {
+    GAME.speaking = false;
+    duckMusic(false);
+    finishTyping();
+    setAdvanceHint(opts);
+    renderAudioButtons();
+  }, role);
+  duckMusic(GAME.speaking);
+  setAdvanceHint(opts);
+  GAME.hintOpts = opts;
+  renderAudioButtons();
+  // driven off the clock, not off tick count, so a throttled timer still
+  // lands on the right character
+  const t0 = performance.now();
+  el.line.textContent = "";
+  typeTimer = setInterval(function () {
+    const n = Math.floor((performance.now() - t0) / 1000 * TYPE_CPS);
+    el.line.textContent = text.slice(0, n);
+    if (n >= text.length) { clearInterval(typeTimer); el.line.textContent = text; }
+  }, 16);
+}
+/** speaks a line that is displayed somewhere other than the subtitle bar */
+function sayOnOverlay(node, text) {
+  node.textContent = text;
+  GAME.speaking = speak(text, function () {
+    GAME.speaking = false;
+    duckMusic(false);
+    renderAudioButtons();
+  }, "story");
+  duckMusic(GAME.speaking);
+  renderAudioButtons();
+}
+
+function setAdvanceHint(opts) {
+  if (opts && opts.hint === false && !GAME.speaking) { el.advance.textContent = ""; return; }
+  el.advance.textContent = GAME.speaking ? LESSON.ui.skipHint : LESSON.ui.clickHint;
+}
+
+function finishTyping() {
+  if (!typeFull) return false;
+  if (el.line.textContent === typeFull) return false;
+  clearInterval(typeTimer);
+  el.line.textContent = typeFull;
+  return true;
+}
+function hideNarration() {
+  clearInterval(typeTimer);
+  stopSpeech();
+  GAME.speaking = false;
+  duckMusic(false);
+  typeFull = "";
+  el.subtitle.classList.remove("on");
+}
+
+/* ---------- top bar ---------- */
+function flash(node) {
+  node.classList.remove("flash");
+  void node.offsetWidth;
+  node.classList.add("flash");
+}
+
+function renderTopbar(flashWhat) {
+  el.weekLabel.textContent = LESSON.ui.week;
+  el.cashLabel.textContent = LESSON.ui.cash;
+  el.wellLabel.textContent = LESSON.wellbeing.label;
+  el.week.textContent = GAME.weekIndex < 0
+    ? "–"
+    : (GAME.weekIndex + 1) + " / " + WEEKS.length;
+  el.cash.textContent = money(GAME.cash);
+
+  const w = GAME.wellbeing;
+  const span = LESSON.wellbeing.max - LESSON.wellbeing.min;
+  el.well.textContent = String(w);
+  el.wellFill.style.width = ((w - LESSON.wellbeing.min) / span * 100) + "%";
+  // green through amber to red as the family comes apart
+  const hue = Math.round(95 * (w / LESSON.wellbeing.max));
+  const sat = 26 + Math.round(26 * (1 - w / LESSON.wellbeing.max));
+  el.wellFill.style.backgroundColor = "hsl(" + hue + "," + sat + "%,38%)";
+
+  if (flashWhat === "cash") flash(el.cash);
+  if (flashWhat === "well") flash(el.well);
+}
+
+/* ---------- budget ledger ---------- */
+function allocTotal() {
+  return NEEDS.reduce(function (sum, n) { return sum + GAME.alloc[n.key]; }, 0)
+    + GAME.alloc.savings;
+}
+function unassigned() { return GAME.cash - allocTotal(); }
+
+function buildLedger() {
+  const week = currentWeek();
+  el.budget.querySelector("h2").textContent = LESSON.ui.budgetTitle;
+  el.budget.querySelector(".note").textContent = LESSON.ui.budgetNote;
+  el.budget.querySelector(".totals .left").textContent = LESSON.ui.unassigned;
+  el.endWeek.textContent = LESSON.ui.endWeek;
+  el.needRows.innerHTML = "";
+
+  const rows = NEEDS.map(function (need) {
+    return {
+      key: need.key, label: need.label, cost: need.cost,
+      hint: need.hint, allOrNothing: need.allOrNothing
+    };
+  });
+  if (week.savingsAllowed) {
+    rows.push({
+      key: "savings", label: LESSON.savings.label,
+      cost: LESSON.savings.max, hint: LESSON.savings.hint, isSavings: true
+    });
+  }
+
+  rows.forEach(function (row) {
+    const div = document.createElement("div");
+    div.className = "need";
+    div.dataset.key = row.key;
+    div.innerHTML =
+      '<div class="top"><span class="name"></span><span class="amt"></span></div>' +
+      '<div class="sub"><span class="hint"></span><span class="eff"></span></div>' +
+      '<input type="range" min="0">';
+    div.querySelector(".name").textContent = row.label;
+    div.querySelector(".hint").textContent = row.hint;
+    const input = div.querySelector("input");
+    input.max = row.cost;
+    // an all-or-nothing need stops only at nothing or all
+    input.step = row.allOrNothing ? row.cost : 1;
+    input.value = GAME.alloc[row.key];
+    input.addEventListener("input", function () {
+      setAlloc(row.key, Number(input.value));
+    });
+    el.needRows.appendChild(div);
+  });
+  renderLedger();
+}
+
+function setAlloc(key, value) {
+  const cap = key === "savings"
+    ? LESSON.savings.max
+    : NEEDS.find(function (n) { return n.key === key; }).cost;
+  value = Math.max(0, Math.min(cap, Math.round(value)));
+  // never let the household spend money it does not have
+  const others = allocTotal() - GAME.alloc[key];
+  const settled = Math.min(value, GAME.cash - others);
+  if (settled !== GAME.alloc[key]) sfx.coin();
+  GAME.alloc[key] = settled;
+  renderLedger();
+}
+
+function renderLedger() {
+  const week = currentWeek();
+  el.needRows.querySelectorAll(".need").forEach(function (div) {
+    const key = div.dataset.key;
+    const isSavings = key === "savings";
+    const cap = isSavings
+      ? LESSON.savings.max
+      : NEEDS.find(function (n) { return n.key === key; }).cost;
+    const got = GAME.alloc[key];
+    div.querySelector("input").value = got;
+    div.querySelector(".amt").textContent = money(got) + " / " + money(cap);
+    let chip = div.querySelector(".chip");
+    const eff = div.querySelector(".eff");
+    if (isSavings) {
+      if (chip) chip.remove();
+      eff.textContent = "";
+      eff.className = "eff";
+    } else {
+      if (!chip) {
+        chip = document.createElement("span");
+        chip.className = "chip";
+        div.querySelector(".name").appendChild(chip);
+      }
+      const need = NEEDS.find(function (n) { return n.key === key; });
+      const res = scoreNeed(need, got);
+      chip.className = "chip " + (res.state === "full" ? "ok" : "bad");
+      chip.textContent = res.state === "full"
+        ? LESSON.ui.paid
+        : LESSON.ui.short + " " + money(cap - got);
+      // the arithmetic, visible before you commit to it
+      eff.textContent = signed(res.delta);
+      eff.className = "eff " + (res.delta > 0 ? "ok" : "bad");
+    }
+  });
+  el.unassigned.textContent = money(unassigned());
+  // the room answers the ledger while the player is still deciding
+  setFood(GAME.alloc.food / needCost("food"));
+  lightStove(GAME.alloc.heat / needCost("heat"));
+  setJarCoins(week.savingsAllowed ? GAME.alloc.savings / LESSON.savings.max
+                                  : GAME.savings / LESSON.savings.max);
+}
+
+/**
+ * What a week's payment buys you.
+ *   full    — the need is met, you get the bonus
+ *   partial — you bought some of it; the penalty shrinks with the shortfall
+ *   none    — nothing paid, or an all-or-nothing need left short
+ * Rent is all-or-nothing, so its slider only stops at $0 or the full amount
+ * and no money can be sunk into it for nothing.
+ */
+function scoreNeed(need, got) {
+  if (got >= need.cost) return { state: "full", delta: need.bonus };
+  if (got <= 0 || need.allOrNothing) return { state: "none", delta: -need.penalty };
+  const shortfall = (need.cost - got) / need.cost;
+  return { state: "partial", delta: -Math.max(1, Math.round(need.penalty * shortfall)) };
+}
+
+function outcomeLine(need, result) {
+  if (result.state === "full") return need.paidLine;
+  if (result.state === "partial" && need.partialLine) return need.partialLine;
+  return need.unpaidLine;
+}
+
+function signed(n) { return (n > 0 ? "+" : "") + n; }
+
+/* content can offer variants; the first one whose condition holds wins */
+const CONDITIONS = {
+  rentOwed:  function () { return GAME.rentMissed > 0; },
+  rentClear: function () { return GAME.rentMissed === 0; }
+};
+function condPasses(cond) {
+  if (!cond) return true;
+  return CONDITIONS[cond] ? CONDITIONS[cond]() : true;
+}
+function pickVariant(v) {
+  if (!Array.isArray(v)) return v;
+  return v.find(function (x) { return condPasses(x.cond); });
+}
+
+/** setRadioGlow, plus the hiss and crackle of a live set */
+function radioOn(on) {
+  setRadioNoise(on);
+  return setRadioGlow(on);
+}
+
+/** setStoveLit, plus the whoosh the first time it catches */
+let heatWas = 0;
+function lightStove(v) {
+  if (v > 0 && heatWas === 0) sfx.stove();
+  heatWas = v;
+  setFireNoise(v);
+  return setStoveLit(v);
+}
+
+function needCost(key) {
+  return NEEDS.find(function (n) { return n.key === key; }).cost;
+}
+
+/** clicking the door, table or stove pays that need in full if the money is there */
+function payFromRoom(objectName) {
+  const need = NEEDS.find(function (n) { return n.object === objectName; });
+  if (!need) return;
+  const current = GAME.alloc[need.key];
+  const target = current >= need.cost ? 0 : need.cost;
+  setAlloc(need.key, target);
+  focusCamera(objectName);
+  clearTimeout(payFromRoom.release);
+  payFromRoom.release = setTimeout(function () {
+    if (GAME.phase === "budget") focusCamera(null);
+  }, 2200);
+  const row = el.needRows.querySelector('[data-key="' + need.key + '"]');
+  if (row) {
+    el.needRows.querySelectorAll(".need").forEach(function (d) { d.classList.remove("focus"); });
+    row.classList.add("focus");
+  }
+}
+
+/* ---------- jar animation ---------- */
+function animateJar(from, to, ms, done) {
+  const t0 = performance.now();
+  (function step(now) {
+    const k = Math.min(1, (now - t0) / ms);
+    // coins fall out in little lurches rather than a smooth drain
+    const eased = k < 1 ? k + 0.04 * Math.sin(k * 22) * (1 - k) : 1;
+    setJarCoins(from + (to - from) * eased);
+    if (k < 1) requestAnimationFrame(step);
+    else if (done) done();
+  })(t0);
+}
+
+/* ---------- beats ---------- */
+const BEAT_ACTIONS = {
+  emptyJar: function () {
+    const from = GAME.savings / LESSON.savings.max;
+    GAME.savings = 0;
+    animateJar(from, 0, 1600);
+    [0, 260, 520, 820].forEach(function (d) { setTimeout(sfx.coin, d); });
+  },
+  knock: function () {
+    // three knocks, slow and even — felt as a jolt through the room
+    let n = 0;
+    const id = setInterval(function () {
+      shakeCamera(0.055);
+      sfx.knock();
+      if (++n >= 3) clearInterval(id);
+    }, 420);
+  }
+};
+
+function runBeats(beats, done) {
+  GAME.phase = "beats";
+  GAME.beats = beats.slice();
+  GAME.beatIndex = -1;
+  GAME.onAdvance = function () { nextBeat(done); };
+  nextBeat(done);
+}
+
+function nextBeat(done) {
+  GAME.beatIndex++;
+  if (GAME.beatIndex >= GAME.beats.length) {
+    GAME.onAdvance = null;
+    hideNarration();
+    done();
+    return;
+  }
+  const beat = GAME.beats[GAME.beatIndex];
+  if (beat.focus) focusCamera(beat.focus);
+  if (beat.radio !== undefined) radioOn(!!beat.radio);
+  if (beat.action && BEAT_ACTIONS[beat.action]) BEAT_ACTIONS[beat.action]();
+  narrate(beat.line, { fact: beat.fact });
+}
+
+/* ---------- the week ---------- */
+function startWeek(index) {
+  GAME.weekIndex = index;
+  const week = WEEKS[index];
+
+  GAME.alloc = { savings: 0 };
+  NEEDS.forEach(function (n) { GAME.alloc[n.key] = 0; });
+
+  GAME.cash += week.income;
+  renderTopbar("cash");
+  focusCamera(null);
+  radioOn(false);
+
+  narrate(week.incomeLine, { hint: false });
+  const beats = week.beats.filter(function (b) { return condPasses(b.cond); });
+  showClipping(pickVariant(week.clipping), function () {
+    runBeats(beats, openBudget);
+  });
+}
+
+function showClipping(clip, done) {
+  el.clipping.querySelector(".kicker").textContent = clip.kicker;
+  el.clipping.querySelector("h3").textContent = clip.headline;
+  el.clipping.querySelector(".body").textContent = clip.body;
+  el.clipping.querySelector(".dateline").textContent = clip.dateline;
+  el.clipping.classList.remove("on");
+  void el.clipping.offsetWidth;
+  el.clipping.classList.add("on");
+  sfx.paper();
+  GAME.phase = "beats";
+  GAME.onAdvance = function () { GAME.onAdvance = null; done(); };
+  el.advance.textContent = LESSON.ui.clickHint;
+  el.subtitle.classList.add("on");
+}
+
+function openBudget() {
+  GAME.phase = "budget";
+  GAME.onAdvance = null;
+  hideNarration();
+  radioOn(false);
+  focusCamera(null);          // back to the orbit, so every object is reachable
+  document.body.classList.add("budgeting");
+  buildLedger();
+  el.budget.classList.add("on");
+  sfx.paper();
+}
+
+function endWeek() {
+  GAME.phase = "result";
+  document.body.classList.remove("budgeting");
+  el.budget.classList.remove("on");
+  el.clipping.classList.remove("on");
+  el.needRows.querySelectorAll(".need").forEach(function (d) { d.classList.remove("focus"); });
+
+  const week = currentWeek();
+  const spent = allocTotal();
+  GAME.cash -= spent;
+  GAME.savings += GAME.alloc.savings;
+
+  let swing = 0;
+  const outcomes = NEEDS.map(function (need) {
+    const got = GAME.alloc[need.key];
+    const res = scoreNeed(need, got);
+    swing += res.delta;
+    return { need: need, got: got, state: res.state, met: res.state === "full", delta: res.delta };
+  });
+
+  // rent in arrears is a running state, not a one-week event
+  const rent = outcomes.find(function (o) { return o.need.key === "rent"; });
+  if (rent && !rent.met) GAME.rentMissed++;
+
+  // report the change that was actually applied, not the one the clamp ate
+  const before = GAME.wellbeing;
+  GAME.wellbeing = Math.max(
+    LESSON.wellbeing.min,
+    Math.min(LESSON.wellbeing.max, before + swing)
+  );
+  const applied = GAME.wellbeing - before;
+
+  // the room now shows the week the family actually had
+  setFood(GAME.alloc.food / needCost("food"));
+  lightStove(GAME.alloc.heat / needCost("heat"));
+  setEvictionNotice(GAME.rentMissed > 0);
+  setJarCoins(GAME.savings / LESSON.savings.max);
+  focusCamera(firstUnmet(outcomes));
+
+  renderTopbar("well");
+  showResult(week, outcomes, swing, applied);
+}
+
+function firstUnmet(outcomes) {
+  const miss = outcomes.find(function (o) { return !o.met; });
+  return miss ? miss.need.object : null;
+}
+
+function showResult(week, outcomes, swing, applied) {
+  el.result.querySelector("h2").textContent = LESSON.ui.resultTitle;
+  el.result.querySelector(".week").textContent = LESSON.ui.week + " " + week.n;
+  const ul = el.result.querySelector("ul");
+  ul.innerHTML = "";
+  outcomes.forEach(function (o) {
+    const li = document.createElement("li");
+    li.className = o.state === "full" ? "ok" : (o.state === "partial" ? "part" : "bad");
+    li.innerHTML = '<span class="mark"></span><span class="txt"></span><span class="delta"></span>';
+    li.querySelector(".mark").textContent =
+      o.state === "full" ? "✓" : (o.state === "partial" ? "–" : "✗");
+    li.querySelector(".txt").textContent = outcomeLine(o.need, o);
+    li.querySelector(".delta").textContent = signed(o.delta);
+    ul.appendChild(li);
+  });
+  // paying this week does not wipe out what is already owed
+  const rentOut = outcomes.find(function (o) { return o.need.key === "rent"; });
+  if (GAME.rentMissed > 0 && rentOut && rentOut.met) {
+    const li = document.createElement("li");
+    li.className = "bad";
+    li.innerHTML = '<span class="mark"></span><span class="txt"></span>';
+    li.querySelector(".mark").textContent = "!";
+    li.querySelector(".txt").textContent = LESSON.ui.arrears;
+    ul.appendChild(li);
+  }
+
+  // if the clamp swallowed part of the swing, say so rather than printing a lie
+  let swingText = GAME.wellbeing + "  (" + signed(applied) + ")";
+  if (applied !== swing) {
+    swingText += "  · " + (applied > swing ? LESSON.ui.atFloor : LESSON.ui.atCeiling);
+  }
+  el.result.querySelector(".swing .val").textContent = swingText;
+  sfx.paper();
+  el.resultNext.textContent = LESSON.ui.continueLabel;
+  el.result.classList.add("on");
+}
+
+function afterResult() {
+  el.result.classList.remove("on");
+  if (GAME.weekIndex < WEEKS.length - 1) {
+    startWeek(GAME.weekIndex + 1);
+  } else {
+    endAct();
+  }
+}
+
+function endAct() {
+  focusCamera(null);
+  if (GAME.wellbeing < LESSON.wellbeing.crisis) {
+    runCrisis(function () { startTransition(); });
+  } else {
+    narrate(LESSON.act1.closing, { fact: true });
+    GAME.phase = "beats";
+    GAME.onAdvance = function () { GAME.onAdvance = null; hideNarration(); startTransition(); };
+  }
+}
+
+/* ---------- Hooverville ---------- */
+function runCrisis(done) {
+  GAME.phase = "crisis";
+  const scene = LESSON.act1.crisisScene;
+  // the kitchen goes dark and cold behind the fade
+  setStoveLit(false);
+  setFood(false);
+  setJarCoins(0);
+  hideNarration();
+
+  el.crisis.querySelector(".cap").textContent = scene.title;
+  const textEl = el.crisis.querySelector(".text");
+  el.crisis.classList.add("on");
+  void el.crisis.offsetWidth;
+  el.crisis.classList.add("vis");
+
+  let i = 0;
+  sayOnOverlay(textEl, scene.lines[0]);
+  GAME.onAdvance = function () {
+    i++;
+    if (i < scene.lines.length) {
+      sayOnOverlay(textEl, scene.lines[i]);
+    } else {
+      GAME.onAdvance = null;
+      el.crisis.classList.remove("vis");
+      setTimeout(function () { el.crisis.classList.remove("on"); done(); }, 1400);
+    }
+  };
+}
+
+/* ============================================================
+   TRANSITION  —  the fireside chat
+   ============================================================ */
+function startTransition() {
+  GAME.phase = "transition";
+  GAME.onAdvance = null;
+  document.body.classList.remove("budgeting");
+  hideNarration();
+  el.budget.classList.remove("on");
+  el.result.classList.remove("on");
+  el.clipping.classList.remove("on");
+
+  radioOn(true);
+  focusCamera("radio");
+  stopMusic();
+  playTransitionSting();
+
+  const T = LESSON.transition;
+  let i = 0;
+  const showCard = function () {
+    hideNarration();
+    el.transition.querySelector(".over").textContent = T.card.over;
+    el.transition.querySelector("h2").textContent = T.card.name;
+    el.transition.querySelector("p").textContent = T.card.under;
+    el.transition.classList.add("on");
+    GAME.onAdvance = function () {
+      GAME.onAdvance = null;
+      el.transition.classList.remove("on");
+      startAct2();
+    };
+  };
+
+  const nextLine = function () {
+    i++;
+    if (i < T.lines.length) { narrate(T.lines[i]); return; }
+    showCard();
+  };
+
+  // let the dial hiss and the band finish before the voice comes in
+  GAME.onAdvance = null;
+  setTimeout(function () {
+    if (GAME.phase !== "transition") return;
+    narrate(T.lines[0]);
+    GAME.onAdvance = nextLine;
+  }, STING_LENGTH);
+}
+window.startTransition = startTransition;
+
+/* ============================================================
+   ACT TWO  —  choose three programmes
+   ============================================================ */
+const PROGRAMS = LESSON.act2.programs;
+
+const PROGRAM_EFFECTS = {
+  refillJar: function () {
+    animateJar(0, 1, 1700);
+    [0, 320, 640, 980].forEach(function (d) { setTimeout(sfx.coin, d); });
+  },
+  food: function () { setFood(true); },
+  heat: function () { lightStove(1); },
+  chair: function () { setRockingChair(true); },
+  none: function () {}
+};
+
+function startAct2() {
+  GAME.phase = "act2";
+  GAME.picks = [];
+  el.topbar.classList.add("on");
+  // 1932 as the family left it: the room has to be earned back
+  setFood(false);
+  setStoveLit(false);
+  setJarCoins(0);
+  setRockingChair(false);
+  setRoomWarmth(0);
+  radioOn(true);
+  focusCamera(null);
+  playMovement("act2");
+  buildPosters();
+  openAct2();
+}
+
+function buildPosters() {
+  const A = LESSON.act2;
+  el.act2.querySelector("h2").textContent = A.heading;
+  el.act2.querySelector(".instruction").textContent = A.instruction;
+  el.posters.innerHTML = "";
+
+  PROGRAMS.forEach(function (prog) {
+    const b = document.createElement("button");
+    b.className = "poster";
+    b.dataset.key = prog.key;
+    b.style.setProperty("--pc", prog.colour);
+    b.innerHTML =
+      '<span class="stamp"></span>' +
+      '<span class="art"></span>' +
+      '<span class="short"></span>' +
+      '<span class="name"></span>' +
+      '<span class="year"></span>' +
+      '<span class="desc"></span>' +
+      '<span class="target"></span>';
+    b.querySelector(".art").innerHTML = prog.art;
+    b.querySelector(".short").textContent = prog.short;
+    b.querySelector(".name").textContent = prog.name;
+    b.querySelector(".year").textContent = prog.year;
+    b.querySelector(".desc").textContent = prog.desc;
+    b.querySelector(".target").textContent = A.problems[prog.problem];
+    b.querySelector(".stamp").textContent = A.counter;
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      choose(prog);
+    });
+    el.posters.appendChild(b);
+  });
+  renderPosters();
+}
+
+function renderPosters() {
+  const A = LESSON.act2;
+  el.act2.querySelector(".count").textContent =
+    A.counter + " " + GAME.picks.length + " / " + A.pickCount;
+  el.posters.querySelectorAll(".poster").forEach(function (b) {
+    const taken = GAME.picks.indexOf(b.dataset.key) !== -1;
+    b.classList.toggle("chosen", taken);
+    b.disabled = taken;
+  });
+}
+
+function openAct2() {
+  GAME.phase = "act2";
+  GAME.onAdvance = null;
+  hideNarration();
+  renderPosters();
+  el.act2.classList.add("on");
+  sfx.paper();
+}
+
+function choose(prog) {
+  if (GAME.picks.length >= LESSON.act2.pickCount) return;
+  if (GAME.picks.indexOf(prog.key) !== -1) return;
+  GAME.picks.push(prog.key);
+
+  el.act2.classList.remove("on");
+  GAME.phase = "reveal";
+
+  // the room answers the programme
+  sfx.chime();
+  if (PROGRAM_EFFECTS[prog.effect]) PROGRAM_EFFECTS[prog.effect]();
+  setRoomWarmth(warmthFromPicks());
+  focusCamera(prog.focus || null);
+
+  narrate(prog.reveal, { fact: true, voice: "history" });
+  GAME.onAdvance = function () {
+    GAME.onAdvance = null;
+    hideNarration();
+    focusCamera(null);
+    if (GAME.picks.length >= LESSON.act2.pickCount) showEnding();
+    else openAct2();
+  };
+}
+
+/** only the programmes that actually reach this kitchen warm it */
+function warmthFromPicks() {
+  const helped = GAME.picks.filter(function (k) {
+    const prog = PROGRAMS.find(function (p) { return p.key === k; });
+    return prog && prog.effect !== "none";
+  }).length;
+  return helped / LESSON.act2.pickCount;
+}
+
+/* ============================================================
+   ENDING
+   ============================================================ */
+function showEnding() {
+  GAME.phase = "ending";
+  GAME.onAdvance = null;
+  hideNarration();
+  radioOn(false);
+  focusCamera(null);
+  stopMusic();
+  playFinalChord();
+
+  const E = LESSON.ending;
+  const card = el.ending.querySelector(".card");
+  card.querySelector("h2").textContent = E.title;
+  card.querySelector(".lead").textContent = E.lead;
+  card.querySelector('[data-k="wellbeing"]').textContent = E.wellbeingLabel;
+  card.querySelector('[data-k="problems"]').textContent = E.problemsLabel;
+  card.querySelector('[data-k="lasted"]').textContent = E.lastedLabel;
+  card.querySelector('[data-k="reflection"]').textContent = E.reflectionLabel;
+  card.querySelector(".lasted").textContent = E.lasted;
+  card.querySelector(".q").textContent = E.reflection;
+  card.querySelector("textarea").placeholder = E.reflectionPlaceholder;
+  el.playAgain.textContent = E.playAgain;
+
+  card.querySelector(".wb .num").textContent = GAME.wellbeing;
+  const band = E.bands.find(function (b) { return GAME.wellbeing >= b.min; });
+  card.querySelector(".wb .band").textContent = band ? band.text : "";
+
+  // every problem of 1932, and what the player did about it
+  const chosen = GAME.picks.map(function (k) {
+    return PROGRAMS.find(function (p) { return p.key === k; });
+  });
+  const ul = card.querySelector("ul");
+  ul.innerHTML = "";
+  Object.keys(LESSON.act2.problems).forEach(function (key) {
+    const taken = chosen.filter(function (p) { return p.problem === key; });
+    const solved = taken.some(function (p) { return p.solves; });
+    const struck = taken.length > 0 && !solved;
+    const li = document.createElement("li");
+    li.className = solved ? "ok" : (struck ? "struck" : "no");
+    li.innerHTML = '<span class="mark"></span><span class="txt"></span><span class="via"></span>';
+    li.querySelector(".mark").textContent = solved ? "✓" : "✗";
+    li.querySelector(".txt").textContent = LESSON.act2.problems[key];
+    li.querySelector(".via").textContent = taken.length
+      ? taken.map(function (p) { return p.short; }).join(", ") +
+        " · " + (solved ? E.solvedMark : E.struckMark)
+      : E.unsolvedMark;
+    ul.appendChild(li);
+  });
+
+  el.ending.classList.add("on");
+}
+
+/* ---------- play again ---------- */
+function resetGame() {
+  GAME.phase = "title";
+  GAME.weekIndex = -1;
+  GAME.cash = 0;
+  GAME.wellbeing = LESSON.wellbeing.start;
+  GAME.savings = 0;
+  GAME.rentMissed = 0;
+  GAME.alloc = {};
+  GAME.picks = [];
+  GAME.beats = [];
+  GAME.onAdvance = null;
+
+  hideNarration();
+  stopSpeech();
+  stopMusic();
+  silenceAmbience();
+  heatWas = 0;
+  document.body.classList.remove("budgeting");
+  [el.topbar, el.budget, el.result, el.clipping, el.act2,
+   el.ending, el.transition].forEach(function (n) { n.classList.remove("on"); });
+  el.crisis.classList.remove("on", "vis");
+  el.intro.classList.remove("on");
+  el.ending.querySelector("textarea").value = "";
+
+  // the kitchen as it stands at the title card
+  setFood(true);
+  setStoveLit(true);
+  setJarCoins(0);
+  setEvictionNotice(false);
+  radioOn(false);
+  setRockingChair(false);
+  setRoomWarmth(0);
+  focusCamera(null);
+
+  renderTopbar();
+  renderAudioButtons();
+  el.title.classList.remove("gone");
+}
+
+/* ---------- title and intro ---------- */
+function showTitle() {
+  el.title.querySelector("h1").textContent = LESSON.title.name;
+  el.title.querySelector(".year").textContent = LESSON.title.year;
+  el.title.querySelector(".sub").textContent = LESSON.title.subtitle;
+  el.title.querySelector(".subject").textContent = LESSON.subject;
+  el.begin.textContent = LESSON.title.begin;
+  renderTopbar();
+}
+
+function runIntro() {
+  GAME.phase = "intro";
+  el.intro.classList.add("on");
+  const p = el.intro.querySelector("p");
+  let i = 0;
+  sayOnOverlay(p, LESSON.intro[0]);
+  GAME.onAdvance = function () {
+    i++;
+    if (i < LESSON.intro.length) {
+      p.style.opacity = 0;
+      setTimeout(function () { sayOnOverlay(p, LESSON.intro[i]); p.style.opacity = 1; }, 180);
+    } else {
+      GAME.onAdvance = null;
+      el.intro.classList.remove("on");
+      el.topbar.classList.add("on");
+      GAME.cash = 0;
+      GAME.wellbeing = LESSON.wellbeing.start;
+      GAME.savings = 0;
+      GAME.rentMissed = 0;
+      setFood(false);
+      setStoveLit(false);
+      setJarCoins(0);
+      setEvictionNotice(false);
+      startWeek(0);
+    }
+  };
+  p.style.transition = "opacity 180ms ease";
+}
+
+/* ---------- input ---------- */
+function advance() {
+  if (GAME.speaking) return;        // held until the line ends, or Skip
+  if (finishTyping()) return;
+  if (GAME.onAdvance) GAME.onAdvance();
+}
+
+/** Skip cuts the current line short; with nothing being spoken it moves on. */
+function skipAhead() {
+  if (GAME.speaking) {
+    const cb = onSpeechDone;
+    if (cb) {
+      cb();                         // cancels the voice and runs its completion
+    } else {
+      stopSpeech();
+      GAME.speaking = false;
+      duckMusic(false);
+      finishTyping();
+      setAdvanceHint(GAME.hintOpts);
+    }
+    renderAudioButtons();
+    return;
+  }
+  if (finishTyping()) return;
+  if (GAME.onAdvance) GAME.onAdvance();
+}
+
+el.begin.addEventListener("click", async function (e) {
+  e.stopPropagation();
+  el.title.classList.add("gone");
+  // browsers only allow audio to start from a gesture, so this is the moment
+  await initAudio();
+  renderAudioButtons();
+  playMovement("act1");
+  setTimeout(runIntro, 700);
+});
+el.intro.addEventListener("click", advance);
+el.crisis.addEventListener("click", advance);
+el.transition.addEventListener("click", advance);
+el.clipping.addEventListener("click", advance);
+el.subtitle.addEventListener("click", advance);
+el.endWeek.addEventListener("click", function (e) { e.stopPropagation(); endWeek(); });
+el.resultNext.addEventListener("click", function (e) { e.stopPropagation(); afterResult(); });
+el.playAgain.addEventListener("click", function (e) { e.stopPropagation(); resetGame(); });
+
+function renderAudioButtons() {
+  el.muteMusic.textContent = LESSON.ui.music;
+  el.muteVoice.textContent = LESSON.ui.voice;
+  el.skip.textContent = LESSON.ui.skip;
+  el.muteMusic.classList.toggle("off", audio.musicMuted);
+  el.muteVoice.classList.toggle("off", audio.voiceMuted);
+  el.skip.classList.toggle("hot", !!GAME.speaking);
+  if (!SPEECH_OK) {
+    el.muteVoice.disabled = true;
+    el.muteVoice.title = "No speech voice available in this browser";
+  }
+}
+
+el.muteMusic.addEventListener("click", function (e) {
+  e.stopPropagation();
+  audio.musicMuted = !audio.musicMuted;
+  applyMusicLevel(0.3);
+  refreshAmbience(0.4);
+  renderAudioButtons();
+});
+
+el.muteVoice.addEventListener("click", function (e) {
+  e.stopPropagation();
+  audio.voiceMuted = !audio.voiceMuted;
+  if (audio.voiceMuted && GAME.speaking) skipAhead();   // never strand the player
+  renderAudioButtons();
+});
+
+el.skip.addEventListener("click", function (e) {
+  e.stopPropagation();
+  skipAhead();
+});
+
+// clicking in the room: pay a need during the budget, advance otherwise
+const ADVANCING_PHASES = ["intro", "beats", "reveal", "crisis", "transition"];
+onRoomClick = function (key) {
+  if (GAME.phase === "budget") payFromRoom(key);
+  else if (ADVANCING_PHASES.indexOf(GAME.phase) !== -1) advance();
+};
+onEmptyClick = function () {
+  if (ADVANCING_PHASES.indexOf(GAME.phase) !== -1) advance();
+};
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "d" || e.key === "D") {
+    el.title.classList.add("gone");
+    el.intro.classList.remove("on");
+    el.topbar.classList.add("on");
+    startTransition();
+  }
+});
+
+showTitle();
+renderAudioButtons();
+
+console.log(
+  "%cHard Times: 1932 — room ready.",
+  "font-weight:bold"
+);
+console.log("Helpers: setFood(bool), setStoveLit(bool), setJarCoins(0-1), setEvictionNotice(bool), setRadioGlow(bool), focusCamera(name|null)");
+console.log("Debug keys: D jumps to the act transition, G toggles the room-state panel.");
+</script>
+</body>
+</html>

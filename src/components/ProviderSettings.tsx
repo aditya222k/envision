@@ -61,7 +61,9 @@ function ProviderRow({
     >
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold text-ink">{label}</h2>
-        <p className="text-ink">
+        <p
+          className={`font-bold ${summary.isConfigured ? "text-science" : "text-ink-soft"}`}
+        >
           {summary.isConfigured ? "Ready to use" : "Not set up yet"}
         </p>
       </div>

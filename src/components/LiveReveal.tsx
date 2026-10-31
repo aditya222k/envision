@@ -28,7 +28,7 @@ export function LiveReveal({
   return (
     <section
       aria-label="Your game is taking shape"
-      className="col-span-2 flex flex-col gap-4 bg-paper p-4 sm:p-6 lg:col-span-4 lg:row-start-5"
+      className="flex flex-col gap-4 bg-paper p-4 sm:p-7"
     >
       <h2 className="text-2xl font-bold text-ink">
         {draft.title ?? "Your game is taking shape"}

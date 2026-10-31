@@ -15,7 +15,7 @@ function ReviewItem({
   const [answerIndex, setAnswerIndex] = useState(round.answerIndex);
 
   return (
-    <li className="flex flex-col gap-3 border-2 border-ink p-4">
+    <li className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-[0_0_0_1px_var(--line)]">
       <p className="font-bold text-ink">{round.prompt}</p>
       <p className="text-sm text-ink">{round.explanation}</p>
       <label className="field-label">

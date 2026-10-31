@@ -110,9 +110,13 @@ export function StudentPath() {
           {path.title}
         </h1>
         <p className="text-lg text-ink">{path.premise}</p>
-        <p className="font-bold text-ink">
-          {path.hero.emoji} {path.hero.name} · {completed.length} of{" "}
-          {topics.length} complete
+        <p className="flex flex-wrap gap-x-4 font-bold text-ink">
+          <span>
+            {path.hero.emoji} {path.hero.name}
+          </span>
+          <span className="text-ink-soft">
+            {completed.length} of {topics.length} complete
+          </span>
         </p>
       </section>
 
@@ -142,7 +146,7 @@ export function StudentPath() {
             title={current.topic.title}
             src={`/play/${current.topic.gameId}`}
             sandbox="allow-scripts"
-            className="h-[85vh] w-full border-2 border-ink bg-white lg:h-[640px]"
+            className="game-frame h-[85vh] w-full lg:h-[640px]"
           />
           {hasFinishedGame && (
             <button

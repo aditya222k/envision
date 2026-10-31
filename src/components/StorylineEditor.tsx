@@ -431,7 +431,7 @@ export function StorylineEditor() {
           </button>
         </div>
         {isDeleting && (
-          <div className="flex flex-col gap-3 border-2 border-history p-4">
+          <div className="flex flex-col gap-3 rounded-xl bg-[#fbe9e7] p-4">
             <p className="font-bold text-ink">
               Delete {storyline.title}? Your games stay in your catalog.
             </p>

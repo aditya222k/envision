@@ -121,13 +121,16 @@ function GameRow({
           <h2 className="text-2xl font-bold text-ink">{game.name}</h2>
         )}
         <p className="text-ink">{game.subjectLine}</p>
-        <p className="text-sm text-ink">
-          {isPublished
-            ? game.hasUnpublishedChanges
-              ? "Published. Students don't have your latest changes yet."
-              : "Published to students"
-            : "Not published"}
-          {` · Version ${game.versionCount} · Updated ${new Date(game.updatedAt).toLocaleDateString()}`}
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-soft">
+          <span className={`font-bold ${isPublished ? "text-science" : ""}`}>
+            {isPublished
+              ? game.hasUnpublishedChanges
+                ? "Published. Students don't have your latest changes yet."
+                : "Published to students"
+              : "Not published"}
+          </span>
+          <span>Version {game.versionCount}</span>
+          <span>Updated {new Date(game.updatedAt).toLocaleDateString()}</span>
         </p>
       </div>
 
@@ -177,7 +180,7 @@ function GameRow({
           <button
             type="button"
             onClick={() => setIsDeleting(true)}
-            className="action action-quiet h-11 px-5"
+            className="h-11 px-2 font-bold text-history underline-offset-4 hover:underline sm:ml-auto"
           >
             Delete
           </button>
@@ -185,7 +188,7 @@ function GameRow({
       </div>
 
       {isDeleting && (
-        <div className="flex flex-col gap-3 border-2 border-history p-4">
+        <div className="flex flex-col gap-3 rounded-xl bg-[#fbe9e7] p-4">
           <p className="font-bold text-ink">
             Delete {game.name}? This can&apos;t be undone
             {isPublished ? ", and students will lose access" : ""}.
@@ -273,7 +276,7 @@ export function GameCatalog() {
   return (
     <>
       {isLocalAddress && games.some((game) => game.publishedAt) && (
-        <p className="bg-pencil p-4 font-bold text-ink">
+        <p className="bg-[var(--pencil-light)] p-6 font-bold text-ink">
           Student links start with localhost, so they only work on this
           computer. Open Envision using your computer&apos;s network address
           before you copy a link for students.

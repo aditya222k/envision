@@ -57,7 +57,7 @@ export function GameDrawer({
         aria-haspopup="dialog"
         className="drawer-button"
       >
-        Your games
+        Open a saved game
       </button>
 
       <dialog
@@ -67,7 +67,7 @@ export function GameDrawer({
         className="drawer"
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between gap-4 border-b-[3px] border-ink p-5">
+          <div className="flex items-center justify-between gap-4 px-6 pt-6 pb-4">
             <h2
               id="game-drawer-title"
               className="font-display text-3xl leading-none text-ink"
@@ -115,7 +115,7 @@ export function GameDrawer({
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-5 border-t-[3px] border-ink p-5">
+          <div className="flex flex-wrap gap-5 border-t border-[var(--line)] px-6 py-5">
             <Link href="/games" className="font-bold text-ink underline">
               Manage all games
             </Link>

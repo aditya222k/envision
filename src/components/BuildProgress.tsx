@@ -28,10 +28,11 @@ export function BuildProgress({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex justify-between gap-4 text-ink">
-        <span className="font-bold">{label}</span>
-        <span className="tabular-nums">
-          {rounded}% · {formatElapsed(now - startedAt)}
+      <div className="flex items-baseline gap-4 text-ink">
+        <span className="flex-1 font-bold">{label}</span>
+        <span className="tabular-nums">{rounded}%</span>
+        <span className="tabular-nums text-ink-soft">
+          {formatElapsed(now - startedAt)}
         </span>
       </div>
       <div

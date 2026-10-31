@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
       "./src/lib/games/engine/world.js",
       "./src/lib/games/engine/lab.js",
       "./src/lib/games/engine/activities.js",
+      "./src/lib/games/prebuilt/*.html",
     ],
   },
   turbopack: {

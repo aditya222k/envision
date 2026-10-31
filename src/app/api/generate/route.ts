@@ -1,5 +1,5 @@
 import { buildLab, reviseLab } from "@/lib/games/buildLab";
-import { runDemoBuild, runDemoChange } from "@/lib/games/demo";
+import { runDemoBuild, runDemoChange, runPrebuiltBuild } from "@/lib/games/demo";
 import { LAB_KITS, type LabKit } from "@/lib/games/lab";
 import { buildGame } from "@/lib/games/pipeline";
 import { reviseGame } from "@/lib/games/revise";
@@ -91,7 +91,12 @@ export async function POST(request: Request) {
         send({ type: "progress", ...progress });
 
       try {
-        if (isDemo) {
+        if (isDemo && !gameId && !storyline) {
+          send({
+            type: "result",
+            game: await runPrebuiltBuild(body.prompt, signal, onProgress),
+          });
+        } else if (isDemo) {
           // Incognito never calls a provider or changes a saved game.
           const game =
             gameId && currentSpec
